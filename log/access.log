@@ -1,0 +1,24 @@
+Begin logging
+Begin logging
+Tue Dec 11 09:51:04 2018 POST /Tue Dec 11 09:51:05 2018 POST /Tue Dec 11 09:51:05 2018 POST /Tue Dec 11 09:51:14 2018 POST /Tue Dec 11 09:51:15 2018 POST /Begin logging
+Tue Dec 11 09:51:56 2018 POST /
+Tue Dec 11 09:51:56 2018 POST /
+Tue Dec 11 09:51:56 2018 POST /
+Tue Dec 11 09:51:57 2018 POST /
+Tue Dec 11 09:52:08 2018 GET /
+Begin logging
+Tue Dec 11 09:53:38 2018 GET /
+Tue Dec 11 09:53:40 2018 GET /
+Tue Dec 11 09:54:27 2018 GET /post
+Tue Dec 11 09:54:31 2018 GET /post
+Begin logging
+Tue Dec 11 09:56:51 2018 localhost:8080 GET /post
+Tue Dec 11 09:56:55 2018 localhost:8080 GET /post
+Tue Dec 11 09:56:59 2018 localhost:8080 GET /post
+Begin logging
+Tue Dec 11 09:58:34 2018 localhost:8080 GET /post?id=3
+Tue Dec 11 09:58:35 2018 localhost:8080 GET /post?id=3
+Tue Dec 11 09:58:35 2018 localhost:8080 GET /post?id=3
+Tue Dec 11 09:58:36 2018 localhost:8080 GET /post?id=
+Tue Dec 11 09:58:38 2018 localhost:8080 GET /post?id=10
+Tue Dec 11 09:58:43 2018 localhost:8080 GET /post?id=11
