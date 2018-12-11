@@ -22,3 +22,10 @@ Tue Dec 11 09:58:35 2018 localhost:8080 GET /post?id=3
 Tue Dec 11 09:58:36 2018 localhost:8080 GET /post?id=
 Tue Dec 11 09:58:38 2018 localhost:8080 GET /post?id=10
 Tue Dec 11 09:58:43 2018 localhost:8080 GET /post?id=11
+Begin logging
+Tue Dec 11 10:57:57 2018 %!s(int=200) localhost:8080 GET /post?id=11
+Tue Dec 11 10:57:59 2018 %!s(int=200) localhost:8080 GET /post?id=10
+Begin logging
+Tue Dec 11 10:58:43 2018 200 localhost:8080 GET /post?id=10
+Tue Dec 11 10:58:44 2018 200 localhost:8080 GET /post?id=10
+Tue Dec 11 10:58:44 2018 200 localhost:8080 GET /post?id=10

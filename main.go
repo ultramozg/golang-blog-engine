@@ -28,6 +28,11 @@ type Post struct {
 	Date  string
 }
 
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
 var (
 	db      *sql.DB
 	logFile *os.File
@@ -206,11 +211,13 @@ func authMiddleware(h http.Handler) http.Handler {
 
 func logMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := fmt.Fprintf(logFile, "%s %s %s %s\n", time.Now().Format("Mon Jan _2 15:04:05 2006"), r.Host, r.Method, r.URL.RequestURI())
+		l := NewLoggingResponseWriter(w)
+		h.ServeHTTP(l, r)
+
+		_, err := fmt.Fprintf(logFile, "%s %v %s %s %s\n", time.Now().Format("Mon Jan _2 15:04:05 2006"), l.statusCode, r.Host, r.Method, r.URL.RequestURI())
 		if err != nil {
 			log.Println("Cannot write to file", err)
 		}
-		h.ServeHTTP(w, r)
 	})
 }
 
@@ -228,4 +235,13 @@ func initLogging(path string) (*os.File, error) {
 		return nil, err
 	}
 	return file, nil
+}
+
+func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
+	return &loggingResponseWriter{w, http.StatusOK}
+}
+
+func (l *loggingResponseWriter) WriteHeader(code int) {
+	l.statusCode = code
+	l.ResponseWriter.WriteHeader(code)
 }
