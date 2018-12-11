@@ -29,3 +29,59 @@ Begin logging
 Tue Dec 11 10:58:43 2018 200 localhost:8080 GET /post?id=10
 Tue Dec 11 10:58:44 2018 200 localhost:8080 GET /post?id=10
 Tue Dec 11 10:58:44 2018 200 localhost:8080 GET /post?id=10
+Begin logging
+Tue Dec 11 11:46:08 2018 200 localhost:8080 GET /post?id=10
+Tue Dec 11 11:46:15 2018 200 localhost:8080 GET /post?id=10
+Tue Dec 11 11:46:16 2018 200 localhost:8080 GET /post?id=10
+Begin logging
+Begin logging
+Tue Dec 11 11:56:37 2018 200 localhost:8080 GET /post?id=10
+Tue Dec 11 11:57:17 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 11:58:10 2018 400 localhost:8080 POST /
+Tue Dec 11 11:58:21 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 11:59:27 2018 400 localhost:8080 POST /
+Tue Dec 11 11:59:28 2018 400 localhost:8080 POST /
+Tue Dec 11 11:59:29 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:03:09 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:03:51 2018 400 localhost:8080 POST /
+Tue Dec 11 12:03:52 2018 400 localhost:8080 POST /
+Tue Dec 11 12:03:54 2018 400 localhost:8080 POST /
+Tue Dec 11 12:03:57 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:05:16 2018 400 localhost:8080 POST /
+Tue Dec 11 12:05:18 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:07:06 2018 200 localhost:8080 POST /
+Tue Dec 11 12:07:19 2018 400 localhost:8080 POST /
+Tue Dec 11 12:07:22 2018 200 localhost:8080 POST /
+Tue Dec 11 12:07:29 2018 200 localhost:8080 POST /
+Tue Dec 11 12:07:57 2018 200 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:36:06 2018 200 localhost:8080 POST /
+Tue Dec 11 12:36:10 2018 200 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:47:22 2018 200 localhost:8080 POST /
+Tue Dec 11 12:47:24 2018 200 localhost:8080 POST /
+Tue Dec 11 12:47:25 2018 200 localhost:8080 POST /
+Tue Dec 11 12:47:31 2018 200 localhost:8080 POST /
+Tue Dec 11 12:47:35 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:50:18 2018 400 localhost:8080 POST /
+Tue Dec 11 12:50:20 2018 400 localhost:8080 POST /
+Tue Dec 11 12:50:21 2018 400 localhost:8080 POST /
+Tue Dec 11 12:50:21 2018 400 localhost:8080 POST /
+Tue Dec 11 12:50:22 2018 400 localhost:8080 POST /
+Tue Dec 11 12:50:29 2018 200 localhost:8080 POST /
+Tue Dec 11 12:50:36 2018 400 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:50:57 2018 400 localhost:8080 POST /
+Tue Dec 11 12:51:02 2018 200 localhost:8080 POST /
+Begin logging
+Tue Dec 11 12:53:22 2018 200 localhost:8080 POST /
+Tue Dec 11 12:53:32 2018 400 localhost:8080 POST /
+Tue Dec 11 12:53:45 2018 200 localhost:8080 GET /post?id=10
+Tue Dec 11 12:53:51 2018 200 localhost:8080 GET /post?id=0

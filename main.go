@@ -14,12 +14,23 @@ import (
 	*/
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/satori/go.uuid"
 )
 
 const (
 	postsPerPage = 8
 	logFilePath  = "log/access.log"
 )
+
+const (
+	ADMIN = iota
+	USER  = iota
+)
+
+type Admin struct {
+	login  string
+	passwd string
+}
 
 type Post struct {
 	Id    int
@@ -34,14 +45,20 @@ type loggingResponseWriter struct {
 }
 
 var (
-	db      *sql.DB
-	logFile *os.File
+	db         *sql.DB
+	logFile    *os.File
+	admin      *Admin
+	dbSessions map[string]int
 )
 
 func main() {
 	var err error
 	db = initializeDatabase("database/database.sqlite")
 	migrateDatabase(db)
+
+	//User admin
+	admin = &Admin{"admin", "abcd"}
+	dbSessions = make(map[string]int)
 
 	//Init logging
 	logFile, err = initLogging(logFilePath)
@@ -194,16 +211,47 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func loggedIn() bool {
-	return true
+func loggedIn(c *http.Cookie) bool {
+	if v, ok := dbSessions[c.Value]; ok && v == ADMIN {
+		return true
+	}
+	return false
 }
 
 func authMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		if strings.HasPrefix(r.URL.Path, "/delete") && !loggedIn() || r.Method != "GET" && !loggedIn() {
-			http.Error(w, "Method Not Allowed", 405)
-			return
+		//-First check if session exist, if so, allow
+		//-Check if this is POST request, if so fetch try to fetch login, password, if login successfull create session
+		c, err := r.Cookie("session")
+		if err == http.ErrNoCookie {
+			if r.Method == "POST" {
+				if err := r.ParseForm(); err != nil {
+					http.Error(w, "Bad Request", 400)
+					return
+				}
+				if r.FormValue("login") != "" && r.FormValue("password") != "" {
+					if r.FormValue("login") == admin.login && r.FormValue("password") == admin.passwd {
+						sID, _ := uuid.NewV4()
+						c = &http.Cookie{
+							Name:  "session",
+							Value: sID.String(),
+						}
+						http.SetCookie(w, c)
+						dbSessions[sID.String()] = ADMIN
+						return
+					} else {
+						http.Error(w, "Not Authorized", 400)
+						return
+					}
+				}
+			}
+		} else {
+			//Cookie exist need to check if this is match in our dbSEssions
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			if strings.HasPrefix(r.URL.Path, "/delete") && !loggedIn(c) || r.Method != "GET" && !loggedIn(c) {
+				http.Error(w, "Method Not Allowed", 405)
+				return
+			}
 		}
 		h.ServeHTTP(w, r)
 	})
