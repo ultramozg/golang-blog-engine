@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -24,7 +25,7 @@ const (
 
 const (
 	ADMIN = iota
-	USER  = iota
+	USER
 )
 
 type Admin struct {
@@ -49,7 +50,12 @@ var (
 	logFile    *os.File
 	admin      *Admin
 	dbSessions map[string]int
+	tpl        *template.Template
 )
+
+func init() {
+	tpl = template.Must(template.ParseGlob("templates/*.gohtml"))
+}
 
 func main() {
 	var err error
@@ -68,13 +74,21 @@ func main() {
 	defer logFile.Close()
 	fmt.Fprintln(logFile, "Begin logging")
 
+	//Register MUX
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getPage)
 	mux.HandleFunc("/post", getPost)
 	mux.HandleFunc("/delete", deletePost)
+	mux.HandleFunc("/logout", logOut)
+
+	//Register Fileserver
+	fs := http.FileServer(http.Dir("public"))
+	mux.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	//Set Admin and Logging middleware
 	adminHandler := logMiddleware(authMiddleware(mux))
+
+	log.Println("Listening on port :8080")
 	http.ListenAndServe(":8080", adminHandler)
 }
 
@@ -135,11 +149,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 func getPage(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		p, err := strconv.Atoi(r.FormValue("p"))
-		if err != nil {
-			http.Error(w, "Query error", 400)
-			return
-		}
+		p, _ := strconv.Atoi(r.FormValue("p"))
 
 		posts := []Post{}
 		s := `select * from posts limit 8 offset ?;`
@@ -158,7 +168,8 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 			posts = append(posts, p)
 		}
 
-		fmt.Fprintln(w, posts)
+		//fmt.Fprintln(w, posts)
+		tpl.ExecuteTemplate(w, "page.gohtml", posts)
 
 	case "POST":
 		if err := r.ParseForm(); err != nil {
@@ -183,6 +194,27 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 
 	}
 
+}
+
+func logOut(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("session")
+	if err == http.ErrNoCookie {
+		http.Error(w, "You not Logged in", 401)
+		return
+	}
+	if r.Method == http.MethodGet {
+		//delete session
+		if loggedInAsAdmin(c) {
+			delete(dbSessions, c.Value)
+			//delete cookie
+			c = &http.Cookie{
+				Name:   "session",
+				Value:  "",
+				MaxAge: -1,
+			}
+			http.SetCookie(w, c)
+		}
+	}
 }
 
 func deletePost(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +243,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func loggedIn(c *http.Cookie) bool {
+func loggedInAsAdmin(c *http.Cookie) bool {
 	if v, ok := dbSessions[c.Value]; ok && v == ADMIN {
 		return true
 	}
@@ -222,6 +254,7 @@ func authMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		//-First check if session exist, if so, allow
 		//-Check if this is POST request, if so fetch try to fetch login, password, if login successfull create session
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		c, err := r.Cookie("session")
 		if err == http.ErrNoCookie {
 			if r.Method == "POST" {
@@ -247,8 +280,7 @@ func authMiddleware(h http.Handler) http.Handler {
 			}
 		} else {
 			//Cookie exist need to check if this is match in our dbSEssions
-			w.Header().Set("Content-Type", "text/html; charset=utf-8")
-			if strings.HasPrefix(r.URL.Path, "/delete") && !loggedIn(c) || r.Method != "GET" && !loggedIn(c) {
+			if strings.HasPrefix(r.URL.Path, "/delete") && !loggedInAsAdmin(c) || r.Method != "GET" && !loggedInAsAdmin(c) {
 				http.Error(w, "Method Not Allowed", 405)
 				return
 			}
@@ -262,7 +294,7 @@ func logMiddleware(h http.Handler) http.Handler {
 		l := NewLoggingResponseWriter(w)
 		h.ServeHTTP(l, r)
 
-		_, err := fmt.Fprintf(logFile, "%s %v %s %s %s\n", time.Now().Format("Mon Jan _2 15:04:05 2006"), l.statusCode, r.Host, r.Method, r.URL.RequestURI())
+		_, err := fmt.Fprintf(logFile, "%s %v %s %s %s\n", time.Now().Format("Mon Jan _2 15:04:05 2006"), l.statusCode, r.RemoteAddr, r.Method, r.URL.RequestURI())
 		if err != nil {
 			log.Println("Cannot write to file", err)
 		}

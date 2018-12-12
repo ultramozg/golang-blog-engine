@@ -85,3 +85,59 @@ Tue Dec 11 12:53:22 2018 200 localhost:8080 POST /
 Tue Dec 11 12:53:32 2018 400 localhost:8080 POST /
 Tue Dec 11 12:53:45 2018 200 localhost:8080 GET /post?id=10
 Tue Dec 11 12:53:51 2018 200 localhost:8080 GET /post?id=0
+Begin logging
+Wed Dec 12 08:06:24 2018 200 [::1]:49529 GET /post?id=10
+Wed Dec 12 08:06:29 2018 200 [::1]:49530 GET /post?id=10
+Begin logging
+Wed Dec 12 08:28:05 2018 200 [::1]:49531 GET /post?id=10
+Begin logging
+Wed Dec 12 09:21:14 2018 200 [::1]:49532 GET /post?id=10
+Wed Dec 12 09:21:16 2018 200 [::1]:49533 GET /post?id=10
+Wed Dec 12 09:21:17 2018 200 [::1]:49534 GET /post?id=10
+Wed Dec 12 09:21:20 2018 200 [::1]:49535 GET /post?id=10
+Wed Dec 12 09:21:26 2018 400 [::1]:49536 POST /
+Wed Dec 12 09:21:34 2018 200 [::1]:49537 POST /
+Begin logging
+Wed Dec 12 09:23:05 2018 200 [::1]:49538 POST /
+Wed Dec 12 09:23:10 2018 400 [::1]:49539 POST /
+Wed Dec 12 09:23:15 2018 200 [::1]:49540 POST /
+Wed Dec 12 09:23:17 2018 200 [::1]:49541 POST /
+Wed Dec 12 09:23:17 2018 200 [::1]:49542 POST /
+Begin logging
+Wed Dec 12 09:23:40 2018 405 [::1]:49543 HEAD /logout
+Begin logging
+Wed Dec 12 09:24:30 2018 405 [::1]:49546 GET /logout
+Begin logging
+Wed Dec 12 09:24:45 2018 400 [::1]:49547 GET /logout
+Begin logging
+Wed Dec 12 09:25:22 2018 401 [::1]:49548 GET /logout
+Begin logging
+Begin logging
+Wed Dec 12 09:40:18 2018 401 [::1]:49549 GET /logout
+Begin logging
+Wed Dec 12 09:44:22 2018 401 [::1]:49550 GET /logout
+Wed Dec 12 09:44:27 2018 301 [::1]:49551 GET /public
+Wed Dec 12 09:44:48 2018 200 [::1]:49552 GET /public/
+Wed Dec 12 09:44:59 2018 200 [::1]:49553 GET /public/test.txt
+Begin logging
+Begin logging
+Begin logging
+Wed Dec 12 10:25:19 2018 200 [::1]:49554 GET /public/test.txt
+Wed Dec 12 10:25:22 2018 400 [::1]:49555 GET /
+Wed Dec 12 10:25:35 2018 200 [::1]:49556 GET /?p=0
+Begin logging
+Wed Dec 12 10:26:10 2018 200 [::1]:49557 GET /?p=1
+Wed Dec 12 10:26:11 2018 200 [::1]:49558 GET /?p=2
+Wed Dec 12 10:26:13 2018 200 [::1]:49559 GET /?p=3
+Wed Dec 12 10:26:16 2018 200 [::1]:49560 GET /?p=4
+Wed Dec 12 10:26:17 2018 200 [::1]:49561 GET /?p=5
+Wed Dec 12 10:26:41 2018 200 [::1]:49562 GET /?p=4
+Wed Dec 12 10:28:02 2018 400 [::1]:49563 GET /
+Begin logging
+Wed Dec 12 10:33:32 2018 200 [::1]:49564 GET /
+Wed Dec 12 10:33:36 2018 200 [::1]:49565 GET /?p=1
+Wed Dec 12 10:33:38 2018 200 [::1]:49566 GET /?p=2
+Begin logging
+Begin logging
+Wed Dec 12 10:42:50 2018 200 [::1]:49567 GET /?p=2
+Wed Dec 12 10:42:54 2018 200 [::1]:49568 GET /?p=0

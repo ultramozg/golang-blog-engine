@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>My Posts</title>
+</head>
+<body>
+	<div>
+		<form method="POST" action="/">
+			<label>Login</label><input name="login" type="text" value="" />
+			<label>Password</label><input name="password" type="text" value="" />
+			<input type="submit" value="login" />
+		</form>
+	</div>
+<ul>
+	{{range .}}
+	<li>{{.Title}} {{.Date}}</li>
+	{{end}}
+</ul>
+</body>
+</html>
