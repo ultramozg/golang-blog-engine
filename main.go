@@ -77,19 +77,20 @@ func main() {
 	//Register MUX
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getPage)
+	mux.HandleFunc("/login", login)
+	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/post", getPost)
 	mux.HandleFunc("/delete", deletePost)
-	mux.HandleFunc("/logout", logOut)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public"))
 	mux.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	//Set Admin and Logging middleware
-	adminHandler := logMiddleware(authMiddleware(mux))
+	logHandler := logMiddleware(setHeaderMiddleware(mux))
 
 	log.Println("Listening on port :8080")
-	http.ListenAndServe(":8080", adminHandler)
+	http.ListenAndServe(":8080", logHandler)
 }
 
 func initializeDatabase(filepath string) *sql.DB {
@@ -196,27 +197,6 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func logOut(w http.ResponseWriter, r *http.Request) {
-	c, err := r.Cookie("session")
-	if err == http.ErrNoCookie {
-		http.Error(w, "You not Logged in", 401)
-		return
-	}
-	if r.Method == http.MethodGet {
-		//delete session
-		if loggedInAsAdmin(c) {
-			delete(dbSessions, c.Value)
-			//delete cookie
-			c = &http.Cookie{
-				Name:   "session",
-				Value:  "",
-				MaxAge: -1,
-			}
-			http.SetCookie(w, c)
-		}
-	}
-}
-
 func deletePost(w http.ResponseWriter, r *http.Request) {
 	v := r.FormValue("id")
 	if _, err := strconv.Atoi(v); err != nil {
@@ -243,39 +223,32 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func loggedInAsAdmin(c *http.Cookie) bool {
-	if v, ok := dbSessions[c.Value]; ok && v == ADMIN {
-		return true
-	}
-	return false
-}
-
-func authMiddleware(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func login(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
 		//-First check if session exist, if so, allow
 		//-Check if this is POST request, if so fetch try to fetch login, password, if login successfull create session
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		c, err := r.Cookie("session")
 		if err == http.ErrNoCookie {
-			if r.Method == "POST" {
-				if err := r.ParseForm(); err != nil {
-					http.Error(w, "Bad Request", 400)
-					return
-				}
-				if r.FormValue("login") != "" && r.FormValue("password") != "" {
-					if r.FormValue("login") == admin.login && r.FormValue("password") == admin.passwd {
-						sID, _ := uuid.NewV4()
-						c = &http.Cookie{
-							Name:  "session",
-							Value: sID.String(),
-						}
-						http.SetCookie(w, c)
-						dbSessions[sID.String()] = ADMIN
-						return
-					} else {
-						http.Error(w, "Not Authorized", 400)
-						return
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, "Internal Server Error", 500)
+				return
+			}
+			if r.FormValue("login") != "" && r.FormValue("password") != "" {
+				if r.FormValue("login") == admin.login && r.FormValue("password") == admin.passwd {
+					sID, _ := uuid.NewV4()
+					c = &http.Cookie{
+						Name:  "session",
+						Value: sID.String(),
 					}
+					http.SetCookie(w, c)
+					dbSessions[sID.String()] = ADMIN
+					http.Redirect(w, r, "/", http.StatusSeeOther)
+					return
+				} else {
+					http.Error(w, "Not Authorized", 400)
+					http.Redirect(w, r, "/", http.StatusSeeOther)
+					return
 				}
 			}
 		} else {
@@ -285,6 +258,45 @@ func authMiddleware(h http.Handler) http.Handler {
 				return
 			}
 		}
+	default:
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+func logout(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("session")
+	if err == http.ErrNoCookie {
+		http.Error(w, "You are not Logged in", 401)
+		return
+	}
+	switch r.Method {
+	case http.MethodPost:
+		//delete session
+		if loggedInAsAdmin(c) {
+			delete(dbSessions, c.Value)
+			//delete cookie
+			c = &http.Cookie{
+				Name:   "session",
+				Value:  "",
+				MaxAge: -1,
+			}
+			http.SetCookie(w, c)
+		}
+	default:
+		http.Error(w, "Not authorized", 401)
+	}
+}
+
+func loggedInAsAdmin(c *http.Cookie) bool {
+	if v, ok := dbSessions[c.Value]; ok && v == ADMIN {
+		return true
+	}
+	return false
+}
+
+func setHeaderMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		h.ServeHTTP(w, r)
 	})
 }
