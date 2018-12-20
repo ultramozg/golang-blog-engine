@@ -177,9 +177,13 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Posts    []Post
 			LoggedIn bool
+			PrevPage string
+			NextPage string
 		}{
 			posts,
 			loggedInAsAdmin(r),
+			fmt.Sprintf("http://%v/page?p=%v", r.Host, p-1),
+			fmt.Sprintf("http://%v/page?p=%v", r.Host, p+1),
 		}
 		tpl.ExecuteTemplate(w, "page.gohtml", data)
 
