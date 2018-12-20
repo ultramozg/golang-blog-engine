@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"html/template"
 	"log"
@@ -10,9 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	/*"io"
-	"flag"
-	*/
+	//"io"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
@@ -58,6 +57,11 @@ func init() {
 }
 
 func main() {
+	//Parse Keys
+	addr := flag.String("ip", "localhost", "Ip address to bind(localhost)")
+	port := flag.String("p", "8080", "port listen to (:8080)")
+	flag.Parse()
+
 	var err error
 	db = initializeDatabase("database/database.sqlite")
 	migrateDatabase(db)
@@ -87,10 +91,10 @@ func main() {
 	mux.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	//Set Admin and Logging middleware
-	logHandler := logMiddleware(setHeaderMiddleware(mux))
+	logHandler := logMiddleware(setHeaderMiddleware(authMiddleware(mux)))
 
-	log.Println("Listening on port :8080")
-	http.ListenAndServe(":8080", logHandler)
+	log.Println("Listening on addr:port: ", *addr+":"+*port)
+	http.ListenAndServe(*addr+":"+*port, logHandler)
 }
 
 func initializeDatabase(filepath string) *sql.DB {
@@ -128,7 +132,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 	p := Post{}
 
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		s := `select * from posts where id = ?`
 		row := db.QueryRow(s, v)
 		err := row.Scan(&p.Id, &p.Title, &p.Body, &p.Date)
@@ -137,7 +141,8 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 		case sql.ErrNoRows:
 			fmt.Fprintln(w, "No row was returned!")
 		case nil:
-			fmt.Fprintln(w, p)
+			//fmt.Fprintln(w, p)
+			tpl.ExecuteTemplate(w, "post.gohtml", p)
 		default:
 			panic(err)
 		}
@@ -149,7 +154,7 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 
 func getPage(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
 		p, _ := strconv.Atoi(r.FormValue("p"))
 
 		posts := []Post{}
@@ -169,10 +174,16 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 			posts = append(posts, p)
 		}
 
-		//fmt.Fprintln(w, posts)
-		tpl.ExecuteTemplate(w, "page.gohtml", posts)
+		data := struct {
+			Posts    []Post
+			LoggedIn bool
+		}{
+			posts,
+			loggedInAsAdmin(r),
+		}
+		tpl.ExecuteTemplate(w, "page.gohtml", data)
 
-	case "POST":
+	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Bad Request", 400)
 			return
@@ -205,7 +216,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch r.Method {
-	case "GET":
+	case http.MethodPost:
 		s := `delete from posts where id = ?`
 		_, err := db.Exec(s, v)
 
@@ -229,7 +240,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		//-First check if session exist, if so, allow
 		//-Check if this is POST request, if so fetch try to fetch login, password, if login successfull create session
 		c, err := r.Cookie("session")
-		if err == http.ErrNoCookie {
+		if err == http.ErrNoCookie || !loggedInAsAdmin(r) {
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, "Internal Server Error", 500)
 				return
@@ -253,7 +264,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			//Cookie exist need to check if this is match in our dbSEssions
-			if strings.HasPrefix(r.URL.Path, "/delete") && !loggedInAsAdmin(c) || r.Method != "GET" && !loggedInAsAdmin(c) {
+			if strings.HasPrefix(r.URL.Path, "/delete") && !loggedInAsAdmin(r) || r.Method != "GET" && !loggedInAsAdmin(r) {
 				http.Error(w, "Method Not Allowed", 405)
 				return
 			}
@@ -272,7 +283,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
 		//delete session
-		if loggedInAsAdmin(c) {
+		if loggedInAsAdmin(r) {
 			delete(dbSessions, c.Value)
 			//delete cookie
 			c = &http.Cookie{
@@ -281,15 +292,21 @@ func logout(w http.ResponseWriter, r *http.Request) {
 				MaxAge: -1,
 			}
 			http.SetCookie(w, c)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 		}
 	default:
 		http.Error(w, "Not authorized", 401)
 	}
 }
 
-func loggedInAsAdmin(c *http.Cookie) bool {
-	if v, ok := dbSessions[c.Value]; ok && v == ADMIN {
-		return true
+func loggedInAsAdmin(r *http.Request) bool {
+	c, err := r.Cookie("session")
+	if err == http.ErrNoCookie {
+		return false
+	} else {
+		if v, ok := dbSessions[c.Value]; ok && v == ADMIN {
+			return true
+		}
 	}
 	return false
 }
@@ -309,6 +326,25 @@ func logMiddleware(h http.Handler) http.Handler {
 		_, err := fmt.Fprintf(logFile, "%s %v %s %s %s\n", time.Now().Format("Mon Jan _2 15:04:05 2006"), l.statusCode, r.RemoteAddr, r.Method, r.URL.RequestURI())
 		if err != nil {
 			log.Println("Cannot write to file", err)
+		}
+	})
+}
+
+func authMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		//check if user is Authorized to call this uri and Methods
+		switch r.Method {
+		case http.MethodPost:
+			if loggedInAsAdmin(r) || r.URL.Path == "/login" {
+				h.ServeHTTP(w, r)
+			}
+			return
+		case http.MethodGet:
+			h.ServeHTTP(w, r)
+			return
+		default:
+			http.Error(w, "Unauthorized", 401)
+			return
 		}
 	})
 }

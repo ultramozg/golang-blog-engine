@@ -5,6 +5,14 @@
 	<title>My Posts</title>
 </head>
 <body>
+	{{if .LoggedIn}}
+	<div>
+		<form method="POST" action="/logout">
+			<input type="submit" value="logout" />
+		</form>
+	</div>
+	{{end}}
+	{{if not .LoggedIn}}
 	<div>
 		<form method="POST" action="/login">
 			<label>Login</label><input name="login" type="text" value="" />
@@ -12,10 +20,20 @@
 			<input type="submit" value="login" />
 		</form>
 	</div>
+	{{end}}
 <ul>
-	{{range .}}
+	{{range .Posts}}
 	<li>{{.Title}} {{.Date}}</li>
 	{{end}}
 </ul>
+	{{if .LoggedIn}}
+	<div>
+		<form method="POST" action="/">
+			<label>Title</label><input name="title" type="text" value="" />
+			<label>Body</label><input name="body" type="text" value="" />
+			<input type="submit" value="submit" />
+		</form>
+	</div>
+	{{end}}
 </body>
 </html>
