@@ -14,7 +14,7 @@
 	{{end}}
 <ul>
 	{{range .Posts}}
-	<li>{{.Title}} {{.Date}}</li>
+	<li><a href="http://localhost:8080/post?id={{.Id}}">{{.Title}} {{.Date}}</a></li>
 	{{end}}
 </ul>
 	{{if .LoggedIn}}

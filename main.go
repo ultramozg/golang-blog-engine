@@ -182,8 +182,8 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		}{
 			posts,
 			loggedInAsAdmin(r),
-			fmt.Sprintf("http://%v/page?p=%v", r.Host, p-1),
-			fmt.Sprintf("http://%v/page?p=%v", r.Host, p+1),
+			fmt.Sprintf("http://%v/page?p=%v", r.Host, add(p, -1)),
+			fmt.Sprintf("http://%v/page?p=%v", r.Host, add(p, +1)),
 		}
 		tpl.ExecuteTemplate(w, "page.gohtml", data)
 
@@ -378,4 +378,11 @@ func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 func (l *loggingResponseWriter) WriteHeader(code int) {
 	l.statusCode = code
 	l.ResponseWriter.WriteHeader(code)
+}
+
+func add(i, j int) int {
+	if i+j <= 0 {
+		return 0
+	}
+	return i + j
 }
