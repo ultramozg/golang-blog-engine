@@ -12,15 +12,6 @@
 		</form>
 	</div>
 	{{end}}
-	{{if not .LoggedIn}}
-	<div>
-		<form method="POST" action="/login">
-			<label>Login</label><input name="login" type="text" value="" />
-			<label>Password</label><input name="password" type="text" value="" />
-			<input type="submit" value="login" />
-		</form>
-	</div>
-	{{end}}
 <ul>
 	{{range .Posts}}
 	<li>{{.Title}} {{.Date}}</li>

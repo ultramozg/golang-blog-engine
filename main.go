@@ -240,6 +240,8 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 
 func login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case http.MethodGet:
+		tpl.ExecuteTemplate(w, "login.gohtml", loggedInAsAdmin(r))
 	case http.MethodPost:
 		//-First check if session exist, if so, allow
 		//-Check if this is POST request, if so fetch try to fetch login, password, if login successfull create session

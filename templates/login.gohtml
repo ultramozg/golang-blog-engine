@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Login</title>
+</head>
+<body>
+	{{if .}}
+	<div>
+		<form method="POST" action="/logout">
+			<input type="submit" value="logout" />
+		</form>
+	</div>
+	{{end}}
+	{{if not .}}
+	<div>
+		<form method="POST" action="/login">
+			<label>Login</label><input name="login" type="text" value="" />
+			<label>Password</label><input name="password" type="text" value="" />
+			<input type="submit" value="login" />
+		</form>
+	</div>
+	{{end}}
+</body>
+</html>
