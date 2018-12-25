@@ -87,7 +87,7 @@ func main() {
 	mux.HandleFunc("/delete", deletePost)
 
 	//Register Fileserver
-	fs := http.FileServer(http.Dir("public"))
+	fs := http.FileServer(http.Dir("public/"))
 	mux.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	//Set Admin and Logging middleware
@@ -319,7 +319,11 @@ func loggedInAsAdmin(r *http.Request) bool {
 
 func setHeaderMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if strings.HasSuffix(r.URL.RequestURI(), ".css") {
+			w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		} else {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		}
 		h.ServeHTTP(w, r)
 	})
 }

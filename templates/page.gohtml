@@ -2,9 +2,16 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
+	<!--
+	<link rel="stylesheet"  href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.css" />
+	-->
+	<link rel="stylesheet" href="public/css/skeleton.css" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0">
 	<title>My Posts</title>
 </head>
 <body>
+	<div class="container">
+	<h2 class=u-pull-right>Right</h2>
 	{{if .LoggedIn}}
 	<div>
 		<form method="POST" action="/logout">
@@ -14,7 +21,7 @@
 	{{end}}
 <ul>
 	{{range .Posts}}
-	<li><a href="http://localhost:8080/post?id={{.Id}}">{{.Title}} {{.Date}}</a></li>
+	<li><h3><a href="/post?id={{.Id}}">{{.Title}} {{.Date}}</a></h3></li>
 	{{end}}
 </ul>
 	{{if .LoggedIn}}
@@ -28,5 +35,7 @@
 	{{end}}
 	<a href="{{.PrevPage}}">Prev Page</a>
 	<a href="{{.NextPage}}">Next Page</a>
+	<button class="u-max-full-width">Button</button>
+	</div>
 </body>
 </html>
