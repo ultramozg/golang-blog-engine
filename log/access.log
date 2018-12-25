@@ -1611,3 +1611,503 @@ Tue Dec 25 08:09:47 2018 200 127.0.0.1:42389 GET /favicon.ico
 Tue Dec 25 08:09:54 2018 200 127.0.0.1:42389 GET /skeleton.css
 Tue Dec 25 08:09:54 2018 200 127.0.0.1:42389 GET /favicon.ico
 Tue Dec 25 08:10:02 2018 200 127.0.0.1:42389 GET /favicon.ico
+Begin logging
+Tue Dec 25 09:48:15 2018 200 127.0.0.1:47253 GET /
+Tue Dec 25 09:48:16 2018 200 127.0.0.1:47253 GET /favicon.ico
+Begin logging
+Tue Dec 25 09:53:31 2018 200 127.0.0.1:48515 GET /
+Tue Dec 25 09:53:31 2018 200 127.0.0.1:48515 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:03:31 2018 200 127.0.0.1:50913 GET /
+Tue Dec 25 10:03:31 2018 200 127.0.0.1:50913 GET /favicon.ico
+Tue Dec 25 10:03:39 2018 200 127.0.0.1:50913 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:05:59 2018 200 127.0.0.1:51507 GET /
+Tue Dec 25 10:05:59 2018 200 127.0.0.1:51507 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:08:44 2018 200 127.0.0.1:52169 GET /
+Tue Dec 25 10:08:44 2018 200 127.0.0.1:52169 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:10:37 2018 200 127.0.0.1:52629 GET /
+Tue Dec 25 10:10:38 2018 200 127.0.0.1:52629 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:11:13 2018 200 127.0.0.1:52771 GET /
+Tue Dec 25 10:11:13 2018 200 127.0.0.1:52771 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:11:51 2018 200 127.0.0.1:52929 GET /
+Tue Dec 25 10:11:52 2018 200 127.0.0.1:52929 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:12:22 2018 200 127.0.0.1:53055 GET /
+Tue Dec 25 10:12:22 2018 200 127.0.0.1:53055 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:12:53 2018 200 127.0.0.1:53177 GET /
+Tue Dec 25 10:12:53 2018 200 127.0.0.1:53177 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:18:41 2018 200 127.0.0.1:54567 GET /
+Tue Dec 25 10:18:41 2018 200 127.0.0.1:54567 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:22:29 2018 200 127.0.0.1:55481 GET /
+Tue Dec 25 10:22:29 2018 200 127.0.0.1:55481 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:24:28 2018 200 127.0.0.1:55955 GET /
+Tue Dec 25 10:24:28 2018 200 127.0.0.1:55955 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:26:50 2018 200 127.0.0.1:56525 GET /
+Tue Dec 25 10:26:50 2018 200 127.0.0.1:56525 GET /favicon.ico
+Tue Dec 25 10:26:51 2018 200 127.0.0.1:56525 GET /
+Tue Dec 25 10:26:51 2018 200 127.0.0.1:56525 GET /favicon.ico
+Tue Dec 25 10:26:52 2018 200 127.0.0.1:56525 GET /
+Tue Dec 25 10:26:52 2018 200 127.0.0.1:56525 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:28:07 2018 200 127.0.0.1:56835 GET /
+Tue Dec 25 10:28:07 2018 404 127.0.0.1:56835 GET /public/css/normalizer.css
+Tue Dec 25 10:28:07 2018 200 127.0.0.1:56835 GET /favicon.ico
+Tue Dec 25 10:29:37 2018 200 127.0.0.1:56835 GET /
+Tue Dec 25 10:29:37 2018 404 127.0.0.1:56835 GET /public/css/normalizer.css
+Tue Dec 25 10:29:38 2018 200 127.0.0.1:56835 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:30:03 2018 200 127.0.0.1:57337 GET /
+Tue Dec 25 10:30:03 2018 200 127.0.0.1:57337 GET /public/css/custom.css
+Tue Dec 25 10:30:03 2018 404 127.0.0.1:57339 GET /public/css/normalizer.css
+Tue Dec 25 10:30:03 2018 200 127.0.0.1:57339 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:34:44 2018 200 127.0.0.1:58466 GET /
+Tue Dec 25 10:34:44 2018 404 127.0.0.1:58466 GET /public/css/normalizer.css
+Tue Dec 25 10:34:44 2018 200 127.0.0.1:58466 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:34:44 2018 304 127.0.0.1:58466 GET /public/css/custom.css
+Tue Dec 25 10:34:45 2018 200 127.0.0.1:58466 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:35:15 2018 200 127.0.0.1:58592 GET /
+Tue Dec 25 10:35:15 2018 404 127.0.0.1:58592 GET /public/css/normalizer.css
+Tue Dec 25 10:35:15 2018 304 127.0.0.1:58592 GET /public/css/custom.css
+Tue Dec 25 10:35:15 2018 304 127.0.0.1:58594 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:35:15 2018 200 127.0.0.1:58594 GET /favicon.ico
+Tue Dec 25 10:35:20 2018 200 127.0.0.1:58594 GET /
+Tue Dec 25 10:35:20 2018 404 127.0.0.1:58594 GET /public/css/normalizer.css
+Tue Dec 25 10:35:20 2018 200 127.0.0.1:58594 GET /favicon.ico
+Tue Dec 25 10:36:03 2018 200 127.0.0.1:58594 GET /
+Tue Dec 25 10:36:03 2018 404 127.0.0.1:58594 GET /public/css/normalizer.css
+Tue Dec 25 10:36:03 2018 304 127.0.0.1:58594 GET /public/css/custom.css
+Tue Dec 25 10:36:03 2018 304 127.0.0.1:58592 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:36:03 2018 200 127.0.0.1:58592 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:36:27 2018 200 127.0.0.1:58884 GET /
+Tue Dec 25 10:36:27 2018 200 127.0.0.1:58884 GET /public/css/normalize.css
+Tue Dec 25 10:36:27 2018 304 127.0.0.1:58886 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:36:27 2018 200 127.0.0.1:58886 GET /favicon.ico
+Tue Dec 25 10:36:31 2018 200 127.0.0.1:58886 GET /
+Tue Dec 25 10:36:31 2018 200 127.0.0.1:58886 GET /public/css/skeleton.css
+Tue Dec 25 10:36:31 2018 200 127.0.0.1:58886 GET /public/css/normalize.css
+Tue Dec 25 10:36:31 2018 200 127.0.0.1:58884 GET /public/css/custom.css
+Tue Dec 25 10:36:31 2018 200 127.0.0.1:58904 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:36:31 2018 200 127.0.0.1:58884 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:40:11 2018 200 127.0.0.1:59782 GET /
+Tue Dec 25 10:40:11 2018 200 127.0.0.1:59782 GET /public/css/normalize.css
+Tue Dec 25 10:40:11 2018 200 127.0.0.1:59782 GET /public/css/skeleton.css
+Tue Dec 25 10:40:11 2018 200 127.0.0.1:59784 GET /public/css/custom.css
+Tue Dec 25 10:40:11 2018 200 127.0.0.1:59786 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:40:11 2018 200 127.0.0.1:59784 GET /favicon.ico
+Tue Dec 25 10:40:12 2018 200 127.0.0.1:59784 GET /
+Tue Dec 25 10:40:12 2018 200 127.0.0.1:59784 GET /public/css/normalize.css
+Tue Dec 25 10:40:12 2018 200 127.0.0.1:59784 GET /public/css/skeleton.css
+Tue Dec 25 10:40:12 2018 200 127.0.0.1:59782 GET /public/css/custom.css
+Tue Dec 25 10:40:12 2018 200 127.0.0.1:59786 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:40:12 2018 200 127.0.0.1:59782 GET /favicon.ico
+Tue Dec 25 10:40:13 2018 200 127.0.0.1:59782 GET /
+Tue Dec 25 10:40:13 2018 200 127.0.0.1:59782 GET /public/css/normalize.css
+Tue Dec 25 10:40:13 2018 200 127.0.0.1:59782 GET /public/css/skeleton.css
+Tue Dec 25 10:40:13 2018 200 127.0.0.1:59784 GET /public/css/custom.css
+Tue Dec 25 10:40:13 2018 200 127.0.0.1:59786 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:40:13 2018 200 127.0.0.1:59784 GET /favicon.ico
+Tue Dec 25 10:40:14 2018 200 127.0.0.1:59784 GET /
+Tue Dec 25 10:40:14 2018 200 127.0.0.1:59784 GET /public/css/normalize.css
+Tue Dec 25 10:40:14 2018 200 127.0.0.1:59784 GET /public/css/skeleton.css
+Tue Dec 25 10:40:14 2018 200 127.0.0.1:59782 GET /public/css/custom.css
+Tue Dec 25 10:40:14 2018 200 127.0.0.1:59786 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:40:14 2018 200 127.0.0.1:59782 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:45:56 2018 200 127.0.0.1:32931 GET /
+Tue Dec 25 10:45:56 2018 304 127.0.0.1:32931 GET /public/css/custom.css
+Tue Dec 25 10:45:57 2018 304 127.0.0.1:32931 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:45:57 2018 200 127.0.0.1:32931 GET /favicon.ico
+Tue Dec 25 10:45:58 2018 200 127.0.0.1:32931 GET /
+Tue Dec 25 10:45:58 2018 200 127.0.0.1:32931 GET /favicon.ico
+Tue Dec 25 10:45:59 2018 200 127.0.0.1:32931 GET /
+Tue Dec 25 10:45:59 2018 200 127.0.0.1:32931 GET /public/css/custom.css
+Tue Dec 25 10:45:59 2018 200 127.0.0.1:32931 GET /public/css/normalize.css
+Tue Dec 25 10:45:59 2018 200 127.0.0.1:32945 GET /public/css/skeleton.css
+Tue Dec 25 10:45:59 2018 200 127.0.0.1:32947 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:45:59 2018 200 127.0.0.1:32945 GET /favicon.ico
+Tue Dec 25 10:46:00 2018 200 127.0.0.1:32945 GET /
+Tue Dec 25 10:46:00 2018 200 127.0.0.1:32945 GET /public/css/custom.css
+Tue Dec 25 10:46:00 2018 200 127.0.0.1:32945 GET /public/css/normalize.css
+Tue Dec 25 10:46:00 2018 200 127.0.0.1:32931 GET /public/css/skeleton.css
+Tue Dec 25 10:46:00 2018 200 127.0.0.1:32947 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:46:00 2018 200 127.0.0.1:32931 GET /favicon.ico
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32931 GET /
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32931 GET /public/css/custom.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32931 GET /public/css/normalize.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32945 GET /public/css/skeleton.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32947 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32945 GET /favicon.ico
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32945 GET /
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32945 GET /public/css/custom.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32945 GET /public/css/normalize.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32945 GET /public/css/skeleton.css
+Tue Dec 25 10:46:01 2018 200 127.0.0.1:32931 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:46:02 2018 200 127.0.0.1:32945 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:48:03 2018 404 127.0.0.1:33447 GET /public/css/customcss
+Tue Dec 25 10:48:03 2018 200 127.0.0.1:33447 GET /favicon.ico
+Tue Dec 25 10:48:09 2018 304 127.0.0.1:33447 GET /public/css/custom.css
+Tue Dec 25 10:48:09 2018 200 127.0.0.1:33447 GET /favicon.ico
+Tue Dec 25 10:48:37 2018 304 127.0.0.1:33447 GET /public/css/custom.css
+Tue Dec 25 10:48:37 2018 200 127.0.0.1:33447 GET /favicon.ico
+Tue Dec 25 10:49:25 2018 200 127.0.0.1:33447 GET /favicon.ico
+Begin logging
+Tue Dec 25 10:53:26 2018 200 127.0.0.1:34768 GET /
+Tue Dec 25 10:53:26 2018 304 127.0.0.1:34768 GET /public/css/custom.css
+Tue Dec 25 10:53:26 2018 304 127.0.0.1:34768 GET /public/css/github-prettify-theme.css
+Tue Dec 25 10:53:26 2018 200 127.0.0.1:34768 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:01:53 2018 200 127.0.0.1:36794 GET /
+Tue Dec 25 11:01:53 2018 200 127.0.0.1:36794 GET /public/css/normalize.css
+Tue Dec 25 11:01:53 2018 200 127.0.0.1:36794 GET /public/css/skeleton.css
+Tue Dec 25 11:01:53 2018 200 127.0.0.1:36794 GET /public/css/custom.css
+Tue Dec 25 11:01:53 2018 200 127.0.0.1:36796 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:01:54 2018 200 127.0.0.1:36794 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:03:40 2018 200 127.0.0.1:37239 GET /login
+Tue Dec 25 11:03:40 2018 200 127.0.0.1:37239 GET /favicon.ico
+Tue Dec 25 11:03:49 2018 303 127.0.0.1:37239 POST /login
+Tue Dec 25 11:03:49 2018 200 127.0.0.1:37239 GET /
+Tue Dec 25 11:03:49 2018 200 127.0.0.1:37239 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:39:16 2018 200 127.0.0.1:45769 GET /
+Tue Dec 25 11:39:16 2018 200 127.0.0.1:45769 GET /public/css/normalize.css
+Tue Dec 25 11:39:16 2018 200 127.0.0.1:45769 GET /public/css/skeleton.css
+Tue Dec 25 11:39:16 2018 200 127.0.0.1:45771 GET /public/css/custom.css
+Tue Dec 25 11:39:16 2018 200 127.0.0.1:45773 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:39:17 2018 200 127.0.0.1:45771 GET /favicon.ico
+Tue Dec 25 11:39:22 2018 200 127.0.0.1:45771 GET /
+Tue Dec 25 11:39:22 2018 200 127.0.0.1:45771 GET /public/css/normalize.css
+Tue Dec 25 11:39:22 2018 200 127.0.0.1:45771 GET /public/css/skeleton.css
+Tue Dec 25 11:39:22 2018 200 127.0.0.1:45769 GET /public/css/custom.css
+Tue Dec 25 11:39:22 2018 200 127.0.0.1:45773 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:39:22 2018 200 127.0.0.1:45769 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:39:37 2018 200 127.0.0.1:45859 GET /
+Tue Dec 25 11:39:37 2018 200 127.0.0.1:45859 GET /public/css/normalize.css
+Tue Dec 25 11:39:37 2018 200 127.0.0.1:45859 GET /public/css/skeleton.css
+Tue Dec 25 11:39:37 2018 200 127.0.0.1:45859 GET /public/css/custom.css
+Tue Dec 25 11:39:37 2018 200 127.0.0.1:45861 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:39:37 2018 200 127.0.0.1:45859 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:44:02 2018 200 127.0.0.1:46923 GET /
+Tue Dec 25 11:44:03 2018 200 127.0.0.1:46923 GET /favicon.ico
+Tue Dec 25 11:44:04 2018 200 127.0.0.1:46923 GET /
+Tue Dec 25 11:44:04 2018 200 127.0.0.1:46923 GET /public/css/normalize.css
+Tue Dec 25 11:44:04 2018 200 127.0.0.1:46923 GET /public/css/skeleton.css
+Tue Dec 25 11:44:04 2018 200 127.0.0.1:46934 GET /public/css/custom.css
+Tue Dec 25 11:44:04 2018 200 127.0.0.1:46936 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:44:04 2018 200 127.0.0.1:46934 GET /favicon.ico
+Tue Dec 25 11:44:05 2018 200 127.0.0.1:46934 GET /
+Tue Dec 25 11:44:05 2018 200 127.0.0.1:46934 GET /public/css/normalize.css
+Tue Dec 25 11:44:05 2018 200 127.0.0.1:46934 GET /public/css/skeleton.css
+Tue Dec 25 11:44:05 2018 200 127.0.0.1:46923 GET /public/css/custom.css
+Tue Dec 25 11:44:05 2018 200 127.0.0.1:46936 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:44:06 2018 200 127.0.0.1:46923 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:46:10 2018 200 127.0.0.1:47441 GET /
+Tue Dec 25 11:46:10 2018 200 127.0.0.1:47441 GET /public/css/normalize.css
+Tue Dec 25 11:46:10 2018 200 127.0.0.1:47441 GET /public/css/skeleton.css
+Tue Dec 25 11:46:10 2018 200 127.0.0.1:47443 GET /public/css/custom.css
+Tue Dec 25 11:46:10 2018 200 127.0.0.1:47445 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:46:10 2018 200 127.0.0.1:47443 GET /favicon.ico
+Tue Dec 25 11:46:12 2018 200 127.0.0.1:47443 GET /
+Tue Dec 25 11:46:12 2018 200 127.0.0.1:47443 GET /public/css/normalize.css
+Tue Dec 25 11:46:12 2018 200 127.0.0.1:47441 GET /public/css/skeleton.css
+Tue Dec 25 11:46:12 2018 200 127.0.0.1:47443 GET /public/css/custom.css
+Tue Dec 25 11:46:12 2018 200 127.0.0.1:47445 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:46:12 2018 200 127.0.0.1:47443 GET /favicon.ico
+Tue Dec 25 11:46:16 2018 200 127.0.0.1:47443 GET /login
+Tue Dec 25 11:46:16 2018 200 127.0.0.1:47443 GET /favicon.ico
+Tue Dec 25 11:46:20 2018 303 127.0.0.1:47443 POST /login
+Tue Dec 25 11:46:21 2018 200 127.0.0.1:47443 GET /
+Tue Dec 25 11:46:21 2018 200 127.0.0.1:47443 GET /favicon.ico
+Tue Dec 25 11:46:38 2018 303 127.0.0.1:47443 POST /logout
+Tue Dec 25 11:46:38 2018 200 127.0.0.1:47443 GET /
+Tue Dec 25 11:46:38 2018 200 127.0.0.1:47443 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:48:48 2018 200 127.0.0.1:48087 GET /
+Tue Dec 25 11:48:48 2018 200 127.0.0.1:48087 GET /favicon.ico
+Tue Dec 25 11:48:50 2018 200 127.0.0.1:48087 GET /
+Tue Dec 25 11:48:50 2018 200 127.0.0.1:48087 GET /public/css/normalize.css
+Tue Dec 25 11:48:50 2018 200 127.0.0.1:48087 GET /public/css/skeleton.css
+Tue Dec 25 11:48:50 2018 200 127.0.0.1:48097 GET /public/css/custom.css
+Tue Dec 25 11:48:50 2018 200 127.0.0.1:48099 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:48:50 2018 200 127.0.0.1:48097 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:49:51 2018 200 127.0.0.1:48345 GET /
+Tue Dec 25 11:49:51 2018 200 127.0.0.1:48345 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:50:51 2018 200 127.0.0.1:48583 GET /
+Tue Dec 25 11:50:51 2018 200 127.0.0.1:48583 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:51:44 2018 200 127.0.0.1:48801 GET /
+Tue Dec 25 11:51:44 2018 200 127.0.0.1:48801 GET /favicon.ico
+Tue Dec 25 11:51:49 2018 200 127.0.0.1:48801 GET /login
+Tue Dec 25 11:51:49 2018 200 127.0.0.1:48801 GET /favicon.ico
+Tue Dec 25 11:51:53 2018 303 127.0.0.1:48801 POST /login
+Tue Dec 25 11:51:53 2018 200 127.0.0.1:48801 GET /
+Tue Dec 25 11:51:54 2018 200 127.0.0.1:48801 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:56:57 2018 200 127.0.0.1:50063 GET /
+Tue Dec 25 11:56:57 2018 304 127.0.0.1:50063 GET /public/css/custom.css
+Tue Dec 25 11:56:57 2018 304 127.0.0.1:50065 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:56:58 2018 200 127.0.0.1:50065 GET /favicon.ico
+Tue Dec 25 11:56:58 2018 200 127.0.0.1:50065 GET /
+Tue Dec 25 11:56:58 2018 200 127.0.0.1:50065 GET /public/css/normalize.css
+Tue Dec 25 11:56:58 2018 200 127.0.0.1:50065 GET /public/css/skeleton.css
+Tue Dec 25 11:56:58 2018 200 127.0.0.1:50065 GET /public/css/custom.css
+Tue Dec 25 11:56:58 2018 200 127.0.0.1:50063 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:56:59 2018 200 127.0.0.1:50065 GET /favicon.ico
+Tue Dec 25 11:57:03 2018 200 127.0.0.1:50065 GET /login
+Tue Dec 25 11:57:03 2018 200 127.0.0.1:50065 GET /favicon.ico
+Tue Dec 25 11:57:08 2018 303 127.0.0.1:50065 POST /login
+Tue Dec 25 11:57:08 2018 200 127.0.0.1:50065 GET /
+Tue Dec 25 11:57:09 2018 200 127.0.0.1:50065 GET /favicon.ico
+Tue Dec 25 11:57:21 2018 200 127.0.0.1:50065 GET /
+Tue Dec 25 11:57:22 2018 200 127.0.0.1:50065 GET /favicon.ico
+Tue Dec 25 11:57:25 2018 200 127.0.0.1:50065 GET /
+Tue Dec 25 11:57:25 2018 200 127.0.0.1:50065 GET /favicon.ico
+Tue Dec 25 11:57:27 2018 303 127.0.0.1:50065 POST /logout
+Tue Dec 25 11:57:27 2018 200 127.0.0.1:50065 GET /
+Tue Dec 25 11:57:27 2018 200 127.0.0.1:50065 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:59:09 2018 200 127.0.0.1:50609 GET /
+Tue Dec 25 11:59:10 2018 200 127.0.0.1:50609 GET /public/css/normalize.css
+Tue Dec 25 11:59:10 2018 200 127.0.0.1:50609 GET /public/css/skeleton.css
+Tue Dec 25 11:59:10 2018 200 127.0.0.1:50611 GET /public/css/custom.css
+Tue Dec 25 11:59:10 2018 200 127.0.0.1:50613 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:59:10 2018 200 127.0.0.1:50611 GET /favicon.ico
+Begin logging
+Tue Dec 25 11:59:25 2018 200 127.0.0.1:50675 GET /
+Tue Dec 25 11:59:25 2018 200 127.0.0.1:50675 GET /public/css/normalize.css
+Tue Dec 25 11:59:25 2018 200 127.0.0.1:50675 GET /public/css/skeleton.css
+Tue Dec 25 11:59:25 2018 200 127.0.0.1:50677 GET /public/css/custom.css
+Tue Dec 25 11:59:25 2018 200 127.0.0.1:50679 GET /public/css/github-prettify-theme.css
+Tue Dec 25 11:59:25 2018 200 127.0.0.1:50677 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:00:22 2018 200 127.0.0.1:50909 GET /
+Tue Dec 25 12:00:22 2018 200 127.0.0.1:50909 GET /public/css/normalize.css
+Tue Dec 25 12:00:22 2018 200 127.0.0.1:50909 GET /public/css/skeleton.css
+Tue Dec 25 12:00:22 2018 200 127.0.0.1:50911 GET /public/css/custom.css
+Tue Dec 25 12:00:22 2018 200 127.0.0.1:50913 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:00:22 2018 200 127.0.0.1:50911 GET /favicon.ico
+Tue Dec 25 12:00:25 2018 200 127.0.0.1:50911 GET /login
+Tue Dec 25 12:00:25 2018 200 127.0.0.1:50911 GET /favicon.ico
+Tue Dec 25 12:00:30 2018 303 127.0.0.1:50911 POST /login
+Tue Dec 25 12:00:30 2018 200 127.0.0.1:50911 GET /
+Tue Dec 25 12:00:30 2018 200 127.0.0.1:50911 GET /favicon.ico
+Tue Dec 25 12:00:33 2018 401 127.0.0.1:50911 GET /logout
+Tue Dec 25 12:00:33 2018 200 127.0.0.1:50911 GET /favicon.ico
+Tue Dec 25 12:00:35 2018 200 127.0.0.1:50911 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:01:20 2018 200 127.0.0.1:51155 GET /
+Tue Dec 25 12:01:20 2018 200 127.0.0.1:51155 GET /public/css/normalize.css
+Tue Dec 25 12:01:20 2018 200 127.0.0.1:51155 GET /public/css/skeleton.css
+Tue Dec 25 12:01:20 2018 200 127.0.0.1:51157 GET /public/css/custom.css
+Tue Dec 25 12:01:20 2018 200 127.0.0.1:51159 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:01:21 2018 200 127.0.0.1:51157 GET /favicon.ico
+Tue Dec 25 12:01:24 2018 200 127.0.0.1:51157 GET /login
+Tue Dec 25 12:01:24 2018 200 127.0.0.1:51157 GET /favicon.ico
+Tue Dec 25 12:01:28 2018 303 127.0.0.1:51157 POST /login
+Tue Dec 25 12:01:28 2018 200 127.0.0.1:51157 GET /
+Tue Dec 25 12:01:29 2018 200 127.0.0.1:51157 GET /favicon.ico
+Tue Dec 25 12:01:33 2018 401 127.0.0.1:51157 GET /logout
+Tue Dec 25 12:01:33 2018 200 127.0.0.1:51157 GET /favicon.ico
+Tue Dec 25 12:01:35 2018 200 127.0.0.1:51157 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:02:32 2018 200 127.0.0.1:51461 GET /
+Tue Dec 25 12:02:32 2018 200 127.0.0.1:51461 GET /public/css/normalize.css
+Tue Dec 25 12:02:32 2018 200 127.0.0.1:51461 GET /public/css/skeleton.css
+Tue Dec 25 12:02:32 2018 200 127.0.0.1:51463 GET /public/css/custom.css
+Tue Dec 25 12:02:32 2018 200 127.0.0.1:51465 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:02:32 2018 200 127.0.0.1:51463 GET /favicon.ico
+Tue Dec 25 12:02:35 2018 200 127.0.0.1:51463 GET /login
+Tue Dec 25 12:02:35 2018 200 127.0.0.1:51463 GET /favicon.ico
+Tue Dec 25 12:02:39 2018 303 127.0.0.1:51463 POST /login
+Tue Dec 25 12:02:39 2018 200 127.0.0.1:51463 GET /
+Tue Dec 25 12:02:40 2018 200 127.0.0.1:51463 GET /favicon.ico
+Tue Dec 25 12:02:41 2018 303 127.0.0.1:51463 GET /logout
+Tue Dec 25 12:02:41 2018 200 127.0.0.1:51463 GET /
+Tue Dec 25 12:02:41 2018 200 127.0.0.1:51463 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:05:14 2018 200 127.0.0.1:52121 GET /
+Tue Dec 25 12:05:14 2018 200 127.0.0.1:52121 GET /public/css/normalize.css
+Tue Dec 25 12:05:14 2018 200 127.0.0.1:52121 GET /public/css/skeleton.css
+Tue Dec 25 12:05:14 2018 200 127.0.0.1:52123 GET /public/css/custom.css
+Tue Dec 25 12:05:14 2018 200 127.0.0.1:52125 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:05:14 2018 200 127.0.0.1:52123 GET /favicon.ico
+Tue Dec 25 12:05:19 2018 200 127.0.0.1:52123 GET /login
+Tue Dec 25 12:05:19 2018 200 127.0.0.1:52123 GET /favicon.ico
+Tue Dec 25 12:05:24 2018 303 127.0.0.1:52123 POST /login
+Tue Dec 25 12:05:24 2018 200 127.0.0.1:52123 GET /
+Tue Dec 25 12:05:25 2018 200 127.0.0.1:52123 GET /favicon.ico
+Tue Dec 25 12:05:27 2018 303 127.0.0.1:52123 GET /logout
+Tue Dec 25 12:05:27 2018 200 127.0.0.1:52123 GET /
+Tue Dec 25 12:05:27 2018 200 127.0.0.1:52123 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:08:47 2018 200 127.0.0.1:52985 GET /
+Tue Dec 25 12:08:47 2018 200 127.0.0.1:52985 GET /public/css/normalize.css
+Tue Dec 25 12:08:47 2018 200 127.0.0.1:52985 GET /public/css/skeleton.css
+Tue Dec 25 12:08:47 2018 200 127.0.0.1:52987 GET /public/css/custom.css
+Tue Dec 25 12:08:47 2018 200 127.0.0.1:52989 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:08:48 2018 200 127.0.0.1:52987 GET /favicon.ico
+Tue Dec 25 12:08:51 2018 200 127.0.0.1:52987 GET /login
+Tue Dec 25 12:08:51 2018 200 127.0.0.1:52987 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:11:23 2018 200 127.0.0.1:53617 GET /login
+Tue Dec 25 12:11:23 2018 200 127.0.0.1:53617 GET /public/css/normalize.css
+Tue Dec 25 12:11:23 2018 200 127.0.0.1:53617 GET /public/css/skeleton.css
+Tue Dec 25 12:11:23 2018 200 127.0.0.1:53619 GET /public/css/custom.css
+Tue Dec 25 12:11:23 2018 200 127.0.0.1:53621 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:11:23 2018 200 127.0.0.1:53619 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:11:57 2018 303 127.0.0.1:53759 POST /login
+Tue Dec 25 12:11:57 2018 200 127.0.0.1:53759 GET /
+Tue Dec 25 12:11:57 2018 200 127.0.0.1:53759 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:18:17 2018 200 127.0.0.1:55277 GET /
+Tue Dec 25 12:18:17 2018 200 127.0.0.1:55277 GET /public/css/normalize.css
+Tue Dec 25 12:18:17 2018 200 127.0.0.1:55277 GET /public/css/skeleton.css
+Tue Dec 25 12:18:17 2018 200 127.0.0.1:55279 GET /public/css/custom.css
+Tue Dec 25 12:18:17 2018 200 127.0.0.1:55281 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:18:17 2018 200 127.0.0.1:55279 GET /favicon.ico
+Tue Dec 25 12:18:20 2018 200 127.0.0.1:55279 GET /login
+Tue Dec 25 12:18:21 2018 200 127.0.0.1:55279 GET /favicon.ico
+Tue Dec 25 12:18:32 2018 303 127.0.0.1:55279 POST /login
+Tue Dec 25 12:18:32 2018 200 127.0.0.1:55279 GET /
+Tue Dec 25 12:18:32 2018 200 127.0.0.1:55279 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:27:47 2018 200 127.0.0.1:57570 GET /
+Tue Dec 25 12:27:47 2018 200 127.0.0.1:57570 GET /public/css/normalize.css
+Tue Dec 25 12:27:47 2018 200 127.0.0.1:57570 GET /public/css/skeleton.css
+Tue Dec 25 12:27:47 2018 200 127.0.0.1:57572 GET /public/css/custom.css
+Tue Dec 25 12:27:47 2018 200 127.0.0.1:57574 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:27:47 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:27:55 2018 200 127.0.0.1:57572 GET /login
+Tue Dec 25 12:27:55 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:00 2018 303 127.0.0.1:57572 POST /login
+Tue Dec 25 12:28:00 2018 200 127.0.0.1:57572 GET /
+Tue Dec 25 12:28:00 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:24 2018 200 127.0.0.1:57572 POST /
+Tue Dec 25 12:28:24 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:27 2018 200 127.0.0.1:57572 GET /
+Tue Dec 25 12:28:28 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:31 2018 200 127.0.0.1:57572 GET /page?p=1
+Tue Dec 25 12:28:32 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:35 2018 200 127.0.0.1:57572 GET /page?p=2
+Tue Dec 25 12:28:35 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:38 2018 200 127.0.0.1:57572 GET /page?p=3
+Tue Dec 25 12:28:38 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:41 2018 200 127.0.0.1:57572 GET /page?p=4
+Tue Dec 25 12:28:42 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:45 2018 200 127.0.0.1:57572 GET /page?p=5
+Tue Dec 25 12:28:45 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:49 2018 200 127.0.0.1:57572 GET /post?id=48
+Tue Dec 25 12:28:49 2018 200 127.0.0.1:57572 GET /favicon.ico
+Tue Dec 25 12:28:56 2018 200 127.0.0.1:57572 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:32:50 2018 200 127.0.0.1:58806 GET /page?p=5
+Tue Dec 25 12:32:50 2018 200 127.0.0.1:58806 GET /public/css/normalize.css
+Tue Dec 25 12:32:50 2018 200 127.0.0.1:58806 GET /public/css/skeleton.css
+Tue Dec 25 12:32:50 2018 200 127.0.0.1:58808 GET /public/css/custom.css
+Tue Dec 25 12:32:50 2018 200 127.0.0.1:58810 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:32:50 2018 200 127.0.0.1:58808 GET /favicon.ico
+Tue Dec 25 12:33:01 2018 200 127.0.0.1:58808 GET /page?p=4
+Tue Dec 25 12:33:01 2018 200 127.0.0.1:58808 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:54:19 2018 200 127.0.0.1:35731 GET /page?p=4
+Tue Dec 25 12:54:20 2018 304 127.0.0.1:35731 GET /public/css/custom.css
+Tue Dec 25 12:54:20 2018 304 127.0.0.1:35733 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:54:20 2018 200 127.0.0.1:35733 GET /favicon.ico
+Tue Dec 25 12:54:21 2018 200 127.0.0.1:35733 GET /page?p=4
+Tue Dec 25 12:54:21 2018 200 127.0.0.1:35733 GET /favicon.ico
+Tue Dec 25 12:54:25 2018 200 127.0.0.1:35733 GET /publish
+Tue Dec 25 12:54:25 2018 200 127.0.0.1:35733 GET /favicon.ico
+Tue Dec 25 12:54:34 2018 200 127.0.0.1:35733 GET /login
+Tue Dec 25 12:54:34 2018 200 127.0.0.1:35733 GET /favicon.ico
+Tue Dec 25 12:54:38 2018 303 127.0.0.1:35733 POST /login
+Tue Dec 25 12:54:38 2018 200 127.0.0.1:35733 GET /
+Tue Dec 25 12:54:38 2018 200 127.0.0.1:35733 GET /favicon.ico
+Tue Dec 25 12:54:45 2018 200 127.0.0.1:35733 GET /publish
+Tue Dec 25 12:54:45 2018 200 127.0.0.1:35733 GET /favicon.ico
+Begin logging
+Tue Dec 25 12:55:17 2018 200 127.0.0.1:35978 GET /publish
+Tue Dec 25 12:55:17 2018 200 127.0.0.1:35978 GET /public/css/normalize.css
+Tue Dec 25 12:55:17 2018 200 127.0.0.1:35978 GET /public/css/skeleton.css
+Tue Dec 25 12:55:17 2018 200 127.0.0.1:35980 GET /public/css/custom.css
+Tue Dec 25 12:55:17 2018 200 127.0.0.1:35982 GET /public/css/github-prettify-theme.css
+Tue Dec 25 12:55:17 2018 200 127.0.0.1:35980 GET /favicon.ico
+Begin logging
+Tue Dec 25 13:37:12 2018 200 127.0.0.1:46029 GET /publish
+Tue Dec 25 13:37:13 2018 304 127.0.0.1:46029 GET /public/css/custom.css
+Tue Dec 25 13:37:13 2018 304 127.0.0.1:46031 GET /public/css/github-prettify-theme.css
+Tue Dec 25 13:37:13 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:16 2018 200 127.0.0.1:46031 GET /login
+Tue Dec 25 13:37:16 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:20 2018 303 127.0.0.1:46031 POST /login
+Tue Dec 25 13:37:20 2018 200 127.0.0.1:46031 GET /
+Tue Dec 25 13:37:21 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:26 2018 200 127.0.0.1:46031 GET /publish
+Tue Dec 25 13:37:26 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:35 2018 200 127.0.0.1:46031 POST /publish
+Tue Dec 25 13:37:35 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:39 2018 200 127.0.0.1:46031 GET /publish
+Tue Dec 25 13:37:39 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:41 2018 200 127.0.0.1:46031 GET /
+Tue Dec 25 13:37:41 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:43 2018 200 127.0.0.1:46031 GET /page?p=1
+Tue Dec 25 13:37:44 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:46 2018 200 127.0.0.1:46031 GET /page?p=2
+Tue Dec 25 13:37:46 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:49 2018 200 127.0.0.1:46031 GET /page?p=3
+Tue Dec 25 13:37:49 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:51 2018 200 127.0.0.1:46031 GET /page?p=4
+Tue Dec 25 13:37:52 2018 200 127.0.0.1:46031 GET /favicon.ico
+Tue Dec 25 13:37:54 2018 200 127.0.0.1:46031 GET /page?p=5
+Tue Dec 25 13:37:54 2018 200 127.0.0.1:46031 GET /favicon.ico
+Begin logging
+Tue Dec 25 13:40:09 2018 200 127.0.0.1:46757 GET /page?p=5
+Tue Dec 25 13:40:09 2018 200 127.0.0.1:46757 GET /favicon.ico
+Tue Dec 25 13:40:13 2018 200 127.0.0.1:46757 GET /login
+Tue Dec 25 13:40:14 2018 200 127.0.0.1:46757 GET /favicon.ico
+Tue Dec 25 13:40:19 2018 303 127.0.0.1:46757 POST /login
+Tue Dec 25 13:40:19 2018 200 127.0.0.1:46757 GET /
+Tue Dec 25 13:40:19 2018 200 127.0.0.1:46757 GET /favicon.ico
+Tue Dec 25 13:40:26 2018 200 127.0.0.1:46757 GET /publish
+Tue Dec 25 13:40:26 2018 200 127.0.0.1:46757 GET /favicon.ico
+Tue Dec 25 13:40:29 2018 303 127.0.0.1:46757 GET /logout
+Tue Dec 25 13:40:29 2018 200 127.0.0.1:46757 GET /
+Tue Dec 25 13:40:29 2018 200 127.0.0.1:46757 GET /favicon.ico
+Begin logging
+Tue Dec 25 13:41:09 2018 200 127.0.0.1:47011 GET /
+Tue Dec 25 13:41:09 2018 200 127.0.0.1:47011 GET /public/css/normalize.css
+Tue Dec 25 13:41:09 2018 200 127.0.0.1:47011 GET /public/css/skeleton.css
+Tue Dec 25 13:41:09 2018 200 127.0.0.1:47013 GET /public/css/custom.css
+Tue Dec 25 13:41:09 2018 200 127.0.0.1:47015 GET /public/css/github-prettify-theme.css
+Tue Dec 25 13:41:09 2018 200 127.0.0.1:47013 GET /favicon.ico
+Tue Dec 25 13:41:15 2018 200 127.0.0.1:47013 GET /login
+Tue Dec 25 13:41:15 2018 200 127.0.0.1:47013 GET /favicon.ico
+Tue Dec 25 13:41:19 2018 303 127.0.0.1:47013 POST /login
+Tue Dec 25 13:41:19 2018 200 127.0.0.1:47013 GET /
+Tue Dec 25 13:41:20 2018 200 127.0.0.1:47013 GET /favicon.ico
+Tue Dec 25 13:41:22 2018 200 127.0.0.1:47013 GET /publish
+Tue Dec 25 13:41:22 2018 200 127.0.0.1:47013 GET /favicon.ico
+Tue Dec 25 13:41:29 2018 200 127.0.0.1:47013 POST /publish
+Tue Dec 25 13:41:29 2018 200 127.0.0.1:47013 GET /favicon.ico
+Tue Dec 25 13:41:31 2018 200 127.0.0.1:47013 GET /
+Tue Dec 25 13:41:32 2018 200 127.0.0.1:47013 GET /favicon.ico

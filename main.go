@@ -84,6 +84,7 @@ func main() {
 	mux.HandleFunc("/login", login)
 	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/post", getPost)
+	mux.HandleFunc("/publish", publish)
 	mux.HandleFunc("/delete", deletePost)
 
 	//Register Fileserver
@@ -152,6 +153,33 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func publish(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		tpl.ExecuteTemplate(w, "publish.gohtml", loggedInAsAdmin(r))
+	case http.MethodPost:
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Bad Request", 400)
+			return
+		}
+
+		title := r.FormValue("title")
+		body := r.FormValue("body")
+		if title == "" || body == "" {
+			http.Error(w, "Bad Request", 400)
+			return
+		}
+
+		s := `insert into posts (title, body, datepost) values ($1, $2, $3)`
+		_, err := db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"))
+		if err != nil {
+			http.Error(w, "Internal Server Error", 500)
+		}
+	default:
+		http.Error(w, "Method Not Allowed", 405)
+	}
+}
+
 func getPage(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -187,24 +215,6 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		}
 		tpl.ExecuteTemplate(w, "page.gohtml", data)
 
-	case http.MethodPost:
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Bad Request", 400)
-			return
-		}
-
-		title := r.FormValue("title")
-		body := r.FormValue("body")
-		if title == "" || body == "" {
-			http.Error(w, "Bad Request", 400)
-			return
-		}
-
-		s := `insert into posts (title, body, datepost) values ($1, $2, $3)`
-		_, err := db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"))
-		if err != nil {
-			http.Error(w, "Internal Server Error", 500)
-		}
 	default:
 		http.Error(w, "Method Not Allowed", 405)
 
@@ -287,7 +297,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch r.Method {
-	case http.MethodPost:
+	case http.MethodGet:
 		//delete session
 		if loggedInAsAdmin(r) {
 			delete(dbSessions, c.Value)
