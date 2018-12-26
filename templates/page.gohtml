@@ -1,10 +1,14 @@
 {{template "header" .LoggedIn}}
-<ul>
-	{{range .Posts}}
-	<li><h3><a href="/post?id={{.Id}}">{{.Title}} {{.Date}}</a></h3></li>
-	{{end}}
-</ul>
+<div class="container">
+{{range .Posts}}
+<div class="docs-section">
+	<h4><a href="/post?id={{.Id}}">{{.Title}}</a></h4>
+	<p>{{.Body}}</p>
+	<div class="u-pull-right"><h6>{{.Date}}</h6></div>
+</div>
+{{end}}
+	<div class="docs-section"></div>
 	<a class="u-pull-left" href="{{.PrevPage}}">Prev Page</a>
 	<a class="u-pull-right" href="{{.NextPage}}">Next Page</a>
-	</div>
+</div>
 {{template "footer"}}

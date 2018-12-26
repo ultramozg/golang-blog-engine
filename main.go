@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -186,7 +187,7 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		p, _ := strconv.Atoi(r.FormValue("p"))
 
 		posts := []Post{}
-		s := `select * from posts limit 8 offset ?;`
+		s := `select id, title, substr(body,1,300), datepost from posts limit 8 offset ?;`
 		rows, err := db.Query(s, p*postsPerPage)
 		if err != nil {
 			http.Error(w, "Internal Server error", 500)
@@ -199,6 +200,12 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				http.Error(w, "Bad Request", 400)
 			}
+			/*
+				Shrink p.Body to display only words
+				because we have limit in sql query substr
+			*/
+			re := regexp.MustCompile(`\b+\w+\s+?$`)
+			p.Body = re.ReplaceAllString(p.Body, " ...")
 			posts = append(posts, p)
 		}
 

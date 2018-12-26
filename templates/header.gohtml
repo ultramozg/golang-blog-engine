@@ -1,0 +1,40 @@
+{{define "header"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<link rel="stylesheet" href="public/css/normalize.css" />
+	<link rel="stylesheet" href="public/css/skeleton.css" />
+	<link rel="stylesheet" href="public/css/custom.css" />
+	<link rel="stylesheet" href="public/css/github-prettify-theme.css" />
+	<meta name="viewport" content="width=device-width,initial-scale=1.0">
+	<link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+	<title>My Posts</title>
+</head>
+<body>
+		<div class="navbar-spacer"></div>
+		<div class="container">
+		<nav class="navbar">
+			<div class="container">
+				<ul class="navbar-list">
+					<li class="navbar-item">
+						<a class="navbar-link" href="http://google.com">About</a>
+					</li>
+					<li class="navbar-item">
+						<a class="navbar-link" href="#Blog">Blog</a>
+					</li>
+					{{if .}}
+					<div class="u-pull-right">
+					<li class="navbar-item">
+						<a class="navbar-link" href="/publish">Publish Post</a>
+					</li>
+					<li class="navbar-item">
+						<a class="navbar-link" href="/logout">Logout</a>
+					</li>
+					</div>
+					{{end}}
+				</ul>
+			</div>
+		</div>
+		</nav>
+	{{end}}

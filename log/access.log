@@ -2111,3 +2111,192 @@ Tue Dec 25 13:41:29 2018 200 127.0.0.1:47013 POST /publish
 Tue Dec 25 13:41:29 2018 200 127.0.0.1:47013 GET /favicon.ico
 Tue Dec 25 13:41:31 2018 200 127.0.0.1:47013 GET /
 Tue Dec 25 13:41:32 2018 200 127.0.0.1:47013 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:35:31 2018 200 127.0.0.1:52320 GET /
+Wed Dec 26 09:35:31 2018 304 127.0.0.1:52320 GET /public/css/custom.css
+Wed Dec 26 09:35:31 2018 304 127.0.0.1:52320 GET /public/css/github-prettify-theme.css
+Wed Dec 26 09:35:31 2018 200 127.0.0.1:52320 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:36:37 2018 200 127.0.0.1:52587 GET /
+Wed Dec 26 09:36:38 2018 200 127.0.0.1:52587 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:37:22 2018 200 127.0.0.1:52766 GET /
+Wed Dec 26 09:37:22 2018 200 127.0.0.1:52766 GET /favicon.ico
+Wed Dec 26 09:37:24 2018 200 127.0.0.1:52766 GET /
+Wed Dec 26 09:37:24 2018 200 127.0.0.1:52766 GET /public/css/normalize.css
+Wed Dec 26 09:37:24 2018 200 127.0.0.1:52766 GET /public/css/skeleton.css
+Wed Dec 26 09:37:24 2018 200 127.0.0.1:52781 GET /public/css/custom.css
+Wed Dec 26 09:37:24 2018 200 127.0.0.1:52783 GET /public/css/github-prettify-theme.css
+Wed Dec 26 09:37:24 2018 200 127.0.0.1:52781 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:38:02 2018 200 127.0.0.1:52940 GET /
+Wed Dec 26 09:38:02 2018 200 127.0.0.1:52940 GET /public/css/normalize.css
+Wed Dec 26 09:38:02 2018 200 127.0.0.1:52940 GET /public/css/skeleton.css
+Wed Dec 26 09:38:02 2018 200 127.0.0.1:52942 GET /public/css/custom.css
+Wed Dec 26 09:38:02 2018 200 127.0.0.1:52944 GET /public/css/github-prettify-theme.css
+Wed Dec 26 09:38:03 2018 200 127.0.0.1:52942 GET /favicon.ico
+Wed Dec 26 09:41:23 2018 200 127.0.0.1:52942 GET /
+Wed Dec 26 09:41:23 2018 200 127.0.0.1:52942 GET /public/css/normalize.css
+Wed Dec 26 09:41:23 2018 200 127.0.0.1:52942 GET /public/css/skeleton.css
+Wed Dec 26 09:41:23 2018 200 127.0.0.1:52944 GET /public/css/custom.css
+Wed Dec 26 09:41:23 2018 200 127.0.0.1:52940 GET /public/css/github-prettify-theme.css
+Wed Dec 26 09:41:23 2018 200 127.0.0.1:52944 GET /favicon.ico
+Wed Dec 26 09:41:35 2018 200 127.0.0.1:52944 GET /post?id=5
+Wed Dec 26 09:41:35 2018 200 127.0.0.1:52944 GET /favicon.ico
+Wed Dec 26 09:41:43 2018 200 127.0.0.1:52944 GET /logout
+Wed Dec 26 09:41:44 2018 200 127.0.0.1:52944 GET /favicon.ico
+Wed Dec 26 09:41:45 2018 200 127.0.0.1:52944 GET /logout
+Wed Dec 26 09:41:46 2018 200 127.0.0.1:52944 GET /favicon.ico
+Wed Dec 26 09:41:48 2018 200 127.0.0.1:52944 GET /
+Wed Dec 26 09:41:48 2018 200 127.0.0.1:52944 GET /favicon.ico
+Wed Dec 26 09:41:49 2018 200 127.0.0.1:52944 GET /post?id=4
+Wed Dec 26 09:41:49 2018 200 127.0.0.1:52944 GET /favicon.ico
+Wed Dec 26 09:42:41 2018 200 127.0.0.1:52944 GET /
+Wed Dec 26 09:42:41 2018 200 127.0.0.1:52944 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:44:44 2018 200 127.0.0.1:54562 GET /
+Wed Dec 26 09:44:44 2018 200 127.0.0.1:54562 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:57:22 2018 200 127.0.0.1:57588 GET /
+Wed Dec 26 09:57:22 2018 200 127.0.0.1:57588 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:57:59 2018 200 127.0.0.1:57739 GET /
+Wed Dec 26 09:58:00 2018 200 127.0.0.1:57739 GET /favicon.ico
+Begin logging
+Wed Dec 26 09:58:22 2018 200 127.0.0.1:57834 GET /
+Wed Dec 26 09:58:22 2018 200 127.0.0.1:57834 GET /favicon.ico
+Begin logging
+Wed Dec 26 10:00:11 2018 200 127.0.0.1:58273 GET /
+Wed Dec 26 10:00:11 2018 200 127.0.0.1:58273 GET /favicon.ico
+Begin logging
+Wed Dec 26 10:24:18 2018 400 127.0.0.1:35822 GET /
+Wed Dec 26 10:24:19 2018 400 127.0.0.1:35822 GET /favicon.ico
+Begin logging
+Wed Dec 26 10:24:56 2018 400 127.0.0.1:35972 GET /
+Wed Dec 26 10:24:56 2018 400 127.0.0.1:35972 GET /favicon.ico
+Begin logging
+Wed Dec 26 10:26:27 2018 200 127.0.0.1:36338 GET /
+Wed Dec 26 10:26:27 2018 200 127.0.0.1:36338 GET /favicon.ico
+Begin logging
+Wed Dec 26 10:27:09 2018 200 127.0.0.1:36509 GET /
+Wed Dec 26 10:27:09 2018 200 127.0.0.1:36509 GET /favicon.ico
+Begin logging
+Begin logging
+Wed Dec 26 11:34:05 2018 200 127.0.0.1:52537 GET /
+Wed Dec 26 11:34:05 2018 200 127.0.0.1:52537 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:37:16 2018 200 127.0.0.1:53308 GET /
+Wed Dec 26 11:37:17 2018 200 127.0.0.1:53308 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:38:18 2018 200 127.0.0.1:53555 GET /
+Wed Dec 26 11:38:18 2018 200 127.0.0.1:53555 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:50:47 2018 200 127.0.0.1:56546 GET /
+Wed Dec 26 11:50:47 2018 200 127.0.0.1:56546 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:54:48 2018 200 127.0.0.1:57513 GET /
+Wed Dec 26 11:54:48 2018 200 127.0.0.1:57513 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:55:12 2018 200 127.0.0.1:57612 GET /
+Wed Dec 26 11:55:12 2018 200 127.0.0.1:57612 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:55:27 2018 200 127.0.0.1:57675 GET /
+Wed Dec 26 11:55:27 2018 200 127.0.0.1:57675 GET /favicon.ico
+Wed Dec 26 11:55:29 2018 200 127.0.0.1:57675 GET /
+Wed Dec 26 11:55:29 2018 200 127.0.0.1:57675 GET /public/css/normalize.css
+Wed Dec 26 11:55:29 2018 200 127.0.0.1:57675 GET /public/css/skeleton.css
+Wed Dec 26 11:55:29 2018 200 127.0.0.1:57682 GET /public/css/custom.css
+Wed Dec 26 11:55:29 2018 200 127.0.0.1:57684 GET /public/css/github-prettify-theme.css
+Wed Dec 26 11:55:29 2018 200 127.0.0.1:57682 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:55:40 2018 200 127.0.0.1:57733 GET /
+Wed Dec 26 11:55:40 2018 200 127.0.0.1:57733 GET /public/css/normalize.css
+Wed Dec 26 11:55:40 2018 200 127.0.0.1:57733 GET /public/css/skeleton.css
+Wed Dec 26 11:55:40 2018 200 127.0.0.1:57735 GET /public/css/custom.css
+Wed Dec 26 11:55:40 2018 200 127.0.0.1:57737 GET /public/css/github-prettify-theme.css
+Wed Dec 26 11:55:40 2018 200 127.0.0.1:57735 GET /favicon.ico
+Begin logging
+Wed Dec 26 11:55:54 2018 200 127.0.0.1:57795 GET /
+Wed Dec 26 11:55:54 2018 200 127.0.0.1:57795 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:00:15 2018 200 127.0.0.1:58842 GET /
+Wed Dec 26 12:00:15 2018 200 127.0.0.1:58842 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:02:28 2018 200 127.0.0.1:59373 GET /
+Wed Dec 26 12:02:28 2018 200 127.0.0.1:59373 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:31:36 2018 200 127.0.0.1:38124 GET /
+Wed Dec 26 12:31:36 2018 200 127.0.0.1:38124 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:33:04 2018 200 127.0.0.1:38475 GET /
+Wed Dec 26 12:33:04 2018 200 127.0.0.1:38475 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:33:42 2018 200 127.0.0.1:38634 GET /
+Wed Dec 26 12:33:43 2018 200 127.0.0.1:38634 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:34:07 2018 200 127.0.0.1:38733 GET /
+Wed Dec 26 12:34:07 2018 200 127.0.0.1:38733 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:34:48 2018 200 127.0.0.1:38900 GET /
+Wed Dec 26 12:34:48 2018 200 127.0.0.1:38900 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:35:17 2018 200 127.0.0.1:39019 GET /
+Wed Dec 26 12:35:18 2018 200 127.0.0.1:39019 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:35:45 2018 200 127.0.0.1:39130 GET /
+Wed Dec 26 12:35:45 2018 200 127.0.0.1:39130 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:37:01 2018 200 127.0.0.1:39441 GET /
+Wed Dec 26 12:37:01 2018 200 127.0.0.1:39441 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:37:42 2018 200 127.0.0.1:39604 GET /
+Wed Dec 26 12:37:42 2018 200 127.0.0.1:39604 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:38:24 2018 200 127.0.0.1:39775 GET /
+Wed Dec 26 12:38:24 2018 200 127.0.0.1:39775 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:38:50 2018 200 127.0.0.1:39882 GET /
+Wed Dec 26 12:38:51 2018 200 127.0.0.1:39882 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:39:44 2018 200 127.0.0.1:40101 GET /
+Wed Dec 26 12:39:44 2018 200 127.0.0.1:40101 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:40:14 2018 200 127.0.0.1:40228 GET /
+Wed Dec 26 12:40:14 2018 200 127.0.0.1:40228 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:41:13 2018 200 127.0.0.1:40467 GET /
+Wed Dec 26 12:41:13 2018 200 127.0.0.1:40467 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:42:35 2018 200 127.0.0.1:40794 GET /
+Wed Dec 26 12:42:35 2018 200 127.0.0.1:40794 GET /favicon.ico
+Wed Dec 26 12:42:48 2018 200 127.0.0.1:40794 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:45:07 2018 200 127.0.0.1:41441 GET /
+Wed Dec 26 12:45:07 2018 200 127.0.0.1:41441 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:46:49 2018 200 127.0.0.1:41848 GET /
+Wed Dec 26 12:46:49 2018 200 127.0.0.1:41848 GET /favicon.ico
+Wed Dec 26 12:46:56 2018 200 127.0.0.1:41848 GET /post?id=7
+Wed Dec 26 12:46:56 2018 200 127.0.0.1:41848 GET /favicon.ico
+Wed Dec 26 12:46:58 2018 200 127.0.0.1:41848 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:47:55 2018 200 127.0.0.1:42135 GET /
+Wed Dec 26 12:47:56 2018 200 127.0.0.1:42135 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:48:33 2018 200 127.0.0.1:42290 GET /
+Wed Dec 26 12:48:33 2018 200 127.0.0.1:42290 GET /favicon.ico
+Wed Dec 26 12:48:37 2018 200 127.0.0.1:42290 GET /post?id=4
+Wed Dec 26 12:48:38 2018 200 127.0.0.1:42290 GET /favicon.ico
+Wed Dec 26 12:48:39 2018 200 127.0.0.1:42290 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:49:12 2018 200 127.0.0.1:42461 GET /
+Wed Dec 26 12:49:12 2018 200 127.0.0.1:42461 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:49:30 2018 200 127.0.0.1:42536 GET /
+Wed Dec 26 12:49:30 2018 200 127.0.0.1:42536 GET /favicon.ico
+Begin logging
+Wed Dec 26 12:50:15 2018 200 127.0.0.1:42719 GET /
+Wed Dec 26 12:50:15 2018 200 127.0.0.1:42719 GET /favicon.ico
+Wed Dec 26 12:50:17 2018 200 127.0.0.1:42719 GET /post?id=9
+Wed Dec 26 12:50:17 2018 200 127.0.0.1:42719 GET /favicon.ico
+Wed Dec 26 12:50:20 2018 200 127.0.0.1:42719 GET /favicon.ico
