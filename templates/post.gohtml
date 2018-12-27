@@ -1,7 +1,10 @@
-{{template "header" .}}
-		<ul>
-			<li>{{.Title}} - {{.Date}}</li>
-			<li>{{.Body}}</li>
-		</ul>
+{{template "header" .LoggedIn}}
+<div class="container">
+	<h4>{{.Post.Title}}</h4>
+	<p>{{.Post.Body}}</p>
+	<div class="u-pull-right">
+		<h6>{{.Post.Date}}</h6>
 	</div>
+	<div class="docs-section" style="margin:0px;padding:10px"></div>
+</div>
 {{template "footer"}}	

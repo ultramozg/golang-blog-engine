@@ -143,8 +143,14 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 		case sql.ErrNoRows:
 			fmt.Fprintln(w, "No row was returned!")
 		case nil:
-			//fmt.Fprintln(w, p)
-			tpl.ExecuteTemplate(w, "post.gohtml", p)
+			data := struct {
+				Post     Post
+				LoggedIn bool
+			}{
+				p,
+				loggedInAsAdmin(r),
+			}
+			tpl.ExecuteTemplate(w, "post.gohtml", data)
 		default:
 			panic(err)
 		}
