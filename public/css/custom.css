@@ -1,3 +1,5 @@
+textarea {
+  min-height: 400px; }
 .container {
   max-width: 800px; }
 .header {

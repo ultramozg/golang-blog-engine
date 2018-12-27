@@ -86,6 +86,7 @@ func main() {
 	mux.HandleFunc("/logout", logout)
 	mux.HandleFunc("/post", getPost)
 	mux.HandleFunc("/publish", publish)
+	mux.HandleFunc("/about", about)
 	mux.HandleFunc("/delete", deletePost)
 
 	//Register Fileserver
@@ -259,6 +260,10 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not Allowed", 405)
 		return
 	}
+}
+
+func about(w http.ResponseWriter, r *http.Request) {
+	tpl.ExecuteTemplate(w, "about.gohtml", loggedInAsAdmin(r))
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
