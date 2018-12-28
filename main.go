@@ -162,8 +162,41 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func publish(w http.ResponseWriter, r *http.Request) {
+	//First we need check if this post id already exist
+	//fetch id, try to load into template
+	id, ok := strconv.Atoi(r.FormValue("id"))
 	switch r.Method {
 	case http.MethodGet:
+
+		p := Post{}
+		s := `select * from posts where id = ?`
+		row := db.QueryRow(s, id)
+		err := row.Scan(&p.Id, &p.Title, &p.Body, &p.Date)
+
+		switch err {
+		case sql.ErrNoRows:
+			//No data return default page
+			data := struct {
+				Post     Post
+				LoggedIn bool
+			}{
+				Post{},
+				loggedInAsAdmin(r),
+			}
+			tpl.ExecuteTemplate(w, "publish.gohtml", data)
+		case nil:
+			data := struct {
+				Post     Post
+				LoggedIn bool
+			}{
+				p,
+				loggedInAsAdmin(r),
+			}
+			tpl.ExecuteTemplate(w, "publish.gohtml", data)
+		default:
+			http.Error(w, "Internal Server error", 500)
+		}
+
 		tpl.ExecuteTemplate(w, "publish.gohtml", loggedInAsAdmin(r))
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -178,11 +211,20 @@ func publish(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s := `insert into posts (title, body, datepost) values ($1, $2, $3)`
-		_, err := db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"))
+		//check if id was passed, if so need to change query
+		var s string
+		var err error
+		if ok != nil {
+			s = `insert into posts (title, body, datepost) values ($1, $2, $3)`
+			_, err = db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"))
+		} else {
+			s = `insert into posts (title, body, datepost) values ($1, $2, $3) where id = $4`
+			_, err = db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"), id)
+		}
 		if err != nil {
 			http.Error(w, "Internal Server Error", 500)
 		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method Not Allowed", 405)
 	}
@@ -244,7 +286,7 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch r.Method {
-	case http.MethodPost:
+	case http.MethodGet:
 		s := `delete from posts where id = ?`
 		_, err := db.Exec(s, v)
 
@@ -252,7 +294,8 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 		case sql.ErrNoRows:
 			fmt.Fprintln(w, "No row was returned!")
 		case nil:
-			fmt.Fprintln(w, v)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
 		default:
 			panic(err)
 		}

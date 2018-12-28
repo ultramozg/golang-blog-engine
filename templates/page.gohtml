@@ -1,8 +1,15 @@
 {{template "header" .LoggedIn}}
 <div class="container">
+{{$adm := .LoggedIn}}	
+
 {{range .Posts}}
 <div class="docs-section">
-	<h4><a href="/post?id={{.Id}}">{{.Title}}</a></h4>
+	<h4>
+		<a href="/post?id={{.Id}}">{{.Title}}</a>
+		{{if $adm}}
+		(<a href="/publish?id={{.Id}}">Update</a>/<a href="/delete?id={{.Id}}">Delete</a>)
+		{{end}}
+	</h4>
 	<p>{{.Body}}</p>
 	<div class="u-pull-right"><h6>{{.Date}}</h6></div>
 </div>
