@@ -1,11 +1,15 @@
 {{template "header" .LoggedIn}}
-{{if .}}
 <div class="container">
 	<form method="POST" action="/publish">
+		{{if .IsUpdate}}
+		<input type="hidden" name="id" value="{{.Post.Id}}">
 		<label>Title</label><input name="title" class="u-full-width" type="text" value="{{.Post.Title}}" />
 		<label>Body</label><textarea name="body" class="u-full-width" placeholder="Article">{{.Post.Body}}</textarea>
+		{{else}}
+		<label>Title</label><input name="title" class="u-full-width" type="text" value="" />
+		<label>Body</label><textarea name="body" class="u-full-width" placeholder="Article"></textarea>
+		{{end}}
 		<input type="submit" value="submit" />
 	</form>
 </div>
-{{end}}
 {{template "footer"}}

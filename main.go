@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 	//"io"
 
@@ -162,11 +162,12 @@ func getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func publish(w http.ResponseWriter, r *http.Request) {
-	//First we need check if this post id already exist
-	//fetch id, try to load into template
-	id, ok := strconv.Atoi(r.FormValue("id"))
+
 	switch r.Method {
 	case http.MethodGet:
+		//First we need check if this post id already exist
+		//fetch id, try to load into template
+		id, _ := strconv.Atoi(r.FormValue("id"))
 
 		p := Post{}
 		s := `select * from posts where id = ?`
@@ -175,22 +176,26 @@ func publish(w http.ResponseWriter, r *http.Request) {
 
 		switch err {
 		case sql.ErrNoRows:
-			//No data return default page
+			//No data return empty form
 			data := struct {
 				Post     Post
 				LoggedIn bool
+				IsUpdate bool
 			}{
 				Post{},
 				loggedInAsAdmin(r),
+				false,
 			}
 			tpl.ExecuteTemplate(w, "publish.gohtml", data)
 		case nil:
 			data := struct {
 				Post     Post
 				LoggedIn bool
+				IsUpdate bool
 			}{
 				p,
 				loggedInAsAdmin(r),
+				true,
 			}
 			tpl.ExecuteTemplate(w, "publish.gohtml", data)
 		default:
@@ -204,29 +209,32 @@ func publish(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		id, ok := strconv.Atoi(r.FormValue("id"))
 		title := r.FormValue("title")
 		body := r.FormValue("body")
 		if title == "" || body == "" {
 			http.Error(w, "Bad Request", 400)
 			return
 		}
-
 		//check if id was passed, if so need to change query
 		var s string
 		var err error
+
 		if ok != nil {
 			s = `insert into posts (title, body, datepost) values ($1, $2, $3)`
 			_, err = db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"))
 		} else {
-			s = `insert into posts (title, body, datepost) values ($1, $2, $3) where id = $4`
+			s = `update posts set title = $1, body = $2, datepost = $3 where id = $4`
 			_, err = db.Exec(s, title, body, time.Now().Format("Mon Jan _2 15:04:05 2006"), id)
 		}
 		if err != nil {
 			http.Error(w, "Internal Server Error", 500)
+			return
 		}
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	default:
 		http.Error(w, "Method Not Allowed", 405)
+		return
 	}
 }
 
@@ -236,7 +244,7 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		p, _ := strconv.Atoi(r.FormValue("p"))
 
 		posts := []Post{}
-		s := `select id, title, substr(body,1,300), datepost from posts limit 8 offset ?;`
+		s := `select id, title, substr(body,1,300), datepost from posts order by id desc limit 8 offset ?;`
 		rows, err := db.Query(s, p*postsPerPage)
 		if err != nil {
 			http.Error(w, "Internal Server error", 500)
@@ -421,6 +429,15 @@ func authMiddleware(h http.Handler) http.Handler {
 			}
 			return
 		case http.MethodGet:
+			if r.URL.Path == "/publish" || r.URL.Path == "/delete" {
+				if loggedInAsAdmin(r) {
+					h.ServeHTTP(w, r)
+					return
+				} else {
+					http.Error(w, "Unauthorized", 401)
+					return
+				}
+			}
 			h.ServeHTTP(w, r)
 			return
 		default:

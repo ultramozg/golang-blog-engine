@@ -7,7 +7,7 @@
 	<h4>
 		<a href="/post?id={{.Id}}">{{.Title}}</a>
 		{{if $adm}}
-		(<a href="/publish?id={{.Id}}">Update</a>/<a href="/delete?id={{.Id}}">Delete</a>)
+		(<a href="/publish?id={{.Id}}">Update</a>|<a href="/delete?id={{.Id}}">Delete</a>)
 		{{end}}
 	</h4>
 	<p>{{.Body}}</p>
