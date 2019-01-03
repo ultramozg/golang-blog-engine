@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -12,10 +13,10 @@ import (
 	"strings"
 	"text/template"
 	"time"
-	//"io"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 const (
@@ -61,6 +62,7 @@ func main() {
 	//Parse Keys
 	addr := flag.String("ip", "localhost", "Ip address to bind(localhost)")
 	port := flag.String("p", "8080", "port listen to (:8080)")
+	sport := flag.String("sp", "8443", "port to listen ssl (:8443)")
 	flag.Parse()
 
 	var err error
@@ -79,6 +81,13 @@ func main() {
 	defer logFile.Close()
 	fmt.Fprintln(logFile, "Begin logging")
 
+	//Get the cert
+	cert := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist("dcandu.name"),
+		Cache:      autocert.DirCache("cert"),
+	}
+
 	//Register MUX
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getPage)
@@ -96,8 +105,20 @@ func main() {
 	//Set Admin and Logging middleware
 	logHandler := logMiddleware(setHeaderMiddleware(authMiddleware(mux)))
 
+	server := &http.Server{
+		Addr: *addr + ":" + *sport,
+		TLSConfig: &tls.Config{
+			GetCertificate: cert.GetCertificate,
+		},
+		Handler: logHandler,
+	}
+
 	log.Println("Listening on addr:port: ", *addr+":"+*port)
-	http.ListenAndServe(*addr+":"+*port, logHandler)
+	log.Println("Listening SSL on addr:port: ", *addr+":"+*sport)
+
+	//Launch standart http and https protocols
+	go http.ListenAndServe(*addr+":"+*port, cert.HTTPHandler(logHandler))
+	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
 func initializeDatabase(filepath string) *sql.DB {
