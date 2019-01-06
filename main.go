@@ -7,12 +7,14 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -43,14 +45,21 @@ type Post struct {
 	Date  string
 }
 
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
 type gzipResponseWriter struct {
 	io.Writer
 	http.ResponseWriter
 }
 
-type loggingResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
+var gzPool = sync.Pool{
+	New: func() interface{} {
+		w := gzip.NewWriter(ioutil.Discard)
+		return w
+	},
 }
 
 var (
@@ -482,6 +491,11 @@ func authMiddleware(h http.Handler) http.Handler {
 	})
 }
 
+func (w *gzipResponseWriter) WriteHeader(status int) {
+	w.Header().Del("Content-Lenght")
+	w.ResponseWriter.WriteHeader(status)
+}
+
 func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
@@ -494,10 +508,13 @@ func gzipMiddleware(h http.Handler) http.Handler {
 		}
 
 		w.Header().Set("Content-Encoding", "gzip")
-		gz := gzip.NewWriter(w)
+
+		gz := gzPool.Get().(*gzip.Writer)
+		defer gzPool.Put(gz)
+
+		gz.Reset(w)
 		defer gz.Close()
-		gzw := gzipResponseWriter{Writer: gz, ResponseWriter: w}
-		h.ServeHTTP(gzw, r)
+		h.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, Writer: gz}, r)
 	})
 }
 

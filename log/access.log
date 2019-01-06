@@ -3984,3 +3984,13 @@ Sun Jan  6 14:04:15 2019 200 127.0.0.1:56316 GET /page?p=1
 Sun Jan  6 14:04:15 2019 200 127.0.0.1:56316 GET /favicon.ico
 Sun Jan  6 14:04:15 2019 200 127.0.0.1:56316 GET /page?p=0
 Sun Jan  6 14:04:16 2019 200 127.0.0.1:56316 GET /favicon.ico
+Begin logging
+Sun Jan  6 14:30:02 2019 200 127.0.0.1:43654 GET /
+Sun Jan  6 14:30:03 2019 200 127.0.0.1:43654 GET /favicon.ico
+Sun Jan  6 14:30:04 2019 200 127.0.0.1:43654 GET /post?id=86
+Sun Jan  6 14:30:04 2019 200 127.0.0.1:43654 GET /favicon.ico
+Sun Jan  6 14:30:06 2019 200 127.0.0.1:43654 GET /favicon.ico
+Sun Jan  6 14:30:08 2019 200 127.0.0.1:43654 GET /
+Sun Jan  6 14:30:08 2019 200 127.0.0.1:43654 GET /favicon.ico
+Sun Jan  6 14:30:09 2019 200 127.0.0.1:43654 GET /links
+Sun Jan  6 14:30:09 2019 200 127.0.0.1:43654 GET /favicon.ico
