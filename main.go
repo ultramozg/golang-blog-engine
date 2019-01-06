@@ -96,6 +96,7 @@ func main() {
 	mux.HandleFunc("/post", getPost)
 	mux.HandleFunc("/publish", publish)
 	mux.HandleFunc("/about", about)
+	mux.HandleFunc("/links", links)
 	mux.HandleFunc("/delete", deletePost)
 
 	//Register Fileserver
@@ -290,13 +291,13 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		data := struct {
 			Posts    []Post
 			LoggedIn bool
-			PrevPage string
-			NextPage string
+			PrevPage int
+			NextPage int
 		}{
 			posts,
 			loggedInAsAdmin(r),
-			fmt.Sprintf("http://%v/page?p=%v", r.Host, add(p, -1)),
-			fmt.Sprintf("http://%v/page?p=%v", r.Host, add(p, +1)),
+			add(p, -1),
+			add(p, +1),
 		}
 		tpl.ExecuteTemplate(w, "page.gohtml", data)
 
@@ -336,6 +337,10 @@ func deletePost(w http.ResponseWriter, r *http.Request) {
 
 func about(w http.ResponseWriter, r *http.Request) {
 	tpl.ExecuteTemplate(w, "about.gohtml", loggedInAsAdmin(r))
+}
+
+func links(w http.ResponseWriter, r *http.Request) {
+	tpl.ExecuteTemplate(w, "links.gohtml", loggedInAsAdmin(r))
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
