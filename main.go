@@ -1,10 +1,12 @@
 package main
 
 import (
+	"compress/gzip"
 	"crypto/tls"
 	"database/sql"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -39,6 +41,11 @@ type Post struct {
 	Title string
 	Body  string
 	Date  string
+}
+
+type gzipResponseWriter struct {
+	io.Writer
+	http.ResponseWriter
 }
 
 type loggingResponseWriter struct {
@@ -104,21 +111,23 @@ func main() {
 	mux.Handle("/public/", http.StripPrefix("/public/", fs))
 
 	//Set Admin and Logging middleware
-	logHandler := logMiddleware(setHeaderMiddleware(authMiddleware(mux)))
+	mainHandler := gzipMiddleware(logMiddleware(setHeaderMiddleware(authMiddleware(mux))))
 
 	server := &http.Server{
-		Addr: *addr + ":" + *sport,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		Addr:         *addr + ":" + *sport,
 		TLSConfig: &tls.Config{
 			GetCertificate: cert.GetCertificate,
 		},
-		Handler: logHandler,
+		Handler: mainHandler,
 	}
 
 	log.Println("Listening on addr:port: ", *addr+":"+*port)
 	log.Println("Listening SSL on addr:port: ", *addr+":"+*sport)
 
 	//Launch standart http and https protocols
-	go http.ListenAndServe(*addr+":"+*port, cert.HTTPHandler(logHandler))
+	go http.ListenAndServe(*addr+":"+*port, cert.HTTPHandler(mainHandler))
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
@@ -470,6 +479,25 @@ func authMiddleware(h http.Handler) http.Handler {
 			http.Error(w, "Unauthorized", 401)
 			return
 		}
+	})
+}
+
+func (w gzipResponseWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
+
+func gzipMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			h.ServeHTTP(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+		gzw := gzipResponseWriter{Writer: gz, ResponseWriter: w}
+		h.ServeHTTP(gzw, r)
 	})
 }
 

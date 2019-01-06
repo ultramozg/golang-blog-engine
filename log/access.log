@@ -3920,3 +3920,67 @@ Sun Jan  6 12:46:05 2019 200 127.0.0.1:46584 GET /
 Sun Jan  6 12:46:06 2019 200 127.0.0.1:46584 GET /favicon.ico
 Sun Jan  6 12:46:08 2019 200 127.0.0.1:46584 GET /links
 Sun Jan  6 12:46:08 2019 200 127.0.0.1:46584 GET /favicon.ico
+Begin logging
+Sun Jan  6 13:22:54 2019 200 127.0.0.1:36652 GET /
+Sun Jan  6 13:22:55 2019 200 127.0.0.1:36652 GET /favicon.ico
+Sun Jan  6 13:22:59 2019 200 127.0.0.1:36652 GET /login
+Sun Jan  6 13:23:00 2019 200 127.0.0.1:36652 GET /favicon.ico
+Sun Jan  6 13:23:03 2019 303 127.0.0.1:36652 POST /login
+Sun Jan  6 13:23:04 2019 200 127.0.0.1:36652 GET /
+Sun Jan  6 13:23:04 2019 200 127.0.0.1:36652 GET /favicon.ico
+Sun Jan  6 13:23:07 2019 200 127.0.0.1:36652 GET /links
+Sun Jan  6 13:23:08 2019 200 127.0.0.1:36652 GET /favicon.ico
+Begin logging
+Sun Jan  6 13:44:02 2019 200 127.0.0.1:46814 GET /
+Sun Jan  6 13:44:02 2019 200 127.0.0.1:46814 GET /favicon.ico
+Sun Jan  6 13:44:04 2019 200 127.0.0.1:46814 GET /post?id=86
+Sun Jan  6 13:44:04 2019 200 127.0.0.1:46814 GET /favicon.ico
+Sun Jan  6 13:44:06 2019 200 127.0.0.1:46814 GET /favicon.ico
+Sun Jan  6 13:44:07 2019 200 127.0.0.1:46814 GET /post?id=85
+Sun Jan  6 13:44:07 2019 200 127.0.0.1:46814 GET /favicon.ico
+Sun Jan  6 13:44:12 2019 200 127.0.0.1:46814 GET /favicon.ico
+Sun Jan  6 13:44:31 2019 200 127.0.0.1:47070 GET /
+Begin logging
+Begin logging
+Sun Jan  6 13:49:29 2019 200 127.0.0.1:49458 GET /
+Sun Jan  6 13:49:30 2019 200 127.0.0.1:49458 GET /public/css/normalize.css
+Sun Jan  6 13:49:30 2019 200 127.0.0.1:49462 GET /public/css/skeleton.css
+Sun Jan  6 13:49:30 2019 200 127.0.0.1:49462 GET /public/css/custom.css
+Sun Jan  6 13:49:30 2019 200 127.0.0.1:49458 GET /public/css/github-prettify-theme.css
+Sun Jan  6 13:49:30 2019 200 127.0.0.1:49458 GET /favicon.ico
+Sun Jan  6 13:49:44 2019 200 127.0.0.1:49458 GET /
+Sun Jan  6 13:49:44 2019 200 127.0.0.1:49458 GET /favicon.ico
+Sun Jan  6 13:49:47 2019 200 127.0.0.1:49458 GET /
+Sun Jan  6 13:49:47 2019 200 127.0.0.1:49458 GET /public/css/normalize.css
+Sun Jan  6 13:49:47 2019 200 127.0.0.1:49458 GET /public/css/skeleton.css
+Sun Jan  6 13:49:47 2019 200 127.0.0.1:49458 GET /public/css/custom.css
+Sun Jan  6 13:49:47 2019 200 127.0.0.1:49462 GET /public/css/github-prettify-theme.css
+Sun Jan  6 13:49:47 2019 200 127.0.0.1:49462 GET /favicon.ico
+Sun Jan  6 13:50:53 2019 200 127.0.0.1:50140 GET /
+Sun Jan  6 13:51:00 2019 200 127.0.0.1:50200 GET /
+Sun Jan  6 13:51:03 2019 200 127.0.0.1:50220 GET /
+Sun Jan  6 13:51:12 2019 200 127.0.0.1:50296 GET /
+Sun Jan  6 13:51:27 2019 401 127.0.0.1:50428 HEAD /
+Begin logging
+Sun Jan  6 14:03:41 2019 200 127.0.0.1:56302 GET /
+Sun Jan  6 14:03:41 2019 200 127.0.0.1:56302 GET /public/css/normalize.css
+Sun Jan  6 14:03:41 2019 200 127.0.0.1:56306 GET /public/css/skeleton.css
+Sun Jan  6 14:03:41 2019 200 127.0.0.1:56312 GET /public/css/custom.css
+Sun Jan  6 14:03:41 2019 200 127.0.0.1:56316 GET /public/css/github-prettify-theme.css
+Sun Jan  6 14:03:42 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:03:44 2019 200 127.0.0.1:56316 GET /page?p=1
+Sun Jan  6 14:03:45 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:03:47 2019 200 127.0.0.1:56316 GET /page?p=0
+Sun Jan  6 14:03:47 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:04:07 2019 200 127.0.0.1:56316 GET /page?p=1
+Sun Jan  6 14:04:07 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:04:10 2019 200 127.0.0.1:56316 GET /page?p=2
+Sun Jan  6 14:04:10 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:04:11 2019 200 127.0.0.1:56316 GET /page?p=3
+Sun Jan  6 14:04:11 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:04:14 2019 200 127.0.0.1:56316 GET /page?p=2
+Sun Jan  6 14:04:14 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:04:15 2019 200 127.0.0.1:56316 GET /page?p=1
+Sun Jan  6 14:04:15 2019 200 127.0.0.1:56316 GET /favicon.ico
+Sun Jan  6 14:04:15 2019 200 127.0.0.1:56316 GET /page?p=0
+Sun Jan  6 14:04:16 2019 200 127.0.0.1:56316 GET /favicon.ico
