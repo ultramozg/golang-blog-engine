@@ -117,7 +117,7 @@ func main() {
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
-	mux.Handle("/public/", http.StripPrefix("/public/", fs))
+	mux.Handle("/public/", http.StripPrefix("/public/", cacheControlMiddleware(fs)))
 
 	//Set Admin and Logging middleware
 	mainHandler := gzipMiddleware(logMiddleware(setHeaderMiddleware(authMiddleware(mux))))
@@ -460,6 +460,13 @@ func logMiddleware(h http.Handler) http.Handler {
 		if err != nil {
 			log.Println("Cannot write to file", err)
 		}
+	})
+}
+
+func cacheControlMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "max-age=2592000")
+		h.ServeHTTP(w, r)
 	})
 }
 
