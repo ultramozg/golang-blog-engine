@@ -4029,3 +4029,24 @@ Mon Jan  7 10:59:53 2019 200 127.0.0.1:51448 GET /favicon.ico
 Mon Jan  7 11:00:12 2019 200 127.0.0.1:52054 GET /public/css/skeleton.css
 Mon Jan  7 11:00:17 2019 401 127.0.0.1:52098 HEAD /public/css/skeleton.css
 Mon Jan  7 11:00:25 2019 200 127.0.0.1:52166 GET /public/css/skeleton.css
+Begin logging
+Begin logging
+Mon Jan  7 11:33:36 2019 200 127.0.0.1:38444 GET /
+Mon Jan  7 11:33:37 2019 200 127.0.0.1:38444 GET /favicon.ico
+Mon Jan  7 11:33:40 2019 200 127.0.0.1:38444 GET /post?id=86
+Mon Jan  7 11:33:40 2019 200 127.0.0.1:38444 GET /favicon.ico
+Mon Jan  7 11:33:42 2019 200 127.0.0.1:38444 GET /links
+Mon Jan  7 11:33:43 2019 200 127.0.0.1:38444 GET /favicon.ico
+Mon Jan  7 11:33:43 2019 200 127.0.0.1:38444 GET /
+Mon Jan  7 11:33:44 2019 200 127.0.0.1:38444 GET /favicon.ico
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging
+Begin logging

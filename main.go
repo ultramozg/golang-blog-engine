@@ -68,6 +68,10 @@ var (
 	admin      *Admin
 	dbSessions map[string]int
 	tpl        *template.Template
+	addr       *string
+	port       *string
+	sport      *string
+	domain     *string
 )
 
 func init() {
@@ -76,9 +80,10 @@ func init() {
 
 func main() {
 	//Parse Keys
-	addr := flag.String("ip", "localhost", "Ip address to bind(localhost)")
-	port := flag.String("p", "8080", "port listen to (:8080)")
-	sport := flag.String("sp", "8443", "port to listen ssl (:8443)")
+	addr = flag.String("ip", "localhost", "Ip address to bind(localhost)")
+	port = flag.String("p", "8080", "port listen to (:8080)")
+	sport = flag.String("sp", "8443", "port to listen ssl (:8443)")
+	domain = flag.String("dom", "dcandu.name", "domain name")
 	flag.Parse()
 
 	var err error
@@ -100,7 +105,7 @@ func main() {
 	//Get the cert
 	cert := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("dcandu.name"),
+		HostPolicy: autocert.HostWhitelist(*domain),
 		Cache:      autocert.DirCache("cert"),
 	}
 
@@ -136,7 +141,7 @@ func main() {
 	log.Println("Listening SSL on addr:port: ", *addr+":"+*sport)
 
 	//Launch standart http and https protocols
-	go http.ListenAndServe(*addr+":"+*port, cert.HTTPHandler(mainHandler))
+	go http.ListenAndServe(*addr+":"+*port, redirectTLSMiddleware(cert.HTTPHandler(mainHandler)))
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
@@ -163,6 +168,10 @@ func migrateDatabase(db *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func redirectTLS(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://"+*addr+r.RequestURI+*port, http.StatusMovedPermanently)
 }
 
 func getPost(w http.ResponseWriter, r *http.Request) {
@@ -522,6 +531,12 @@ func gzipMiddleware(h http.Handler) http.Handler {
 		gz.Reset(w)
 		defer gz.Close()
 		h.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, Writer: gz}, r)
+	})
+}
+
+func redirectTLSMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "https://"+*domain+r.RequestURI, http.StatusMovedPermanently)
 	})
 }
 
