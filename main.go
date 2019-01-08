@@ -293,7 +293,7 @@ func getPage(w http.ResponseWriter, r *http.Request) {
 		p, _ := strconv.Atoi(r.FormValue("p"))
 
 		posts := []Post{}
-		s := `select id, title, substr(body,1,300), datepost from posts order by id desc limit 8 offset ?;`
+		s := `select id, title, substr(body,1,600), datepost from posts order by id desc limit 8 offset ?;`
 		rows, err := db.Query(s, p*postsPerPage)
 		if err != nil {
 			http.Error(w, "Internal Server error", 500)
