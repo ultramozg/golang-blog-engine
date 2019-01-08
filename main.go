@@ -141,7 +141,7 @@ func main() {
 	log.Println("Listening SSL on addr:port: ", *addr+":"+*sport)
 
 	//Launch standart http and https protocols
-	go http.ListenAndServe(*addr+":"+*port, redirectTLSMiddleware(cert.HTTPHandler(mainHandler)))
+	go http.ListenAndServe(*addr+":"+*port, cert.HTTPHandler(redirectTLSMiddleware(mainHandler)))
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
