@@ -1,0 +1,10 @@
+{{template "header" .LoggedIn}}
+<div class="container">
+	<form method="POST" action="/update">
+		<input type="hidden" name="id" value="{{.Post.Id}}">
+		<label>Title</label><input name="title" class="u-full-width" type="text" value="{{.Post.Title}}" />
+		<label>Body</label><textarea name="body" class="u-full-width" placeholder="Article">{{.Post.Body}}</textarea>
+		<input type="submit" value="submit" />
+	</form>
+</div>
+{{template "footer"}}
