@@ -46,10 +46,11 @@ func (a *App) Run(domain, addr, saddr string) {
 	a.Addr = addr
 	a.SAddr = saddr
 	a.Domain = domain
+
 	//Get the cert
 	cert := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist("dcandu.name"),
+		HostPolicy: autocert.HostWhitelist(domain),
 		Cache:      autocert.DirCache("cert"),
 	}
 
@@ -68,7 +69,7 @@ func (a *App) Run(domain, addr, saddr string) {
 	log.Println("Listening TLS on the addr", a.SAddr)
 
 	//Launch standart http and https protocols
-	go log.Fatal(http.ListenAndServe(a.Addr, a.redirectTLSMiddleware(cert.HTTPHandler(a.Router))))
+	go http.ListenAndServe(a.Addr, cert.HTTPHandler(a.redirectTLSMiddleware(a.Router)))
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
