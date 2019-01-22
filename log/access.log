@@ -3,3 +3,12 @@ Sun Jan 20 13:44:05 2019 200 10.0.2.2:3757 GET /
 Sun Jan 20 13:44:05 2019 200 10.0.2.2:3757 GET /favicon.ico
 Sun Jan 20 13:44:09 2019 200 10.0.2.2:3757 GET /post?id=11
 Sun Jan 20 13:44:09 2019 200 10.0.2.2:3757 GET /favicon.ico
+Tue Jan 22 10:16:23 2019 200 127.0.0.1:35808 GET /
+Tue Jan 22 10:16:23 2019 200 127.0.0.1:35808 GET /public/css/normalize.css
+Tue Jan 22 10:16:23 2019 200 127.0.0.1:35812 GET /public/css/skeleton.css
+Tue Jan 22 10:16:23 2019 200 127.0.0.1:35808 GET /public/css/github-prettify-theme.css
+Tue Jan 22 10:16:23 2019 200 127.0.0.1:35814 GET /public/css/custom.css
+Tue Jan 22 10:16:23 2019 200 127.0.0.1:35812 GET /favicon.ico
+Tue Jan 22 10:16:30 2019 200 127.0.0.1:35818 GET /links
+Tue Jan 22 10:16:31 2019 200 127.0.0.1:35818 GET /
+Tue Jan 22 10:16:32 2019 200 127.0.0.1:35818 GET /about

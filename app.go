@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"strconv"
@@ -21,6 +23,9 @@ type App struct {
 	Temp     *template.Template
 	Sessions *SessionDB
 	Log      Logging
+	Addr     string
+	SAddr    string
+	Domain   string
 }
 
 func (a *App) Initialize(dbname, tmpath string) {
@@ -37,18 +42,34 @@ func (a *App) Initialize(dbname, tmpath string) {
 	a.Log = NewLogging("log/access.log")
 }
 
-func (a *App) Run(addr string) {
+func (a *App) Run(domain, addr, saddr string) {
+	a.Addr = addr
+	a.SAddr = saddr
+	a.Domain = domain
+	//Get the cert
+	cert := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist("dcandu.name"),
+		Cache:      autocert.DirCache("cert"),
+	}
+
 	server := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Addr:         addr,
-		//TLSConfig: &tls.Config{
-		//	GetCertificate: cert.GetCertificate,
-		//},
+		Addr:         a.SAddr,
+		TLSConfig: &tls.Config{
+			GetCertificate: cert.GetCertificate,
+		},
 		Handler: a.Router,
 	}
-	log.Println("Listening on the addr:port", addr)
-	log.Fatal(server.ListenAndServe())
+
+	log.Println("Starting application with auto TLS support")
+	log.Println("Listening on the addr", a.Addr)
+	log.Println("Listening TLS on the addr", a.SAddr)
+
+	//Launch standart http and https protocols
+	go log.Fatal(http.ListenAndServe(a.Addr, a.redirectTLSMiddleware(cert.HTTPHandler(a.Router))))
+	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
 func (a *App) InitializeRoutes() {
