@@ -1,0 +1,8 @@
+{
+	"addr":":8080",
+	"saddr":":8443",
+	"domain":"dcandu.name",
+	"dbpath":"database/database.sqlite",
+	"tmpath":"templates/*.gohtml",
+	"log":"log/access.log"
+}

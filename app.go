@@ -23,41 +23,37 @@ type App struct {
 	Temp     *template.Template
 	Sessions *SessionDB
 	Log      Logging
-	Addr     string
-	SAddr    string
-	Domain   string
+	Config   *Config
 }
 
-func (a *App) Initialize(dbname, tmpath string) {
+func (a *App) Initialize(c *Config) {
 	var err error
-	a.DB, err = sql.Open("sqlite3", dbname)
+	a.Config = c
+
+	a.DB, err = sql.Open("sqlite3", a.Config.DBpath)
 	if err != nil {
 		log.Fatal("Error connecting to dabase", err)
 	}
 
 	a.InitializeRoutes()
 
-	a.Temp = template.Must(template.ParseGlob(tmpath))
+	a.Temp = template.Must(template.ParseGlob(a.Config.TmPath))
 	a.Sessions = NewSessionDB()
-	a.Log = NewLogging("log/access.log")
+	a.Log = NewLogging(a.Config.Log)
 }
 
-func (a *App) Run(domain, addr, saddr string) {
-	a.Addr = addr
-	a.SAddr = saddr
-	a.Domain = domain
-
+func (a *App) Run() {
 	//Get the cert
 	cert := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domain),
+		HostPolicy: autocert.HostWhitelist(a.Config.Domain),
 		Cache:      autocert.DirCache("cert"),
 	}
 
 	server := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Addr:         a.SAddr,
+		Addr:         a.Config.SAddr,
 		TLSConfig: &tls.Config{
 			GetCertificate: cert.GetCertificate,
 		},
@@ -65,11 +61,11 @@ func (a *App) Run(domain, addr, saddr string) {
 	}
 
 	log.Println("Starting application with auto TLS support")
-	log.Println("Listening on the addr", a.Addr)
-	log.Println("Listening TLS on the addr", a.SAddr)
+	log.Println("Listening on the addr", a.Config.Addr)
+	log.Println("Listening TLS on the addr", a.Config.SAddr)
 
 	//Launch standart http and https protocols
-	go http.ListenAndServe(a.Addr, cert.HTTPHandler(a.redirectTLSMiddleware(a.Router)))
+	go http.ListenAndServe(a.Config.Addr, cert.HTTPHandler(a.redirectTLSMiddleware(a.Router)))
 	log.Fatal(server.ListenAndServeTLS("", ""))
 }
 
