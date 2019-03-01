@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"text/template"
 	"time"
 )
@@ -24,6 +28,7 @@ type App struct {
 	Sessions *SessionDB
 	Log      Logging
 	Config   *Config
+	stop     chan os.Signal
 }
 
 func (a *App) Initialize(c *Config) {
@@ -40,6 +45,11 @@ func (a *App) Initialize(c *Config) {
 	a.Temp = template.Must(template.ParseGlob(a.Config.TmPath))
 	a.Sessions = NewSessionDB()
 	a.Log = NewLogging(a.Config.Log)
+
+	//setting up signal capturing
+	a.stop = make(chan os.Signal, 1)
+	signal.Notify(a.stop, os.Interrupt)
+	signal.Notify(a.stop, syscall.SIGTERM)
 }
 
 func (a *App) Run() {
@@ -50,7 +60,7 @@ func (a *App) Run() {
 		Cache:      autocert.DirCache("cert"),
 	}
 
-	server := &http.Server{
+	secureServer := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Addr:         a.Config.SAddr,
@@ -60,13 +70,45 @@ func (a *App) Run() {
 		Handler: a.Router,
 	}
 
+	httpServer := &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		Addr:         a.Config.Addr,
+		Handler:      cert.HTTPHandler(a.redirectTLSMiddleware(a.Router)),
+	}
+
 	log.Println("Starting application with auto TLS support")
 	log.Println("Listening on the addr", a.Config.Addr)
 	log.Println("Listening TLS on the addr", a.Config.SAddr)
 
-	//Launch standart http and https protocols
-	go http.ListenAndServe(a.Config.Addr, cert.HTTPHandler(a.redirectTLSMiddleware(a.Router)))
-	log.Fatal(server.ListenAndServeTLS("", ""))
+	//Launch standart http, to fetch cert Let's Encrypt with 301 -> https
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Fatal("Unable to listen on http port: ", err)
+		}
+	}()
+
+	//Launch https
+	go func() {
+		if err := secureServer.ListenAndServeTLS("", ""); err != nil {
+			log.Fatal("Unable to listen on https port: ", err)
+		}
+	}()
+
+	//Listen to catch sigint signal to gracefully stop the app
+	<-a.stop
+	log.Println("Caught SIGINT or SIGTERM stopping the app")
+
+	//close all connections
+	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	if err := secureServer.Shutdown(ctx); err != nil {
+		log.Println("Unable to shutdown http server")
+	}
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Println("Unable to shutdown http server")
+	}
+	a.DB.Close()
+	os.Exit(0)
 }
 
 func (a *App) InitializeRoutes() {
