@@ -70,11 +70,15 @@ func (a *App) Run() {
 		Handler: a.Router,
 	}
 
+	httpHandler := a.Router
+	//httpHandler = a.redirectTLSMiddleware(httpHandler)
+	httpHandler = cert.HTTPHandler(httpHandler)
+
 	httpServer := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		Addr:         a.Config.Addr,
-		Handler:      cert.HTTPHandler(a.redirectTLSMiddleware(a.Router)),
+		Handler:      httpHandler,
 	}
 
 	log.Println("Starting application with auto TLS support")
@@ -123,6 +127,7 @@ func (a *App) InitializeRoutes() {
 	mux.HandleFunc("/delete", a.deletePost)
 	mux.HandleFunc("/about", a.about)
 	mux.HandleFunc("/links", a.links)
+	mux.HandleFunc("/courses", a.courses)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -350,6 +355,19 @@ func (a *App) links(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.Temp.ExecuteTemplate(w, "links.gohtml", a.Sessions.isAdmin(r))
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) courses(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		a.Temp.ExecuteTemplate(w, "courses.gohtml", a.Sessions.isAdmin(r))
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
