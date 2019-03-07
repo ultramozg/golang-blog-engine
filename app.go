@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme/autocert"
 	"log"
@@ -29,6 +31,10 @@ type App struct {
 	Log      Logging
 	Config   *Config
 	stop     chan os.Signal
+}
+
+type OAuthAccessToken struct {
+	AccessToken string `json:"access_token"`
 }
 
 func (a *App) Initialize(c *Config) {
@@ -128,6 +134,7 @@ func (a *App) InitializeRoutes() {
 	mux.HandleFunc("/about", a.about)
 	mux.HandleFunc("/links", a.links)
 	mux.HandleFunc("/courses", a.courses)
+	mux.HandleFunc("/auth-callback", a.oauth)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -432,6 +439,56 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		err := r.ParseForm()
+		if err != nil {
+			http.Error(w, "Bad request", http.StatusBadRequest)
+			return
+		}
+
+		//Grabe the code which have provided github
+		code := r.FormValue("code")
+		clientId := "4429cbe75ab7b5e1aab9"
+		clientSecret := "787665575a82a2b3b1604c08b77f831cef5b4c50"
+
+		//Next step is to make a post request with client_id, secret_id and
+		reqURL := fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s", clientId, clientSecret, code)
+		req, err := http.NewRequest(http.MethodPost, reqURL, nil)
+		if err != nil {
+			http.Error(w, "Could not create http req.", http.StatusBadRequest)
+			return
+		}
+		req.Header.Set("accept", "application/json")
+
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "Unable send http request", http.StatusInternalServerError)
+			return
+		}
+		defer res.Body.Close()
+
+		//grab access_token
+		var token OAuthAccessToken
+		if res.StatusCode == http.StatusOK {
+			if err := json.NewDecoder(res.Body).Decode(&token); err != nil {
+				http.Error(w, "Could not parse json response", http.StatusBadRequest)
+				return
+			}
+		}
+		log.Println(token.AccessToken)
+
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
