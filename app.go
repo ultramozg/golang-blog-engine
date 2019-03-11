@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
-	"encoding/json"
-	"fmt"
+	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/oauth2"
 	"log"
 	"net/http"
 	"os"
@@ -31,10 +31,7 @@ type App struct {
 	Log      Logging
 	Config   *Config
 	stop     chan os.Signal
-}
-
-type OAuthAccessToken struct {
-	AccessToken string `json:"access_token"`
+	OAuth    *oauth2.Config
 }
 
 func (a *App) Initialize(c *Config) {
@@ -51,6 +48,19 @@ func (a *App) Initialize(c *Config) {
 	a.Temp = template.Must(template.ParseGlob(a.Config.TmPath))
 	a.Sessions = NewSessionDB()
 	a.Log = NewLogging(a.Config.Log)
+
+	//Setting up OAuth authentication via github
+	a.OAuth = &oauth2.Config{
+		ClientID:     a.Config.ClientID,
+		ClientSecret: a.Config.ClientSecret,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  a.Config.GithubAuthorizeURL,
+			TokenURL: a.Config.GithubTokenURL,
+		},
+		RedirectURL: a.Config.RedirectURL,
+		Scopes:      []string{"read:user"},
+	}
+	//======END OAUTH CONFIGURATION======
 
 	//setting up signal capturing
 	a.stop = make(chan os.Signal, 1)
@@ -408,7 +418,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			struct
 		*/
 		if login == "admin" && pass == adminPass {
-			c := a.Sessions.createSession(ADMIN)
+			c := a.Sessions.createSession(User{userType: ADMIN, userName: "admin"})
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -451,43 +461,28 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		err := r.ParseForm()
+		token, err := a.OAuth.Exchange(oauth2.NoContext, r.URL.Query().Get("code"))
 		if err != nil {
-			http.Error(w, "Bad request", http.StatusBadRequest)
+			log.Println(w, "there was an issue getting your token")
+			return
+		}
+		if !token.Valid() {
+			log.Println(w, "retreived invalid token")
 			return
 		}
 
-		//Grabe the code which have provided github
-		code := r.FormValue("code")
-		clientId := "4429cbe75ab7b5e1aab9"
-		clientSecret := "787665575a82a2b3b1604c08b77f831cef5b4c50"
-
-		//Next step is to make a post request with client_id, secret_id and
-		reqURL := fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s", clientId, clientSecret, code)
-		req, err := http.NewRequest(http.MethodPost, reqURL, nil)
+		client := github.NewClient(a.OAuth.Client(oauth2.NoContext, token))
+		user, _, err := client.Users.Get(context.Background(), "")
 		if err != nil {
-			http.Error(w, "Could not create http req.", http.StatusBadRequest)
+			log.Println(w, "error getting name")
 			return
 		}
-		req.Header.Set("accept", "application/json")
 
-		client := &http.Client{}
-		res, err := client.Do(req)
-		if err != nil {
-			http.Error(w, "Unable send http request", http.StatusInternalServerError)
-			return
-		}
-		defer res.Body.Close()
-
-		//grab access_token
-		var token OAuthAccessToken
-		if res.StatusCode == http.StatusOK {
-			if err := json.NewDecoder(res.Body).Decode(&token); err != nil {
-				http.Error(w, "Could not parse json response", http.StatusBadRequest)
-				return
-			}
-		}
-		log.Println(token.AccessToken)
+		c := a.Sessions.createSession(User{userType: GITHUB, userName: *(user.Login)})
+		http.SetCookie(w, c)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		log.Println("You have loged int as github user :", *(user.Login))
+		return
 
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)

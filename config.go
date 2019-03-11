@@ -13,6 +13,13 @@ type Config struct {
 	DBpath string `json:"dbpath"`
 	TmPath string `json:"tmpath"`
 	Log    string `json:"log"`
+
+	//OAuth config details
+	GithubAuthorizeURL string `json:"githubauthorizeurl"`
+	GithubTokenURL     string `json:"githubtokenurl"`
+	RedirectURL        string `json:"redirecturl"`
+	ClientID           string `json:"clientid"`
+	ClientSecret       string `json:"clientsecret"`
 }
 
 func NewConfig() *Config {

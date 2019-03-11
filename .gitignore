@@ -2,3 +2,5 @@
 *.sqlite
 cert/
 log/
+webserver
+conf.d/
