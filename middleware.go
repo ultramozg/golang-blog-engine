@@ -68,6 +68,6 @@ func gzipMiddleware(h http.Handler) http.Handler {
 
 func (a *App) redirectTLSMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "https://"+a.Config.Domain+r.RequestURI, http.StatusMovedPermanently)
+		http.Redirect(w, r, "https://"+a.Config.Cert.Domain+r.RequestURI, http.StatusMovedPermanently)
 	})
 }

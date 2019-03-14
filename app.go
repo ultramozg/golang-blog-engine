@@ -38,26 +38,26 @@ func (a *App) Initialize(c *Config) {
 	var err error
 	a.Config = c
 
-	a.DB, err = sql.Open("sqlite3", a.Config.DBpath)
+	a.DB, err = sql.Open("sqlite3", a.Config.Database.DBpath)
 	if err != nil {
 		log.Fatal("Error connecting to dabase", err)
 	}
 
 	a.InitializeRoutes()
 
-	a.Temp = template.Must(template.ParseGlob(a.Config.TmPath))
+	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
 	a.Sessions = NewSessionDB()
-	a.Log = NewLogging(a.Config.Log)
+	a.Log = NewLogging(a.Config.Log.LogPath)
 
 	//Setting up OAuth authentication via github
 	a.OAuth = &oauth2.Config{
-		ClientID:     a.Config.ClientID,
-		ClientSecret: a.Config.ClientSecret,
+		ClientID:     a.Config.OAuth.ClientID,
+		ClientSecret: a.Config.OAuth.ClientSecret,
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  a.Config.GithubAuthorizeURL,
-			TokenURL: a.Config.GithubTokenURL,
+			AuthURL:  a.Config.OAuth.GithubAuthorizeURL,
+			TokenURL: a.Config.OAuth.GithubTokenURL,
 		},
-		RedirectURL: a.Config.RedirectURL,
+		RedirectURL: a.Config.OAuth.RedirectURL,
 		Scopes:      []string{"read:user"},
 	}
 	//======END OAUTH CONFIGURATION======
@@ -72,14 +72,14 @@ func (a *App) Run() {
 	//Get the cert
 	cert := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(a.Config.Domain),
+		HostPolicy: autocert.HostWhitelist(a.Config.Cert.Domain),
 		Cache:      autocert.DirCache("cert"),
 	}
 
 	secureServer := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Addr:         a.Config.SAddr,
+		Addr:         a.Config.Server.SAddr,
 		TLSConfig: &tls.Config{
 			GetCertificate: cert.GetCertificate,
 		},
@@ -93,13 +93,13 @@ func (a *App) Run() {
 	httpServer := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Addr:         a.Config.Addr,
+		Addr:         a.Config.Server.Addr,
 		Handler:      httpHandler,
 	}
 
 	log.Println("Starting application with auto TLS support")
-	log.Println("Listening on the addr", a.Config.Addr)
-	log.Println("Listening TLS on the addr", a.Config.SAddr)
+	log.Println("Listening on the addr", a.Config.Server.Addr)
+	log.Println("Listening TLS on the addr", a.Config.Server.SAddr)
 
 	//Launch standart http, to fetch cert Let's Encrypt with 301 -> https
 	go func() {

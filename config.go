@@ -7,19 +7,29 @@ import (
 )
 
 type Config struct {
-	Addr   string `json:"addr"`
-	SAddr  string `json:"saddr"`
-	Domain string `json:"domain"`
-	DBpath string `json:"dbpath"`
-	TmPath string `json:"tmpath"`
-	Log    string `json:"log"`
-
-	//OAuth config details
-	GithubAuthorizeURL string `json:"githubauthorizeurl"`
-	GithubTokenURL     string `json:"githubtokenurl"`
-	RedirectURL        string `json:"redirecturl"`
-	ClientID           string `json:"clientid"`
-	ClientSecret       string `json:"clientsecret"`
+	Server struct {
+		Addr  string `json:"addr"`
+		SAddr string `json:"saddr"`
+	} `json:"server"`
+	Database struct {
+		DBpath string `json:"dbpath"`
+	} `json:"database"`
+	Log struct {
+		LogPath string `json:"log"`
+	} `json:"log"`
+	Template struct {
+		TmPath string `json:"tmpath"`
+	} `json:"template"`
+	Cert struct {
+		Domain string `json:"domain"`
+	} `json:"cert"`
+	OAuth struct {
+		GithubAuthorizeURL string `json:"githubauthorizeurl"`
+		GithubTokenURL     string `json:"githubtokenurl"`
+		RedirectURL        string `json:"redirecturl"`
+		ClientID           string `json:"clientid"`
+		ClientSecret       string `json:"clientsecret"`
+	} `json:"oauth"`
 }
 
 func NewConfig() *Config {
