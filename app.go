@@ -146,6 +146,8 @@ func (a *App) InitializeRoutes() {
 	mux.HandleFunc("/links", a.links)
 	mux.HandleFunc("/courses", a.courses)
 	mux.HandleFunc("/auth-callback", a.oauth)
+	mux.HandleFunc("/create-comment", a.createComment)
+	mux.HandleFunc("/delete-comment", a.deleteComment)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -488,6 +490,61 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		id, err := strconv.Atoi(r.FormValue("id"))
+		if err != nil {
+			http.Error(w, "Invalid Id", http.StatusBadRequest)
+			return
+		}
+
+		c := Comment{PostId: id}
+		if err := c.deleteComment(a.DB); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.Atoi(r.FormValue("id"))
+		if err != nil {
+			http.Error(w, "Invalid Id", http.StatusBadRequest)
+			return
+		}
+
+		name := r.FormValue("name")
+		comment := r.FormValue("comment")
+		if name == "" || comment == "" {
+			http.Error(w, "Bad Request", 400)
+			return
+		}
+
+		p := Comment{PostId: id, Name: name, Date: time.Now().Format("Mon Jan _2 15:04:05 2006"), Data: comment}
+		if err := p.createComment(a.DB); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
