@@ -49,3 +49,62 @@ func getPosts(db *sql.DB, count, start int) ([]Post, error) {
 	}
 	return posts, nil
 }
+
+type Comment struct {
+	PostId int
+	Name   string
+	Date   string
+	Data   string
+}
+
+func getComments(db *sql.DB, id int) ([]Comment, error) {
+	rows, err := db.Query(`select postid, name, date, data from comments where id = ? order by id desc;`, id)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	comments := []Comment{}
+
+	for rows.Next() {
+		var c Comment
+		if err := rows.Scan(&c.PostId, &c.Name, &c.Date, &c.Data); err != nil {
+			return nil, err
+		}
+		comments = append(comments, c)
+	}
+	return comments, nil
+}
+
+func (c *Comment) deleteComment(db *sql.DB) error {
+	_, err := db.Exec(`delete from comments where postid = ?`, c.PostId)
+	return err
+}
+
+func (c *Comment) createComment(db *sql.DB) error {
+	_, err := db.Exec(`insert into comments (postid, name, date, data) values ($1, $2, $3, $4)`, c.PostId, c.Name, c.Date, c.Data)
+	return err
+}
+
+func migrateDatabase(db *sql.DB) {
+	sql := `
+	create table if not exists posts (
+	id integer primary key autoincrement,
+	title string not null,
+	body string not null,
+	datepost string not null);
+
+	create table if not exists comments (
+	postid integer not null,
+	name string not null,
+	date string not null,
+	comment  string not null);
+	`
+
+	_, err := db.Exec(sql)
+
+	if err != nil {
+		panic(err)
+	}
+}

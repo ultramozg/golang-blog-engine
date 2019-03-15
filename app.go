@@ -43,6 +43,7 @@ func (a *App) Initialize(c *Config) {
 		log.Fatal("Error connecting to dabase", err)
 	}
 
+	migrateDatabase(a.DB)
 	a.InitializeRoutes()
 
 	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
