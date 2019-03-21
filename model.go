@@ -58,7 +58,7 @@ type Comment struct {
 }
 
 func getComments(db *sql.DB, id int) ([]Comment, error) {
-	rows, err := db.Query(`select postid, name, date, data from comments where id = ? order by id desc;`, id)
+	rows, err := db.Query(`select postid, name, date, comment from comments where postid = ? order by postid desc;`, id)
 
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (c *Comment) deleteComment(db *sql.DB) error {
 }
 
 func (c *Comment) createComment(db *sql.DB) error {
-	_, err := db.Exec(`insert into comments (postid, name, date, data) values ($1, $2, $3, $4)`, c.PostId, c.Name, c.Date, c.Data)
+	_, err := db.Exec(`insert into comments (postid, name, date, comment) values ($1, $2, $3, $4)`, c.PostId, c.Name, c.Date, c.Data)
 	return err
 }
 

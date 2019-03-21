@@ -35,7 +35,7 @@ func (s *SessionDB) isAdmin(r *http.Request) bool {
 	return false
 }
 
-func (s *SessionDB) isLogedin(r *http.Request) bool {
+func (s *SessionDB) isLoggedin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false

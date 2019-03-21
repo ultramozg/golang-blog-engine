@@ -1,4 +1,4 @@
-{{template "header" .LoggedIn}}
+{{template "header" .LogAsAdmin}}
 <div class="container">
 	<h4>{{.Post.Title}}</h4>
 	<p>{{.Post.Body}}</p>
@@ -7,6 +7,21 @@
 	</div>
 	<div class="docs-section" style="margin:0px;padding:10px"></div>
 	<br>
+	{{range .Comms}}
+		{{.Name}}
+		{{.Date}}
+		{{.Data}}
+	{{end}}
+	{{if not .LogAsUser}}
 	<a href="https://github.com/login/oauth/authorize/?client_id=4429cbe75ab7b5e1aab9&redirect_uri=http://localhost:8080/auth-callback">Login via github.com</a>
+	{{else}}
+		<form method="POST" action="/create-comment">
+			<input type="hidden" name="id" value="{{.Post.Id}}">
+			<input type="hidden" name="name" value="Ultramozg">
+			<label>Comment</label><textarea name="comment" class="u-full-width" placeholder="Comment"></textarea>
+			<input type="submit" value="Add comment" />
+		</form>
+	{{end}}	
+	<div class="docs-section" style="margin:0px;padding:10px"></div>
 </div>
 {{template "footer"}}	

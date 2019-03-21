@@ -177,14 +177,26 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		comms, err := getComments(a.DB, id)
+		if err != nil {
+			log.Println("Grab comment error: ", err.Error())
+		}
+
 		data := struct {
-			Post     Post
-			LoggedIn bool
+			Post       Post
+			Comms      []Comment
+			LogAsAdmin bool
+			LogAsUser  bool
 		}{
 			p,
+			comms,
 			a.Sessions.isAdmin(r),
+			a.Sessions.isLoggedin(r),
 		}
-		a.Temp.ExecuteTemplate(w, "post.gohtml", data)
+		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
+		if err != nil {
+			log.Println(err.Error())
+		}
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
