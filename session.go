@@ -40,7 +40,7 @@ func (s *SessionDB) isLoggedin(r *http.Request) bool {
 	if err == http.ErrNoCookie {
 		return false
 	} else {
-		if v, ok := s.Sessions[c.Value]; ok && v.userType == GITHUB {
+		if _, ok := s.Sessions[c.Value]; ok {
 			return true
 		}
 	}

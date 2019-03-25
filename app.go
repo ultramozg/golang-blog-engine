@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
+	"fmt"
 	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme/autocert"
@@ -532,6 +533,11 @@ func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
+		if !a.Sessions.isAdmin(r) || !a.Sessions.isLoggedin(r) {
+			http.Error(w, "Not Authorized", http.StatusUnauthorized)
+			return
+		}
+
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Invalid payload", http.StatusBadRequest)
 			return
@@ -555,7 +561,7 @@ func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("/post?id=%v", id), http.StatusSeeOther)
 
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
