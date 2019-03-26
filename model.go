@@ -51,14 +51,15 @@ func getPosts(db *sql.DB, count, start int) ([]Post, error) {
 }
 
 type Comment struct {
-	PostId int
-	Name   string
-	Date   string
-	Data   string
+	PostId    int
+	CommentId int
+	Name      string
+	Date      string
+	Data      string
 }
 
 func getComments(db *sql.DB, id int) ([]Comment, error) {
-	rows, err := db.Query(`select postid, name, date, comment from comments where postid = ? order by postid desc;`, id)
+	rows, err := db.Query(`select postid, commentid, name, date, comment from comments where postid = ? order by postid desc;`, id)
 
 	if err != nil {
 		return nil, err
@@ -69,7 +70,7 @@ func getComments(db *sql.DB, id int) ([]Comment, error) {
 
 	for rows.Next() {
 		var c Comment
-		if err := rows.Scan(&c.PostId, &c.Name, &c.Date, &c.Data); err != nil {
+		if err := rows.Scan(&c.PostId, &c.CommentId, &c.Name, &c.Date, &c.Data); err != nil {
 			return nil, err
 		}
 		comments = append(comments, c)
@@ -78,7 +79,7 @@ func getComments(db *sql.DB, id int) ([]Comment, error) {
 }
 
 func (c *Comment) deleteComment(db *sql.DB) error {
-	_, err := db.Exec(`delete from comments where postid = ?`, c.PostId)
+	_, err := db.Exec(`delete from comments where commentid = ?`, c.CommentId)
 	return err
 }
 
@@ -97,6 +98,7 @@ func migrateDatabase(db *sql.DB) {
 
 	create table if not exists comments (
 	postid integer not null,
+	commentid integer primary key autoincrement,
 	name string not null,
 	date string not null,
 	comment  string not null);

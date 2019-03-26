@@ -7,7 +7,11 @@
 	</div>
 	<div class="docs-section" style="margin:0px;padding:10px"></div>
 	<br>
+	{{$admin:=.LogAsAdmin}}
 	{{range .Comms}}
+		{{if $admin}}
+			<a href="/delete-comment?id={{.CommentId}}">Delete<a>
+		{{end}}
 		{{.Name}}
 		{{.Date}}
 		{{.Data}}

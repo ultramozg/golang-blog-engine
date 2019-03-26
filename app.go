@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
-	"fmt"
 	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme/autocert"
@@ -351,6 +350,9 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
+	//Need change to POST request, i did in this way
+	//because i not know CSS very well, and link looks good
+	//then button
 	switch r.Method {
 	case http.MethodGet:
 		id, err := strconv.Atoi(r.FormValue("id"))
@@ -509,27 +511,6 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		id, err := strconv.Atoi(r.FormValue("id"))
-		if err != nil {
-			http.Error(w, "Invalid Id", http.StatusBadRequest)
-			return
-		}
-
-		c := Comment{PostId: id}
-		if err := c.deleteComment(a.DB); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-}
-
 func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -561,8 +542,34 @@ func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, fmt.Sprintf("/post?id=%v", id), http.StatusSeeOther)
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusSeeOther)
 
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		if !a.Sessions.isAdmin(r) {
+			http.Error(w, "Not Authorized", http.StatusUnauthorized)
+			return
+		}
+
+		id, err := strconv.Atoi(r.FormValue("id"))
+		if err != nil {
+			http.Error(w, "Invalid Id", http.StatusBadRequest)
+			return
+		}
+
+		c := Comment{CommentId: id}
+		if err := c.deleteComment(a.DB); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusSeeOther)
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
