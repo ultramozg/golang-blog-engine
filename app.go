@@ -88,7 +88,7 @@ func (a *App) Run() {
 	}
 
 	httpHandler := a.Router
-	//httpHandler = a.redirectTLSMiddleware(httpHandler)
+	httpHandler = a.redirectTLSMiddleware(httpHandler)
 	httpHandler = cert.HTTPHandler(httpHandler)
 
 	httpServer := &http.Server{
@@ -481,7 +481,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		token, err := a.OAuth.Exchange(oauth2.NoContext, r.URL.Query().Get("code"))
 		if err != nil {
-			log.Println(w, "there was an issue getting your token")
+			log.Println(w, "there was an issue getting your token: ", err.Error())
 			return
 		}
 		if !token.Valid() {
