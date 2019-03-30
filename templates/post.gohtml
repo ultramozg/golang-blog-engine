@@ -21,7 +21,7 @@
 	{{end}}
 	{{if not .LogAsUser}}
 	<center>
-		<a style="font-size:20px" href="https://github.com/login/oauth/authorize/?client_id=4429cbe75ab7b5e1aab9&redirect_uri=http://localhost:8080/auth-callback">To leave a comment please login via github</a>
+		<a style="font-size:20px" href="{{.AuthURL}}/?client_id={{.ClientID}}&redirect_uri={{.RedirectURL}}">To leave a comment please login via github</a>
 	</center>
 	{{else}}
 		<form method="POST" action="/create-comment">

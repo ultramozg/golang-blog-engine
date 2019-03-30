@@ -88,7 +88,10 @@ func (a *App) Run() {
 	}
 
 	httpHandler := a.Router
-	httpHandler = a.redirectTLSMiddleware(httpHandler)
+	//if this is a test environment disable 301 redirect to https
+	if a.Config.Production == "true" {
+		httpHandler = a.redirectTLSMiddleware(httpHandler)
+	}
 	httpHandler = cert.HTTPHandler(httpHandler)
 
 	httpServer := &http.Server{
@@ -183,15 +186,21 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Post       Post
-			Comms      []Comment
-			LogAsAdmin bool
-			LogAsUser  bool
+			Post        Post
+			Comms       []Comment
+			LogAsAdmin  bool
+			LogAsUser   bool
+			AuthURL     string
+			ClientID    string
+			RedirectURL string
 		}{
 			p,
 			comms,
 			a.Sessions.isAdmin(r),
 			a.Sessions.isLoggedin(r),
+			a.Config.OAuth.GithubAuthorizeURL,
+			a.Config.OAuth.ClientID,
+			a.Config.OAuth.RedirectURL,
 		}
 		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
 		if err != nil {

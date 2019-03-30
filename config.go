@@ -30,6 +30,7 @@ type Config struct {
 		ClientID           string `json:"clientid"`
 		ClientSecret       string `json:"clientsecret"`
 	} `json:"oauth"`
+	Production string `json:"production,omitempty"`
 }
 
 func NewConfig() *Config {
