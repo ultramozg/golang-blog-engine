@@ -523,7 +523,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		if !a.Sessions.isAdmin(r) || !a.Sessions.isLoggedin(r) {
+		if !(a.Sessions.isAdmin(r) || a.Sessions.isLoggedin(r)) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
