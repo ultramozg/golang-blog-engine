@@ -6,6 +6,8 @@ import (
 	"os"
 )
 
+//Config is strcuct which holds necesary data such as server conf
+//database, log, cert, oauth
 type Config struct {
 	Server struct {
 		Addr  string `json:"addr"`
@@ -33,10 +35,12 @@ type Config struct {
 	Production string `json:"production,omitempty"`
 }
 
+//NewConfig create config structure
 func NewConfig() *Config {
 	return &Config{}
 }
 
+//ReadConfig try to read config(json)
 func (c *Config) ReadConfig(path string) {
 	file, err := os.Open(path)
 	if err != nil {

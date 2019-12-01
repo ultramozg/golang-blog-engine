@@ -23,6 +23,15 @@ var (
 	adminPass = "abcd"
 )
 
+/*
+App The main app structure which holds all necessary Data within
+conf := NewConfig()
+conf.ReadConfig(<PATH>)
+
+app := App{}
+a.Initialize(conf)
+a.Run()
+*/
 type App struct {
 	Router   http.Handler
 	DB       *sql.DB
@@ -34,6 +43,7 @@ type App struct {
 	OAuth    *oauth2.Config
 }
 
+//Initialize Is using to initialize the app(connect to DB, initialize routes,logs, sessions and etc.
 func (a *App) Initialize(c *Config) {
 	var err error
 	a.Config = c
@@ -44,7 +54,7 @@ func (a *App) Initialize(c *Config) {
 	}
 
 	migrateDatabase(a.DB)
-	a.InitializeRoutes()
+	a.initializeRoutes()
 
 	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
 	a.Sessions = NewSessionDB()
@@ -69,6 +79,7 @@ func (a *App) Initialize(c *Config) {
 	signal.Notify(a.stop, syscall.SIGTERM)
 }
 
+//Run is using to launch and serve app web requests
 func (a *App) Run() {
 	//Get the cert
 	cert := autocert.Manager{
@@ -135,7 +146,7 @@ func (a *App) Run() {
 	os.Exit(0)
 }
 
-func (a *App) InitializeRoutes() {
+func (a *App) initializeRoutes() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", a.getPosts)
@@ -166,7 +177,7 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p := Post{Id: id}
+	p := Post{ID: id}
 
 	switch r.Method {
 	case http.MethodGet:
@@ -307,7 +318,7 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{Id: id}
+		p := Post{ID: id}
 		if err := p.getPost(a.DB); err != nil {
 			switch err {
 			case sql.ErrNoRows:
@@ -345,7 +356,7 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{Id: id, Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
+		p := Post{ID: id, Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
 		if err := p.updatePost(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -370,7 +381,7 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{Id: id}
+		p := Post{ID: id}
 		if err := p.deletePost(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

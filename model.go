@@ -4,24 +4,25 @@ import (
 	"database/sql"
 )
 
+//Post is struct which holds model representation of one post
 type Post struct {
-	Id    int
+	ID    int
 	Title string
 	Body  string
 	Date  string
 }
 
 func (p *Post) getPost(db *sql.DB) error {
-	return db.QueryRow(`select * from posts where id = ?`, p.Id).Scan(&p.Id, &p.Title, &p.Body, &p.Date)
+	return db.QueryRow(`select * from posts where id = ?`, p.ID).Scan(&p.ID, &p.Title, &p.Body, &p.Date)
 }
 
 func (p *Post) updatePost(db *sql.DB) error {
-	_, err := db.Exec(`update posts set title = $1, body = $2, datepost = $3 where id = $4`, p.Title, p.Body, p.Date, p.Id)
+	_, err := db.Exec(`update posts set title = $1, body = $2, datepost = $3 where id = $4`, p.Title, p.Body, p.Date, p.ID)
 	return err
 }
 
 func (p *Post) deletePost(db *sql.DB) error {
-	_, err := db.Exec(`delete from posts where id = ?`, p.Id)
+	_, err := db.Exec(`delete from posts where id = ?`, p.ID)
 	return err
 }
 
@@ -42,7 +43,7 @@ func getPosts(db *sql.DB, count, start int) ([]Post, error) {
 
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.Id, &p.Title, &p.Body, &p.Date); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Body, &p.Date); err != nil {
 			return nil, err
 		}
 		posts = append(posts, p)
@@ -50,6 +51,7 @@ func getPosts(db *sql.DB, count, start int) ([]Post, error) {
 	return posts, nil
 }
 
+//Comment is struct which holds model representation of one comment
 type Comment struct {
 	PostId    int
 	CommentId int
@@ -102,6 +104,11 @@ func migrateDatabase(db *sql.DB) {
 	name string not null,
 	date string not null,
 	comment  string not null);
+
+	create table if not exists users (
+	id integer primary key autoincrement,
+	name string not null,
+	pass string not null);
 	`
 
 	_, err := db.Exec(sql)
