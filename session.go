@@ -5,20 +5,25 @@ import (
 	"net/http"
 )
 
+//ADMIN is identificator constant
+//GITHUB is user which is loged in via github
 const (
 	ADMIN = iota
 	GITHUB
 )
 
+//User struct holds information about user
 type User struct {
 	userType int
 	userName string
 }
 
+//SessionDB is just a map which holds active sessions
 type SessionDB struct {
 	Sessions map[string]User
 }
 
+//NewSessionDB generate new SessionDB struct
 func NewSessionDB() *SessionDB {
 	return &SessionDB{Sessions: make(map[string]User)}
 }
@@ -27,10 +32,9 @@ func (s *SessionDB) isAdmin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false
-	} else {
-		if v, ok := s.Sessions[c.Value]; ok && v.userType == ADMIN {
-			return true
-		}
+	}
+	if v, ok := s.Sessions[c.Value]; ok && v.userType == ADMIN {
+		return true
 	}
 	return false
 }
@@ -39,10 +43,9 @@ func (s *SessionDB) isLoggedin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false
-	} else {
-		if _, ok := s.Sessions[c.Value]; ok {
-			return true
-		}
+	}
+	if _, ok := s.Sessions[c.Value]; ok {
+		return true
 	}
 	return false
 }
