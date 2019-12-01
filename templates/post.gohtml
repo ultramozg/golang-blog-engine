@@ -11,7 +11,7 @@
 	{{$admin:=.LogAsAdmin}}
 	{{range .Comms}}
 		{{if $admin}}
-			<a href="/delete-comment?id={{.CommentId}}">Delete</a>
+			<a href="/delete-comment?id={{.CommentID}}">Delete</a>
 			<br>
 		{{end}}
 			<h7>{{.Name}}      {{.Date}}</h7>

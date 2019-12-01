@@ -556,7 +556,7 @@ func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Comment{PostId: id, Name: name, Date: time.Now().Format("Mon Jan _2 15:04:05 2006"), Data: comment}
+		p := Comment{PostID: id, Name: name, Date: time.Now().Format("Mon Jan _2 15:04:05 2006"), Data: comment}
 		if err := p.createComment(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -583,7 +583,7 @@ func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		c := Comment{CommentId: id}
+		c := Comment{CommentID: id}
 		if err := c.deleteComment(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
