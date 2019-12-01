@@ -460,10 +460,9 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
-		} else {
-			http.Error(w, "Invalid login credentials", http.StatusUnauthorized)
-			return
 		}
+		http.Error(w, "Invalid login credentials", http.StatusUnauthorized)
+		return
 
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
