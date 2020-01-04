@@ -107,7 +107,8 @@ func migrateDatabase(db *sql.DB) {
 
 	create table if not exists users (
 	id integer primary key autoincrement,
-	name string not null,
+	name string not null unique,
+	type integer not null,
 	pass string not null);
 	`
 
@@ -116,4 +117,18 @@ func migrateDatabase(db *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (u *User) isUserExist(db *sql.DB) bool {
+	status := 0
+	db.QueryRow(`select count(*) from users where name = ?`, u.userName).Scan(&status)
+	if int(status) != 0 {
+		return true
+	}
+	return false
+}
+
+func (u *User)createAdmin(db *sql.DB, pswd string) error {
+	_, err := db.Exec(`insert into users (name, pass, type) values ($1, $2, $3)`, "admin", u.userType, pswd)
+	return err
 }

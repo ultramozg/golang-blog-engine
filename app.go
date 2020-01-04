@@ -1,13 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"database/sql"
-	"github.com/google/go-github/github"
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/oauth2"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,6 +14,12 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	"github.com/google/go-github/github"
+	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/oauth2"
 )
 
 //temporary for testing need to change bcrypt
@@ -54,6 +58,23 @@ func (a *App) Initialize(c *Config) {
 	}
 
 	migrateDatabase(a.DB)
+
+	u := &User{userName: "admin", userType: ADMIN}
+
+	//check if Admin account exists if not create one
+	if !u.isUserExist(a.DB) {
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter Admin password: ")
+		pass, _ := reader.ReadString('\n')
+
+		if ok, hash := HashPassword(pass); ok {
+			err = u.createAdmin(a.DB, hash)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
 	a.initializeRoutes()
 
 	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
@@ -600,4 +621,15 @@ func add(i, j int) int {
 		return 0
 	}
 	return i + j
+}
+
+func HashPassword(password string) (bool, string) {
+
+	var hashedPassword, err = bcrypt.GenerateFromPassword([]byte(password), 11)
+	if err != nil {
+		log.Fatal("Unable to generate hashed password")
+		return false, password
+	}
+
+	return true, string(hashedPassword)
 }
