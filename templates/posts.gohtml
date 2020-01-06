@@ -5,9 +5,9 @@
 {{range .Posts}}
 <div class="docs-section">
 	<h4>
-		<a href="/post?id={{.Id}}">{{.Title}}</a>
+		<a href="/post?id={{.ID}}">{{.Title}}</a>
 		{{if $adm}}
-		(<a href="/update?id={{.Id}}">Update</a>|<a href="/delete?id={{.Id}}">Delete</a>)
+		(<a href="/update?id={{.ID}}">Update</a>|<a href="/delete?id={{.ID}}">Delete</a>)
 		{{end}}
 	</h4>
 	<p>{{.Body}}</p>

@@ -25,7 +25,7 @@
 	</center>
 	{{else}}
 		<form method="POST" action="/create-comment">
-			<input type="hidden" name="id" value="{{.Post.Id}}">
+			<input type="hidden" name="id" value="{{.Post.ID}}">
 			<input type="hidden" name="name" value="Ultramozg">
 			<label>Comment</label><textarea name="comment" class="u-full-width" placeholder="Comment"></textarea>
 			<input type="submit" value="Add comment" />
