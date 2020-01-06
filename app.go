@@ -14,17 +14,13 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+	"strings"
 
 	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
-)
-
-//temporary for testing need to change bcrypt
-var (
-	adminPass = "abcd"
 )
 
 /*
@@ -66,9 +62,10 @@ func (a *App) Initialize(c *Config) {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Enter Admin password: ")
 		pass, _ := reader.ReadString('\n')
+		pass = strings.Replace(pass, "\n","",-1)
 
 		if ok, hash := HashPassword(pass); ok {
-			err = u.createAdmin(a.DB, hash)
+			err = u.createUser(a.DB, hash)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -476,7 +473,9 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			for the test purporses admin pass will store in the
 			struct
 		*/
-		if login == "admin" && pass == adminPass {
+		u := &User{ userName: login }
+
+		if u.checkCredentials(a.DB, pass) && u.isAdmin(a.DB) {
 			c := a.Sessions.createSession(User{userType: ADMIN, userName: "admin"})
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -625,7 +624,7 @@ func add(i, j int) int {
 
 func HashPassword(password string) (bool, string) {
 
-	var hashedPassword, err = bcrypt.GenerateFromPassword([]byte(password), 11)
+	var hashedPassword, err = bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatal("Unable to generate hashed password")
 		return false, password

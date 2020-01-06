@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"log"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 //Post is struct which holds model representation of one post
@@ -128,7 +131,38 @@ func (u *User) isUserExist(db *sql.DB) bool {
 	return false
 }
 
-func (u *User)createAdmin(db *sql.DB, pswd string) error {
-	_, err := db.Exec(`insert into users (name, pass, type) values ($1, $2, $3)`, "admin", u.userType, pswd)
+func (u *User) createUser(db *sql.DB, pswd string) error {
+	_, err := db.Exec(`insert into users (name, type, pass) values ($1, $2, $3)`, "admin", u.userType, pswd)
 	return err
+}
+
+func (u *User) isAdmin(db *sql.DB) bool {
+	var userType int
+	err := db.QueryRow(`select type from users where name = ?`, u.userName).Scan(&userType)
+	if err != nil {
+		log.Println("Error: can't fetch user data :", err)
+	}
+	if userType == ADMIN {
+		return true
+	}
+	return false
+}
+
+func (u *User) checkCredentials(db *sql.DB, pswd string) bool {
+	//Converting the passwords into bytes
+	hashedPwd := ""
+	err := db.QueryRow(`select pass from users where name = ?`, u.userName).Scan(&hashedPwd)
+	if err != nil {
+		log.Fatal("Unable to fetch user pass")
+	}
+
+	byteHash := []byte(hashedPwd)
+	bytePassword := []byte(pswd)
+
+	err = bcrypt.CompareHashAndPassword(byteHash, bytePassword)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+	return true
 }
