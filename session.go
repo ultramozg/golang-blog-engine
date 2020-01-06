@@ -9,7 +9,7 @@ import (
 //ADMIN is identificator constant
 //GITHUB is user which is loged in via github
 const (
-	ADMIN = iota
+	ADMIN = iota + 1
 	GITHUB
 )
 
