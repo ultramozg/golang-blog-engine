@@ -277,8 +277,8 @@ func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
 		}{
 			posts,
 			a.Sessions.isAdmin(r),
-			add(page, -1),
-			add(page, +1),
+			absolute(page-1),
+			absolute(page+1),
 		}
 		a.Temp.ExecuteTemplate(w, "posts.gohtml", data)
 
@@ -615,11 +615,11 @@ func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func add(i, j int) int {
-	if i+j <= 0 {
+func absolute(i int) int {
+	if i <= 0 {
 		return 0
 	}
-	return i + j
+	return i
 }
 
 func HashPassword(password string) (bool, string) {
