@@ -54,6 +54,15 @@ func getPosts(db *sql.DB, count, start int) ([]Post, error) {
 	return posts, nil
 }
 
+func countPosts(db *sql.DB) int {
+	var c int
+	err := db.QueryRow(`select count(*) from posts`).Scan(&c)
+	if err != nil {
+		log.Println(err)
+	}
+	return c
+}
+
 //Comment is struct which holds model representation of one comment
 type Comment struct {
 	PostID    int

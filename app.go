@@ -23,6 +23,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
+
+const(
+	PostsPerPage = 8
+)
 /*
 App The main app structure which holds all necessary Data within
 conf := NewConfig()
@@ -263,7 +267,7 @@ func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
 			page = 0
 		}
 
-		posts, err := getPosts(a.DB, 8, page*8)
+		posts, err := getPosts(a.DB, PostsPerPage, page*PostsPerPage)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -271,12 +275,14 @@ func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
 		}
 		data := struct {
 			Posts    []Post
-			LoggedIn bool
-			PrevPage int
-			NextPage int
+			LoggedIn   bool
+			IsNextPage bool
+			PrevPage   int
+			NextPage   int
 		}{
 			posts,
 			a.Sessions.isAdmin(r),
+			isNextPage(page+1, countPosts(a.DB)),
 			absolute(page-1),
 			absolute(page+1),
 		}
@@ -620,6 +626,10 @@ func absolute(i int) int {
 		return 0
 	}
 	return i
+}
+
+func isNextPage(nextPage, totalPosts int) bool {
+	return (totalPosts / PostsPerPage) > nextPage
 }
 
 func HashPassword(password string) (bool, string) {

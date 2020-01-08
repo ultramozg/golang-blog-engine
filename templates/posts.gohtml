@@ -16,8 +16,8 @@
 {{end}}
 	<div class="docs-section" style="margin:0px;padding:10px"></div>
 		<h5>
-			<a {{if and (eq .PrevPage 0) (eq .NextPage 1)}}style="color:#212222;"{{end}} href="/page?p={{.PrevPage}}">Prev Page</a>
-			<a href="/page?p={{.NextPage}}">Next Page</a>
+			<a {{if and (eq .PrevPage 0) (eq .NextPage 1)}}style="color:#212222;"{{end}} href="/page?p={{.PrevPage}}">Previous</a>
+			{{if .IsNextPage}}<a href="/page?p={{.NextPage}}">Next</a>{{end}}
 		</h5>
 </div>
 {{template "footer"}}
