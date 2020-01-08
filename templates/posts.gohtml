@@ -16,7 +16,7 @@
 {{end}}
 	<div class="docs-section" style="margin:0px;padding:10px"></div>
 		<h5>
-			<a href="/page?p={{.PrevPage}}">Prev Page</a>
+			<a {{if and (eq .PrevPage 0) (eq .NextPage 1)}}style="color:#212222;"{{end}} href="/page?p={{.PrevPage}}">Prev Page</a>
 			<a href="/page?p={{.NextPage}}">Next Page</a>
 		</h5>
 </div>
