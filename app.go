@@ -11,10 +11,10 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"text/template"
 	"time"
-	"strings"
 
 	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
@@ -23,10 +23,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
-
-const(
+const (
 	PostsPerPage = 8
 )
+
 /*
 App The main app structure which holds all necessary Data within
 conf := NewConfig()
@@ -66,7 +66,7 @@ func (a *App) Initialize(c *Config) {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Enter Admin password: ")
 		pass, _ := reader.ReadString('\n')
-		pass = strings.Replace(pass, "\n","",-1)
+		pass = strings.Replace(pass, "\n", "", -1)
 
 		if ok, hash := HashPassword(pass); ok {
 			err = u.createUser(a.DB, hash)
@@ -200,18 +200,18 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p := Post{ID: id}
+	if err = p.getPost(a.DB); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			http.Error(w, "Not Found", http.StatusNotFound)
+		default:
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+		}
+		return
+	}
 
 	switch r.Method {
 	case http.MethodGet:
-		if err := p.getPost(a.DB); err != nil {
-			switch err {
-			case sql.ErrNoRows:
-				http.Error(w, "Not Found", http.StatusNotFound)
-			default:
-				http.Error(w, "Internal error", http.StatusInternalServerError)
-			}
-			return
-		}
 
 		comms, err := getComments(a.DB, id)
 		if err != nil {
@@ -274,7 +274,7 @@ func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		data := struct {
-			Posts    []Post
+			Posts      []Post
 			LoggedIn   bool
 			IsNextPage bool
 			PrevPage   int
@@ -283,8 +283,8 @@ func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
 			posts,
 			a.Sessions.isAdmin(r),
 			isNextPage(page+1, countPosts(a.DB)),
-			absolute(page-1),
-			absolute(page+1),
+			absolute(page - 1),
+			absolute(page + 1),
 		}
 		a.Temp.ExecuteTemplate(w, "posts.gohtml", data)
 
@@ -479,7 +479,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			for the test purporses admin pass will store in the
 			struct
 		*/
-		u := &User{ userName: login }
+		u := &User{userName: login}
 
 		if u.checkCredentials(a.DB, pass) && u.isAdmin(a.DB) {
 			c := a.Sessions.createSession(User{userType: ADMIN, userName: "admin"})
