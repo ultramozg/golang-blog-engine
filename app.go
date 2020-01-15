@@ -171,7 +171,8 @@ func (a *App) Run() {
 func (a *App) initializeRoutes() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", a.getPosts)
+	mux.HandleFunc("/", a.root)
+	mux.HandleFunc("/page", a.getPage)
 	mux.HandleFunc("/login", a.login)
 	mux.HandleFunc("/logout", a.logout)
 	mux.HandleFunc("/post", a.getPost)
@@ -190,6 +191,15 @@ func (a *App) initializeRoutes() {
 	mux.Handle("/public/", http.StripPrefix("/public/", cacheControlMiddleware(fs)))
 
 	a.Router = gzipMiddleware(setHeaderMiddleware(a.Log.logMiddleware(mux)))
+}
+
+func (a *App) root(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.Error(w, "Opps something did wrong", http.StatusNotFound)
+		return
+	}
+	http.Redirect(w, r, "/page?p=0", http.StatusFound)
+	return
 }
 
 func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
@@ -249,28 +259,20 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) getPosts(w http.ResponseWriter, r *http.Request) {
+func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		var page int
 		var err error
-		if r.FormValue("p") == "" {
-			page = 0
-		} else {
-			page, err = strconv.Atoi(r.FormValue("p"))
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
+		page, err = strconv.Atoi(r.FormValue("p"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
-		if page <= 0 {
-			page = 0
-		}
-
 		posts, err := getPosts(a.DB, PostsPerPage, page*PostsPerPage)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		data := struct {
