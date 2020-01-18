@@ -479,11 +479,6 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid Input data", http.StatusBadRequest)
 			return
 		}
-		/*
-			check credentials first
-			for the test purporses admin pass will store in the
-			struct
-		*/
 		u := &User{userName: login}
 
 		if u.checkCredentials(a.DB, pass) && u.isAdmin(a.DB) {
