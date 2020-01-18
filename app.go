@@ -272,9 +272,14 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 		posts, err := getPosts(a.DB, PostsPerPage, page*PostsPerPage)
 
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		if len(posts) == 0 {
+			http.Error(w, "No data", http.StatusNotFound)
+			return
+		}
+
 		data := struct {
 			Posts      []Post
 			LoggedIn   bool
