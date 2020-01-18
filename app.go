@@ -425,6 +425,7 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		a.Temp.ExecuteTemplate(w, "about.gohtml", a.Sessions.isAdmin(r))
+		return
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
