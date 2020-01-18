@@ -260,26 +260,26 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
+	var page int
+	var err error
+	page, err = strconv.Atoi(r.FormValue("p"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	posts, err := getPosts(a.DB, PostsPerPage, page*PostsPerPage)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(posts) == 0 {
+		http.Error(w, "No data", http.StatusNotFound)
+		return
+	}
+
 	switch r.Method {
 	case http.MethodGet:
-		var page int
-		var err error
-		page, err = strconv.Atoi(r.FormValue("p"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		posts, err := getPosts(a.DB, PostsPerPage, page*PostsPerPage)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if len(posts) == 0 {
-			http.Error(w, "No data", http.StatusNotFound)
-			return
-		}
-
 		data := struct {
 			Posts      []Post
 			LoggedIn   bool
