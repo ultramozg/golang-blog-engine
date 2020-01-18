@@ -401,9 +401,6 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
-	//Need change to POST request, i did in this way
-	//because i not know CSS very well, and link looks good
-	//then button
 	switch r.Method {
 	case http.MethodGet:
 		id, err := strconv.Atoi(r.FormValue("id"))
