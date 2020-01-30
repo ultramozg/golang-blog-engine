@@ -141,13 +141,13 @@ func MigrateDatabase(db *sql.DB) {
 
 //User struct holds information about user
 type User struct {
-	UserType int
-	UserName string
+	Type int
+	Name string
 }
 
 func (u *User) IsUserExist(db *sql.DB) bool {
 	status := 0
-	db.QueryRow(`select count(*) from users where name = ?`, u.UserName).Scan(&status)
+	db.QueryRow(`select count(*) from users where name = ?`, u.Name).Scan(&status)
 	if int(status) != 0 {
 		return true
 	}
@@ -155,13 +155,13 @@ func (u *User) IsUserExist(db *sql.DB) bool {
 }
 
 func (u *User) CreateUser(db *sql.DB, pswd string) error {
-	_, err := db.Exec(`insert into users (name, type, pass) values ($1, $2, $3)`, "admin", u.UserType, pswd)
+	_, err := db.Exec(`insert into users (name, type, pass) values ($1, $2, $3)`, "admin", u.Type, pswd)
 	return err
 }
 
 func (u *User) IsAdmin(db *sql.DB) bool {
 	var userType int
-	err := db.QueryRow(`select type from users where name = ?`, u.UserName).Scan(&userType)
+	err := db.QueryRow(`select type from users where name = ?`, u.Name).Scan(&userType)
 	if err != nil {
 		log.Println("Error: can't fetch user data :", err)
 	}
@@ -174,7 +174,7 @@ func (u *User) IsAdmin(db *sql.DB) bool {
 func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 	//Converting the passwords into bytes
 	hashedPwd := ""
-	err := db.QueryRow(`select pass from users where name = ?`, u.UserName).Scan(&hashedPwd)
+	err := db.QueryRow(`select pass from users where name = ?`, u.Name).Scan(&hashedPwd)
 	if err != nil {
 		log.Fatal("Unable to fetch user pass")
 	}

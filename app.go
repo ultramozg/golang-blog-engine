@@ -60,7 +60,7 @@ func (a *App) Initialize(c *Config) {
 
 	model.MigrateDatabase(a.DB)
 
-	u := &model.User{UserName: "admin", UserType: ADMIN}
+	u := &model.User{Name: "admin", Type: ADMIN}
 
 	//check if Admin account exists if not create one
 	if !u.IsUserExist(a.DB) {
@@ -480,10 +480,10 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid Input data", http.StatusBadRequest)
 			return
 		}
-		u := &model.User{UserName: login}
+		u := &model.User{Name: login}
 
 		if u.CheckCredentials(a.DB, pass) && u.IsAdmin(a.DB) {
-			c := a.Sessions.createSession(model.User{UserType: ADMIN, UserName: "admin"})
+			c := a.Sessions.createSession(model.User{Type: ADMIN, Name: "admin"})
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -542,7 +542,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		c := a.Sessions.createSession(model.User{UserType: GITHUB, UserName: *(user.Login)})
+		c := a.Sessions.createSession(model.User{Type: GITHUB, Name: *(user.Login)})
 		http.SetCookie(w, c)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		log.Println("You have loged int as github user :", *(user.Login))

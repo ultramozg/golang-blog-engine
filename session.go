@@ -29,7 +29,7 @@ func (s *SessionDB) isAdmin(r *http.Request) bool {
 	if err == http.ErrNoCookie {
 		return false
 	}
-	if v, ok := s.Sessions[c.Value]; ok && v.UserType == ADMIN {
+	if v, ok := s.Sessions[c.Value]; ok && v.Type == ADMIN {
 		return true
 	}
 	return false
