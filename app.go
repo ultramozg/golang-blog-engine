@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ultramozg/golang-blog-engine/model"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
@@ -57,19 +58,19 @@ func (a *App) Initialize(c *Config) {
 		log.Fatal("Error connecting to dabase", err)
 	}
 
-	migrateDatabase(a.DB)
+	model.MigrateDatabase(a.DB)
 
-	u := &User{userName: "admin", userType: ADMIN}
+	u := &model.User{UserName: "admin", UserType: ADMIN}
 
 	//check if Admin account exists if not create one
-	if !u.isUserExist(a.DB) {
+	if !u.IsUserExist(a.DB) {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("Enter Admin password: ")
 		pass, _ := reader.ReadString('\n')
 		pass = strings.Replace(pass, "\n", "", -1)
 
 		if ok, hash := HashPassword(pass); ok {
-			err = u.createUser(a.DB, hash)
+			err = u.CreateUser(a.DB, hash)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -209,8 +210,8 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p := Post{ID: id}
-	if err = p.getPost(a.DB); err != nil {
+	p := model.Post{ID: id}
+	if err = p.GetPost(a.DB); err != nil {
 		switch err {
 		case sql.ErrNoRows:
 			http.Error(w, "Not Found", http.StatusNotFound)
@@ -223,14 +224,14 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 
-		comms, err := getComments(a.DB, id)
+		comms, err := model.GetComments(a.DB, id)
 		if err != nil {
 			log.Println("Grab comment error: ", err.Error())
 		}
 
 		data := struct {
-			Post        Post
-			Comms       []Comment
+			Post        model.Post
+			Comms       []model.Comment
 			LogAsAdmin  bool
 			LogAsUser   bool
 			AuthURL     string
@@ -267,7 +268,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	posts, err := getPosts(a.DB, PostsPerPage, page*PostsPerPage)
+	posts, err := model.GetPosts(a.DB, PostsPerPage, page*PostsPerPage)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -281,7 +282,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		data := struct {
-			Posts      []Post
+			Posts      []model.Post
 			LoggedIn   bool
 			IsNextPage bool
 			PrevPage   int
@@ -289,7 +290,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 		}{
 			posts,
 			a.Sessions.isAdmin(r),
-			isNextPage(page+1, countPosts(a.DB)),
+			isNextPage(page+1, model.CountPosts(a.DB)),
 			absolute(page - 1),
 			absolute(page + 1),
 		}
@@ -327,8 +328,8 @@ func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
-		if err := p.createPost(a.DB); err != nil {
+		p := model.Post{Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
+		if err := p.CreatePost(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -349,8 +350,8 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{ID: id}
-		if err := p.getPost(a.DB); err != nil {
+		p := model.Post{ID: id}
+		if err := p.GetPost(a.DB); err != nil {
 			switch err {
 			case sql.ErrNoRows:
 				http.Error(w, "Post not found", http.StatusNotFound)
@@ -361,7 +362,7 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Post     Post
+			Post     model.Post
 			LoggedIn bool
 		}{
 			p,
@@ -387,8 +388,8 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{ID: id, Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
-		if err := p.updatePost(a.DB); err != nil {
+		p := model.Post{ID: id, Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
+		if err := p.UpdatePost(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -409,8 +410,8 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Post{ID: id}
-		if err := p.deletePost(a.DB); err != nil {
+		p := model.Post{ID: id}
+		if err := p.DeletePost(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -479,10 +480,10 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid Input data", http.StatusBadRequest)
 			return
 		}
-		u := &User{userName: login}
+		u := &model.User{UserName: login}
 
-		if u.checkCredentials(a.DB, pass) && u.isAdmin(a.DB) {
-			c := a.Sessions.createSession(User{userType: ADMIN, userName: "admin"})
+		if u.CheckCredentials(a.DB, pass) && u.IsAdmin(a.DB) {
+			c := a.Sessions.createSession(model.User{UserType: ADMIN, UserName: "admin"})
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -541,7 +542,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		c := a.Sessions.createSession(User{userType: GITHUB, userName: *(user.Login)})
+		c := a.Sessions.createSession(model.User{UserType: GITHUB, UserName: *(user.Login)})
 		http.SetCookie(w, c)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		log.Println("You have loged int as github user :", *(user.Login))
@@ -582,8 +583,8 @@ func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		p := Comment{PostID: id, Name: name, Date: time.Now().Format("Mon Jan _2 15:04:05 2006"), Data: comment}
-		if err := p.createComment(a.DB); err != nil {
+		p := model.Comment{PostID: id, Name: name, Date: time.Now().Format("Mon Jan _2 15:04:05 2006"), Data: comment}
+		if err := p.CreateComment(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -609,8 +610,8 @@ func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		c := Comment{CommentID: id}
-		if err := c.deleteComment(a.DB); err != nil {
+		c := model.Comment{CommentID: id}
+		if err := c.DeleteComment(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/ultramozg/golang-blog-engine/model"
 )
 
 //ADMIN is identificator constant
@@ -13,20 +14,14 @@ const (
 	GITHUB
 )
 
-//User struct holds information about user
-type User struct {
-	userType int
-	userName string
-}
-
 //SessionDB is just a map which holds active sessions
 type SessionDB struct {
-	Sessions map[string]User
+	Sessions map[string]model.User
 }
 
 //NewSessionDB generate new SessionDB struct
 func NewSessionDB() *SessionDB {
-	return &SessionDB{Sessions: make(map[string]User)}
+	return &SessionDB{Sessions: make(map[string]model.User)}
 }
 
 func (s *SessionDB) isAdmin(r *http.Request) bool {
@@ -34,7 +29,7 @@ func (s *SessionDB) isAdmin(r *http.Request) bool {
 	if err == http.ErrNoCookie {
 		return false
 	}
-	if v, ok := s.Sessions[c.Value]; ok && v.userType == ADMIN {
+	if v, ok := s.Sessions[c.Value]; ok && v.UserType == ADMIN {
 		return true
 	}
 	return false
@@ -51,8 +46,8 @@ func (s *SessionDB) isLoggedin(r *http.Request) bool {
 	return false
 }
 
-func (s *SessionDB) createSession(u User) *http.Cookie {
-	sID, _ := uuid.NewV4()
+func (s *SessionDB) createSession(u model.User) *http.Cookie {
+	sID := uuid.NewV4()
 
 	s.Sessions[sID.String()] = u
 
