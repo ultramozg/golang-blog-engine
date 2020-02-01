@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"compress/gzip"
@@ -24,7 +24,7 @@ var gzPool = sync.Pool{
 	},
 }
 
-func setHeaderMiddleware(h http.Handler) http.Handler {
+func SetHeaderMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.RequestURI(), ".css") {
 			w.Header().Set("Content-Type", "text/css; charset=utf-8")
@@ -35,7 +35,7 @@ func setHeaderMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-func cacheControlMiddleware(h http.Handler) http.Handler {
+func CacheControlMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "max-age=2592000")
 		h.ServeHTTP(w, r)
@@ -51,7 +51,7 @@ func (w gzipResponseWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
-func gzipMiddleware(h http.Handler) http.Handler {
+func GzipMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			h.ServeHTTP(w, r)
@@ -69,9 +69,10 @@ func gzipMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-func (a *App) redirectTLSMiddleware(h http.Handler) http.Handler {
+//TODO domain hardcoded need to get it from config.
+func RedirectTLSMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "https://"+a.Config.Cert.Domain+r.RequestURI, http.StatusMovedPermanently)
+		http.Redirect(w, r, "https://"+"dcandu.name"+r.RequestURI, http.StatusMovedPermanently)
 	})
 }
 
@@ -90,7 +91,7 @@ func (l *loggingResponseWriter) WriteHeader(code int) {
 	l.ResponseWriter.WriteHeader(code)
 }
 
-func logMiddleware(h http.Handler) http.Handler {
+func LogMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		l := newLoggingResponseWriter(w)
 		h.ServeHTTP(l, r)

@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/go-github/github"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ultramozg/golang-blog-engine/middleware"
 	"github.com/ultramozg/golang-blog-engine/model"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/bcrypt"
@@ -120,9 +121,9 @@ func (a *App) Run() {
 	}
 
 	httpHandler := a.Router
-	//if this is a test environment disable 301 redirect to https
+	//TODO if this is a test environment disable 301 redirect to https
 	if a.Config.Production == "true" {
-		httpHandler = a.redirectTLSMiddleware(httpHandler)
+		httpHandler = middleware.RedirectTLSMiddleware(httpHandler)
 	}
 	httpHandler = cert.HTTPHandler(httpHandler)
 
@@ -187,9 +188,9 @@ func (a *App) initializeRoutes() {
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
-	mux.Handle("/public/", http.StripPrefix("/public/", cacheControlMiddleware(fs)))
+	mux.Handle("/public/", http.StripPrefix("/public/", middleware.CacheControlMiddleware(fs)))
 
-	a.Router = gzipMiddleware(setHeaderMiddleware(logMiddleware(mux)))
+	a.Router = middleware.GzipMiddleware(middleware.SetHeaderMiddleware(middleware.LogMiddleware(mux)))
 }
 
 func (a *App) root(w http.ResponseWriter, r *http.Request) {
