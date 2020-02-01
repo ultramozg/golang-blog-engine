@@ -1,4 +1,4 @@
-package main
+package session
 
 import (
 	"net/http"
@@ -24,7 +24,7 @@ func NewSessionDB() *SessionDB {
 	return &SessionDB{Sessions: make(map[string]model.User)}
 }
 
-func (s *SessionDB) isAdmin(r *http.Request) bool {
+func (s *SessionDB) IsAdmin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false
@@ -35,7 +35,7 @@ func (s *SessionDB) isAdmin(r *http.Request) bool {
 	return false
 }
 
-func (s *SessionDB) isLoggedin(r *http.Request) bool {
+func (s *SessionDB) IsLoggedin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false
@@ -46,7 +46,7 @@ func (s *SessionDB) isLoggedin(r *http.Request) bool {
 	return false
 }
 
-func (s *SessionDB) createSession(u model.User) *http.Cookie {
+func (s *SessionDB) CreateSession(u model.User) *http.Cookie {
 	sID := uuid.NewV4()
 
 	s.Sessions[sID.String()] = u
@@ -58,7 +58,7 @@ func (s *SessionDB) createSession(u model.User) *http.Cookie {
 	return c
 }
 
-func (s *SessionDB) delSession(session string) *http.Cookie {
+func (s *SessionDB) DelSession(session string) *http.Cookie {
 	delete(s.Sessions, session)
 
 	c := &http.Cookie{

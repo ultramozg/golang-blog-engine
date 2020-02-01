@@ -20,6 +20,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/middleware"
 	"github.com/ultramozg/golang-blog-engine/model"
+	"github.com/ultramozg/golang-blog-engine/session"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
@@ -42,7 +43,7 @@ type App struct {
 	Router   http.Handler
 	DB       *sql.DB
 	Temp     *template.Template
-	Sessions *SessionDB
+	Sessions *session.SessionDB
 	Config   *Config
 	stop     chan os.Signal
 	OAuth    *oauth2.Config
@@ -60,7 +61,7 @@ func (a *App) Initialize(c *Config) {
 
 	model.MigrateDatabase(a.DB)
 
-	u := &model.User{Name: "admin", Type: ADMIN}
+	u := &model.User{Name: "admin", Type: session.ADMIN}
 
 	//check if Admin account exists if not create one
 	if !u.IsUserExist(a.DB) {
@@ -80,7 +81,7 @@ func (a *App) Initialize(c *Config) {
 	a.initializeRoutes()
 
 	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
-	a.Sessions = NewSessionDB()
+	a.Sessions = session.NewSessionDB()
 
 	//Setting up OAuth authentication via github
 	a.OAuth = &oauth2.Config{
@@ -239,8 +240,8 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 		}{
 			p,
 			comms,
-			a.Sessions.isAdmin(r),
-			a.Sessions.isLoggedin(r),
+			a.Sessions.IsAdmin(r),
+			a.Sessions.IsLoggedin(r),
 			a.Config.OAuth.GithubAuthorizeURL,
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
@@ -288,7 +289,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 			NextPage   int
 		}{
 			posts,
-			a.Sessions.isAdmin(r),
+			a.Sessions.IsAdmin(r),
 			isNextPage(page+1, model.CountPosts(a.DB)),
 			absolute(page - 1),
 			absolute(page + 1),
@@ -308,11 +309,11 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if !a.Sessions.isAdmin(r) {
+		if !a.Sessions.IsAdmin(r) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
-		a.Temp.ExecuteTemplate(w, "create.gohtml", a.Sessions.isAdmin(r))
+		a.Temp.ExecuteTemplate(w, "create.gohtml", a.Sessions.IsAdmin(r))
 
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -365,7 +366,7 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			LoggedIn bool
 		}{
 			p,
-			a.Sessions.isAdmin(r),
+			a.Sessions.IsAdmin(r),
 		}
 		a.Temp.ExecuteTemplate(w, "update.gohtml", data)
 
@@ -424,7 +425,7 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "about.gohtml", a.Sessions.isAdmin(r))
+		a.Temp.ExecuteTemplate(w, "about.gohtml", a.Sessions.IsAdmin(r))
 		return
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
@@ -438,7 +439,7 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 func (a *App) links(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "links.gohtml", a.Sessions.isAdmin(r))
+		a.Temp.ExecuteTemplate(w, "links.gohtml", a.Sessions.IsAdmin(r))
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
@@ -451,7 +452,7 @@ func (a *App) links(w http.ResponseWriter, r *http.Request) {
 func (a *App) courses(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "courses.gohtml", a.Sessions.isAdmin(r))
+		a.Temp.ExecuteTemplate(w, "courses.gohtml", a.Sessions.IsAdmin(r))
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
@@ -464,7 +465,7 @@ func (a *App) courses(w http.ResponseWriter, r *http.Request) {
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "login.gohtml", a.Sessions.isAdmin(r))
+		a.Temp.ExecuteTemplate(w, "login.gohtml", a.Sessions.IsAdmin(r))
 
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -482,7 +483,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		u := &model.User{Name: login}
 
 		if u.CheckCredentials(a.DB, pass) && u.IsAdmin(a.DB) {
-			c := a.Sessions.createSession(model.User{Type: ADMIN, Name: "admin"})
+			c := a.Sessions.CreateSession(model.User{Type: session.ADMIN, Name: "admin"})
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -503,9 +504,9 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if a.Sessions.isAdmin(r) {
+		if a.Sessions.IsAdmin(r) {
 			c, _ := r.Cookie("session")
-			a.Sessions.delSession(c.Value)
+			a.Sessions.DelSession(c.Value)
 			http.SetCookie(w, c)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 		} else {
@@ -541,7 +542,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		c := a.Sessions.createSession(model.User{Type: GITHUB, Name: *(user.Login)})
+		c := a.Sessions.CreateSession(model.User{Type: session.GITHUB, Name: *(user.Login)})
 		http.SetCookie(w, c)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		log.Println("You have loged int as github user :", *(user.Login))
@@ -559,7 +560,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		if !(a.Sessions.isAdmin(r) || a.Sessions.isLoggedin(r)) {
+		if !(a.Sessions.IsAdmin(r) || a.Sessions.IsLoggedin(r)) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
@@ -598,7 +599,7 @@ func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if !a.Sessions.isAdmin(r) {
+		if !a.Sessions.IsAdmin(r) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
