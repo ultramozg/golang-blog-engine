@@ -2,11 +2,14 @@ package main
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 )
 
 type gzipResponseWriter struct {
@@ -69,5 +72,32 @@ func gzipMiddleware(h http.Handler) http.Handler {
 func (a *App) redirectTLSMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://"+a.Config.Cert.Domain+r.RequestURI, http.StatusMovedPermanently)
+	})
+}
+
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
+	return &loggingResponseWriter{w, http.StatusOK}
+}
+
+//WriterHeader catch status code
+func (l *loggingResponseWriter) WriteHeader(code int) {
+	l.statusCode = code
+	l.ResponseWriter.WriteHeader(code)
+}
+
+func logMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		l := newLoggingResponseWriter(w)
+		h.ServeHTTP(l, r)
+
+		_, err := fmt.Printf("%s %v %s %s %s\n", time.Now().Format("Mon Jan _2 15:04:05 2006"), l.statusCode, r.RemoteAddr, r.Method, r.URL.RequestURI())
+		if err != nil {
+			log.Println("Cannot write to file", err)
+		}
 	})
 }

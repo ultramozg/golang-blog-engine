@@ -42,7 +42,6 @@ type App struct {
 	DB       *sql.DB
 	Temp     *template.Template
 	Sessions *SessionDB
-	Log      Logging
 	Config   *Config
 	stop     chan os.Signal
 	OAuth    *oauth2.Config
@@ -81,7 +80,6 @@ func (a *App) Initialize(c *Config) {
 
 	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
 	a.Sessions = NewSessionDB()
-	a.Log = NewLogging(a.Config.Log.LogPath)
 
 	//Setting up OAuth authentication via github
 	a.OAuth = &oauth2.Config{
@@ -191,7 +189,7 @@ func (a *App) initializeRoutes() {
 	fs := http.FileServer(http.Dir("public/"))
 	mux.Handle("/public/", http.StripPrefix("/public/", cacheControlMiddleware(fs)))
 
-	a.Router = gzipMiddleware(setHeaderMiddleware(a.Log.logMiddleware(mux)))
+	a.Router = gzipMiddleware(setHeaderMiddleware(logMiddleware(mux)))
 }
 
 func (a *App) root(w http.ResponseWriter, r *http.Request) {
