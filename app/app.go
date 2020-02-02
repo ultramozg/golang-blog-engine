@@ -43,10 +43,15 @@ type App struct {
 	Router   http.Handler
 	DB       *sql.DB
 	Temp     *template.Template
-	Sessions *session.SessionDB
+	Sessions session.SessionDB
 	Config   *Config
 	stop     chan os.Signal
 	OAuth    *oauth2.Config
+}
+
+//NewApp return App struct
+func NewApp() App {
+	return App{}
 }
 
 //Initialize Is using to initialize the app(connect to DB, initialize routes,logs, sessions and etc.

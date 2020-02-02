@@ -15,41 +15,39 @@ const (
 )
 
 //SessionDB is just a map which holds active sessions
-type SessionDB struct {
-	Sessions map[string]model.User
-}
+type SessionDB map[string]model.User
 
 //NewSessionDB generate new SessionDB struct
-func NewSessionDB() *SessionDB {
-	return &SessionDB{Sessions: make(map[string]model.User)}
+func NewSessionDB() SessionDB {
+	return make(map[string]model.User)
 }
 
-func (s *SessionDB) IsAdmin(r *http.Request) bool {
+func (s SessionDB) IsAdmin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false
 	}
-	if v, ok := s.Sessions[c.Value]; ok && v.Type == ADMIN {
+	if v, ok := s[c.Value]; ok && v.Type == ADMIN {
 		return true
 	}
 	return false
 }
 
-func (s *SessionDB) IsLoggedin(r *http.Request) bool {
+func (s SessionDB) IsLoggedin(r *http.Request) bool {
 	c, err := r.Cookie("session")
 	if err == http.ErrNoCookie {
 		return false
 	}
-	if _, ok := s.Sessions[c.Value]; ok {
+	if _, ok := s[c.Value]; ok {
 		return true
 	}
 	return false
 }
 
-func (s *SessionDB) CreateSession(u model.User) *http.Cookie {
+func (s SessionDB) CreateSession(u model.User) *http.Cookie {
 	sID := uuid.NewV4()
 
-	s.Sessions[sID.String()] = u
+	s[sID.String()] = u
 
 	c := &http.Cookie{
 		Name:  "session",
@@ -58,8 +56,8 @@ func (s *SessionDB) CreateSession(u model.User) *http.Cookie {
 	return c
 }
 
-func (s *SessionDB) DelSession(session string) *http.Cookie {
-	delete(s.Sessions, session)
+func (s SessionDB) DelSession(session string) *http.Cookie {
+	delete(s, session)
 
 	c := &http.Cookie{
 		Name:   "session",
