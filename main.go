@@ -1,10 +1,12 @@
 package main
 
+import "github.com/ultramozg/golang-blog-engine/app"
+
 func main() {
-	conf := NewConfig()
+	conf := app.NewConfig()
 	conf.ReadConfig("conf.d/conf.json")
 
-	a := App{}
+	a := app.App{}
 	a.Initialize(conf)
 	a.Run()
 }
