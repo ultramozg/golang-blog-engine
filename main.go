@@ -6,7 +6,7 @@ func main() {
 	conf := app.NewConfig()
 	conf.ReadConfig("conf.d/conf.json")
 
-	a := app.App{}
+	a := app.NewApp()
 	a.Initialize(conf)
 	a.Run()
 }
