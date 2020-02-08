@@ -34,7 +34,7 @@ func NewConfig() *Config {
 		Server: Server{
 			Addr:  getEnv("IP_ADDR", "0.0.0.0"),
 			Http:  getEnv("HTTP_PORT", ":8080"),
-			Https: getEnv("HTTPS_PORT", "8443"),
+			Https: getEnv("HTTPS_PORT", ":8443"),
 		},
 		OAuth: OAuth{
 			GithubAuthorizeURL: getEnv("GITHUB_AUTHORIZE_URL", ""),
