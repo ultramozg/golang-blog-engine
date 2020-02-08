@@ -296,7 +296,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 		}{
 			posts,
 			a.Sessions.IsAdmin(r),
-			isNextPage(page+1, model.CountPosts(a.DB)),
+			isNextPage(page, model.CountPosts(a.DB)),
 			absolute(page - 1),
 			absolute(page + 1),
 		}
