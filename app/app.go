@@ -59,7 +59,8 @@ func (a *App) Initialize(c *Config) {
 	var err error
 	a.Config = c
 
-	a.DB, err = sql.Open("sqlite3", a.Config.Database.DBpath)
+	a.DB, err = sql.Open("sqlite3", a.Config.DBURI)
+	log.Println("Trying connect to DB:", a.Config.DBURI)
 	if err != nil {
 		log.Fatal("Error connecting to dabase", err)
 	}
@@ -85,7 +86,7 @@ func (a *App) Initialize(c *Config) {
 
 	a.initializeRoutes()
 
-	a.Temp = template.Must(template.ParseGlob(a.Config.Template.TmPath))
+	a.Temp = template.Must(template.ParseGlob("templates/*.gohtml"))
 	a.Sessions = session.NewSessionDB()
 
 	//Setting up OAuth authentication via github
@@ -112,14 +113,14 @@ func (a *App) Run() {
 	//Get the cert
 	cert := autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(a.Config.Cert.Domain),
+		HostPolicy: autocert.HostWhitelist(a.Config.Domain),
 		Cache:      autocert.DirCache("cert"),
 	}
 
 	secureServer := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Addr:         a.Config.Server.SAddr,
+		Addr:         a.Config.Server.Addr + a.Config.Server.Https,
 		TLSConfig: &tls.Config{
 			GetCertificate: cert.GetCertificate,
 		},
@@ -136,13 +137,13 @@ func (a *App) Run() {
 	httpServer := &http.Server{
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		Addr:         a.Config.Server.Addr,
+		Addr:         a.Config.Server.Addr + a.Config.Server.Http,
 		Handler:      httpHandler,
 	}
 
 	log.Println("Starting application with auto TLS support")
-	log.Println("Listening on the addr", a.Config.Server.Addr)
-	log.Println("Listening TLS on the addr", a.Config.Server.SAddr)
+	log.Println("Listening on the addr", a.Config.Server.Addr+a.Config.Server.Http)
+	log.Println("Listening TLS on the addr", a.Config.Server.Addr+a.Config.Server.Https)
 
 	//Launch standart http, to fetch cert Let's Encrypt with 301 -> https
 	go func() {

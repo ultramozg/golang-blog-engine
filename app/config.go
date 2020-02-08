@@ -1,55 +1,59 @@
 package app
 
 import (
-	"encoding/json"
-	"log"
 	"os"
 )
+
+type Server struct {
+	Addr  string
+	Http  string
+	Https string
+}
+
+type OAuth struct {
+	GithubAuthorizeURL string
+	GithubTokenURL     string
+	RedirectURL        string
+	ClientID           string
+	ClientSecret       string
+}
 
 //Config is strcuct which holds necesary data such as server conf
 //database, log, cert, oauth
 type Config struct {
-	Server struct {
-		Addr  string `json:"addr"`
-		SAddr string `json:"saddr"`
-	} `json:"server"`
-	Database struct {
-		DBpath string `json:"dbpath"`
-	} `json:"database"`
-	Log struct {
-		LogPath string `json:"log"`
-	} `json:"log"`
-	Template struct {
-		TmPath string `json:"tmpath"`
-	} `json:"template"`
-	Cert struct {
-		Domain string `json:"domain"`
-	} `json:"cert"`
-	OAuth struct {
-		GithubAuthorizeURL string `json:"githubauthorizeurl"`
-		GithubTokenURL     string `json:"githubtokenurl"`
-		RedirectURL        string `json:"redirecturl"`
-		ClientID           string `json:"clientid"`
-		ClientSecret       string `json:"clientsecret"`
-	} `json:"oauth"`
-	Production string `json:"production,omitempty"`
+	Server     Server
+	OAuth      OAuth
+	Production string
+	DBURI      string
+	Domain     string
 }
 
 //NewConfig create config structure
 func NewConfig() *Config {
-	return &Config{}
+	return &Config{
+		Server: Server{
+			Addr:  getEnv("IP_ADDR", "0.0.0.0"),
+			Http:  getEnv("HTTP_PORT", ":8080"),
+			Https: getEnv("HTTPS_PORT", "8443"),
+		},
+		OAuth: OAuth{
+			GithubAuthorizeURL: getEnv("GITHUB_AUTHORIZE_URL", ""),
+			GithubTokenURL:     getEnv("GITHUB_TOKEN_URL", ""),
+			RedirectURL:        getEnv("REDIRECT_URL", ""),
+			ClientID:           getEnv("CLIENT_ID", ""),
+			ClientSecret:       getEnv("CLIENT_SECRET", ""),
+		},
+		Production: getEnv("PRODUCTION", "false"),
+		DBURI:      getEnv("DBURI", "file:database/database.sqlite"),
+		Domain:     getEnv("DOMAIN", ""),
+	}
 }
 
-//ReadConfig try to read config(json)
-func (c *Config) ReadConfig(path string) {
-	file, err := os.Open(path)
-	if err != nil {
-		log.Fatal("Unable to read configuration file: ", err)
+// Simple helper function to read an environment or return a default value
+func getEnv(key string, defaultVal string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
 	}
-	defer file.Close()
 
-	err = json.NewDecoder(file).Decode(&c)
-	if err != nil {
-		log.Fatal("Invalid config format: ", err)
-	}
+	return defaultVal
 }
