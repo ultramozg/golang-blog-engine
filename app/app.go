@@ -312,10 +312,6 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if !a.Sessions.IsAdmin(r) {
-			http.Error(w, "Not Authorized", http.StatusUnauthorized)
-			return
-		}
 		a.Temp.ExecuteTemplate(w, "create.gohtml", a.Sessions.IsAdmin(r))
 
 	case http.MethodPost:
@@ -564,7 +560,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		if !(a.Sessions.IsAdmin(r) || a.Sessions.IsLoggedin(r)) {
+		if !(a.Sessions.IsLoggedin(r)) {
 			http.Error(w, "Not Authorized", http.StatusUnauthorized)
 			return
 		}
