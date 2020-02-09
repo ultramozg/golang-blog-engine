@@ -368,13 +368,14 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Post     model.Post
-			LoggedIn bool
+			Post       model.Post
+			LogAsAdmin bool
 		}{
 			p,
 			a.Sessions.IsAdmin(r),
 		}
-		a.Temp.ExecuteTemplate(w, "update.gohtml", data)
+		err = a.Temp.ExecuteTemplate(w, "update.gohtml", data)
+		log.Println(err)
 
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
