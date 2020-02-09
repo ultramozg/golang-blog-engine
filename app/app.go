@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -197,7 +198,7 @@ func (a *App) initializeRoutes() {
 	fs := http.FileServer(http.Dir("public/"))
 	mux.Handle("/public/", http.StripPrefix("/public/", middleware.CacheControlMiddleware(fs)))
 
-	a.Router = middleware.GzipMiddleware(middleware.SetHeaderMiddleware(middleware.LogMiddleware(mux)))
+	a.Router = a.securityMiddleware(middleware.GzipMiddleware(middleware.SetHeaderMiddleware(middleware.LogMiddleware(mux))))
 }
 
 func (a *App) root(w http.ResponseWriter, r *http.Request) {
@@ -645,4 +646,21 @@ func HashPassword(password string) (bool, string) {
 	}
 
 	return true, string(hashedPassword)
+}
+
+func (app *App) securityMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if match, _ := regexp.MatchString("/(delete|update|create)", r.URL.RequestURI()); match {
+			if !app.Sessions.IsAdmin(r) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else if match, _ := regexp.MatchString("/(create|delete)-comment", r.URL.RequestURI()); match {
+			if !app.Sessions.IsLoggedin(r) {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
+		h.ServeHTTP(w, r)
+	})
 }
