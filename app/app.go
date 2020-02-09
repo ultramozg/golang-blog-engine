@@ -403,7 +403,11 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodGet:
+	case http.MethodPost:
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
 		id, err := strconv.Atoi(r.FormValue("id"))
 		if err != nil {
 			http.Error(w, "Invalid Id", http.StatusBadRequest)
