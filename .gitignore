@@ -3,3 +3,4 @@
 cert/
 webserver
 conf.d/
+Session.vim
