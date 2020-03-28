@@ -403,7 +403,7 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodPost:
+	case http.MethodGet:
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
