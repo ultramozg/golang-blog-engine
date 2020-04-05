@@ -3,18 +3,24 @@ package app
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
 
-func Testroot(t *testing.T) {
+func TestGetPage(t *testing.T) {
+	os.Setenv("DBURI", "file:../database/database.sqlite")
+	os.Setenv("TEMPLATES", "../templates/*.gohtml")
+
+	conf := NewConfig()
 	a := NewApp()
-	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	a.Initialize(conf)
+	req, err := http.NewRequest(http.MethodGet, "/page?p=0", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(a.root)
+	handler := http.HandlerFunc(a.getPage)
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusOK)
