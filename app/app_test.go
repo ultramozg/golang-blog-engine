@@ -15,6 +15,27 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestRoot(t *testing.T) {
+	conf := NewConfig()
+	a := NewApp()
+	a.Initialize(conf)
+
+	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(a.root)
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusFound {
+		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusFound)
+	}
+	expectedURI := "/page?p=0"
+	if rr.Header().Get("Location") != expectedURI {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expectedURI)
+	}
+}
+
 func TestGetPage(t *testing.T) {
 	conf := NewConfig()
 	a := NewApp()
@@ -28,7 +49,7 @@ func TestGetPage(t *testing.T) {
 	handler := http.HandlerFunc(a.getPage)
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Errorf("GetPage handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 	expected := `<p>Powered by Golang net/http package</p>`
 	if !strings.Contains(rr.Body.String(), expected) {
