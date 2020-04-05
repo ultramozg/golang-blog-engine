@@ -8,13 +8,18 @@ import (
 	"testing"
 )
 
-func TestGetPage(t *testing.T) {
+func TestMain(m *testing.M) {
 	os.Setenv("DBURI", "file:../database/database.sqlite")
 	os.Setenv("TEMPLATES", "../templates/*.gohtml")
 
+	os.Exit(m.Run())
+}
+
+func TestGetPage(t *testing.T) {
 	conf := NewConfig()
 	a := NewApp()
 	a.Initialize(conf)
+
 	req, err := http.NewRequest(http.MethodGet, "/page?p=0", nil)
 	if err != nil {
 		t.Fatal(err)
