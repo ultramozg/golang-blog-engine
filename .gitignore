@@ -4,3 +4,4 @@ cert/
 webserver
 conf.d/
 Session.vim
+launch.json
