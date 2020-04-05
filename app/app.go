@@ -87,7 +87,7 @@ func (a *App) Initialize(c *Config) {
 
 	a.initializeRoutes()
 
-	a.Temp = template.Must(template.ParseGlob("templates/*.gohtml"))
+	a.Temp = template.Must(template.ParseGlob(a.Config.Templates))
 	a.Sessions = session.NewSessionDB()
 
 	//Setting up OAuth authentication via github

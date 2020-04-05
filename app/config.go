@@ -26,6 +26,7 @@ type Config struct {
 	Production string
 	DBURI      string
 	Domain     string
+	Templates  string
 }
 
 //NewConfig create config structure
@@ -43,6 +44,7 @@ func NewConfig() *Config {
 			ClientID:           getEnv("CLIENT_ID", ""),
 			ClientSecret:       getEnv("CLIENT_SECRET", ""),
 		},
+		Templates:  getEnv("TEMPLATES", "templates/*.gohtml"),
 		Production: getEnv("PRODUCTION", "false"),
 		DBURI:      getEnv("DBURI", "file:database/database.sqlite"),
 		Domain:     getEnv("DOMAIN", ""),
