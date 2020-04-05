@@ -58,6 +58,28 @@ func TestGetPage(t *testing.T) {
 	}
 }
 
+func TestFailedLogin(t *testing.T) {
+	conf := NewConfig()
+	a := NewApp()
+	a.Initialize(conf)
+
+	payload := url.Values{}
+	payload.Set("login", "admin")
+	payload.Set("password", "blabla")
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(a.login)
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusUnauthorized {
+		t.Errorf("login handler returned wrong status code: got %v want %v", status, http.StatusUnauthorized)
+	}
+}
+
 func TestSuccesfullLogin(t *testing.T) {
 	conf := NewConfig()
 	a := NewApp()
