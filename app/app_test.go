@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -54,5 +55,36 @@ func TestGetPage(t *testing.T) {
 	expected := `<p>Powered by Golang net/http package</p>`
 	if !strings.Contains(rr.Body.String(), expected) {
 		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	}
+}
+
+func TestSuccesfullLogin(t *testing.T) {
+	conf := NewConfig()
+	a := NewApp()
+	a.Initialize(conf)
+
+	payload := url.Values{}
+	payload.Set("login", "admin")
+	payload.Set("password", "12345")
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(a.login)
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusSeeOther {
+		t.Errorf("login handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	cookies := rr.Result().Cookies()
+	if len(cookies) == 0 {
+		t.Errorf("login handler returned empty cookie: got %v", cookies)
+	}
+
+	if c := cookies[0]; c.Name != "session" {
+		t.Errorf("login handler 'session' cookies hasn't been set got %v want %v", c.Name, "session")
 	}
 }
