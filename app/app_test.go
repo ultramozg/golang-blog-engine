@@ -99,15 +99,14 @@ func TestSuccesfullLogin(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusSeeOther {
 		t.Errorf("login handler returned wrong status code: got %v want %v", status, http.StatusOK)
-		return
 	}
 
 	cookies := rr.Result().Cookies()
 	if len(cookies) == 0 {
 		t.Errorf("login handler returned empty cookie: got %v", cookies)
-	}
-
-	if c := cookies[0]; c.Name != "session" {
-		t.Errorf("login handler 'session' cookies hasn't been set got %v want %v", c.Name, "session")
+	} else {
+		if c := cookies[0]; c.Name != "session" {
+			t.Errorf("login handler 'session' cookies hasn't been set got %v want %v", c.Name, "session")
+		}
 	}
 }
