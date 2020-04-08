@@ -99,6 +99,7 @@ func TestSuccesfullLogin(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusSeeOther {
 		t.Errorf("login handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		return
 	}
 
 	cookies := rr.Result().Cookies()
