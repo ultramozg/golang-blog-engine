@@ -17,9 +17,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestRoot(t *testing.T) {
-	conf := NewConfig()
 	a := NewApp()
-	a.Initialize(conf)
+	a.Initialize()
 
 	req, err := http.NewRequest(http.MethodGet, "/", nil)
 	if err != nil {
@@ -38,9 +37,8 @@ func TestRoot(t *testing.T) {
 }
 
 func TestGetPage(t *testing.T) {
-	conf := NewConfig()
 	a := NewApp()
-	a.Initialize(conf)
+	a.Initialize()
 
 	req, err := http.NewRequest(http.MethodGet, "/page?p=0", nil)
 	if err != nil {
@@ -59,9 +57,8 @@ func TestGetPage(t *testing.T) {
 }
 
 func TestFailedLogin(t *testing.T) {
-	conf := NewConfig()
 	a := NewApp()
-	a.Initialize(conf)
+	a.Initialize()
 
 	payload := url.Values{}
 	payload.Set("login", "admin")
@@ -81,9 +78,8 @@ func TestFailedLogin(t *testing.T) {
 }
 
 func TestSuccesfullLogin(t *testing.T) {
-	conf := NewConfig()
 	a := NewApp()
-	a.Initialize(conf)
+	a.Initialize()
 
 	payload := url.Values{}
 	payload.Set("login", "admin")
