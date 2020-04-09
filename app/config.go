@@ -31,7 +31,7 @@ type Config struct {
 }
 
 //NewConfig create config structure
-func NewConfig() *Config {
+func newConfig() *Config {
 	return &Config{
 		Server: Server{
 			Addr:  getEnv("IP_ADDR", "0.0.0.0"),

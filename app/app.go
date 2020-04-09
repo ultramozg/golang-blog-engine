@@ -53,9 +53,9 @@ func NewApp() App {
 }
 
 //Initialize Is using to initialize the app(connect to DB, initialize routes,logs, sessions and etc.
-func (a *App) Initialize(c *Config) {
+func (a *App) Initialize() {
 	var err error
-	a.Config = c
+	a.Config = newConfig()
 
 	a.DB, err = sql.Open("sqlite3", a.Config.DBURI)
 	log.Println("Trying connect to DB:", a.Config.DBURI)

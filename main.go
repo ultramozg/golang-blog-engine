@@ -22,8 +22,7 @@ func main() {
 		return
 	}
 
-	conf := app.NewConfig()
 	a := app.NewApp()
-	a.Initialize(conf)
+	a.Initialize()
 	a.Run()
 }
