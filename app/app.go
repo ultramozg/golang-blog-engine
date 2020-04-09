@@ -1,18 +1,15 @@
 package app
 
 import (
-	"bufio"
 	"context"
 	"crypto/tls"
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"strconv"
-	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -72,12 +69,7 @@ func (a *App) Initialize(c *Config) {
 
 	//check if Admin account exists if not create one
 	if !u.IsUserExist(a.DB) {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Enter Admin password: ")
-		pass, _ := reader.ReadString('\n')
-		pass = strings.Replace(pass, "\n", "", -1)
-
-		if ok, hash := HashPassword(pass); ok {
+		if ok, hash := HashPassword(a.Config.AdminPass); ok {
 			err = u.CreateUser(a.DB, hash)
 			if err != nil {
 				log.Fatal(err)
