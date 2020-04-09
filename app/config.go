@@ -26,6 +26,7 @@ type Config struct {
 	Production string
 	DBURI      string
 	Domain     string
+	AdminPass  string
 	Templates  string
 }
 
@@ -48,6 +49,7 @@ func NewConfig() *Config {
 		Production: getEnv("PRODUCTION", "false"),
 		DBURI:      getEnv("DBURI", "file:database/database.sqlite"),
 		Domain:     getEnv("DOMAIN", ""),
+		AdminPass:  getEnv("ADMIN_PASSWORD", "12345"),
 	}
 }
 
