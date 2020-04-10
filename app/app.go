@@ -407,6 +407,15 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		p := model.Post{ID: id}
+		if err = p.GetPost(a.DB); err != nil {
+			switch err {
+			case sql.ErrNoRows:
+				http.Error(w, "Not Found", http.StatusNotFound)
+			default:
+				http.Error(w, "Internal error", http.StatusInternalServerError)
+			}
+			return
+		}
 		if err := p.DeletePost(a.DB); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
