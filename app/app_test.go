@@ -106,3 +106,93 @@ func TestSuccesfullLogin(t *testing.T) {
 		}
 	}
 }
+
+func TestCreatePost(t *testing.T) {
+	a := NewApp()
+	a.Initialize()
+
+	payload := url.Values{}
+	payload.Set("login", "admin")
+	payload.Set("password", "12345")
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handlerLogin := http.HandlerFunc(a.login)
+	handlerLogin.ServeHTTP(rr, req)
+
+	req.AddCookie(rr.Result().Cookies()[0])
+
+	// create test post with cookie set
+	payload = url.Values{}
+	payload.Set("title", "New Post")
+	payload.Set("body", "test body")
+
+	req, err = http.NewRequest(http.MethodPost, "/create", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr = httptest.NewRecorder()
+	handlerCreatePost := http.HandlerFunc(a.createPost)
+	handlerCreatePost.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusSeeOther {
+		t.Errorf("GetPage handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
+	}
+}
+
+func TestGetPost(t *testing.T) {
+	a := NewApp()
+	a.Initialize()
+
+	req, err := http.NewRequest(http.MethodGet, "/post?id=1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(a.getPost)
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusFound)
+	}
+	expectedBody := "test body"
+	if !strings.Contains(rr.Body.String(), expectedBody) {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expectedBody)
+	}
+}
+
+func TestDeletePost(t *testing.T) {
+	a := NewApp()
+	a.Initialize()
+
+	payload := url.Values{}
+	payload.Set("login", "admin")
+	payload.Set("password", "12345")
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handlerLogin := http.HandlerFunc(a.login)
+	handlerLogin.ServeHTTP(rr, req)
+
+	//delete post
+	req, err = http.NewRequest(http.MethodGet, "/delete?id=1", strings.NewReader(payload.Encode()))
+	req.AddCookie(rr.Result().Cookies()[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr = httptest.NewRecorder()
+	handlerDeletePost := http.HandlerFunc(a.deletePost)
+	handlerDeletePost.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusSeeOther {
+		t.Errorf("GetPage handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
+	}
+}
