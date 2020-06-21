@@ -121,7 +121,6 @@ func (a *App) Run() {
 	}
 
 	httpHandler := a.Router
-	//TODO if this is a test environment disable 301 redirect to https
 	if a.Config.Production == "true" {
 		httpHandler = middleware.RedirectTLSMiddleware(httpHandler)
 	}
