@@ -548,7 +548,8 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 
 		c := a.Sessions.CreateSession(model.User{Type: session.GITHUB, Name: *(user.Login)})
 		http.SetCookie(w, c)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		//http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, r.Header.Get("Referer"), http.StatusSeeOther)
 		log.Println("You have logged in as github user :", *(user.Login))
 		return
 
@@ -650,13 +651,13 @@ func HashPassword(password string) (bool, string) {
 
 func (app *App) securityMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if match, _ := regexp.MatchString("/(delete|update|create)", r.URL.RequestURI()); match {
-			if !app.Sessions.IsAdmin(r) {
+		if match, _ := regexp.MatchString("/(create|delete)-comment", r.URL.RequestURI()); match {
+			if !app.Sessions.IsLoggedin(r) {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-		} else if match, _ := regexp.MatchString("/(create|delete)-comment", r.URL.RequestURI()); match {
-			if !app.Sessions.IsLoggedin(r) {
+		} else if match, _ := regexp.MatchString("/(delete|update|create)", r.URL.RequestURI()); match {
+			if !app.Sessions.IsAdmin(r) {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
