@@ -549,7 +549,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 		c := a.Sessions.CreateSession(model.User{Type: session.GITHUB, Name: *(user.Login)})
 		http.SetCookie(w, c)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
-		log.Println("You have loged int as github user :", *(user.Login))
+		log.Println("You have logged in as github user :", *(user.Login))
 		return
 
 	case http.MethodHead:
