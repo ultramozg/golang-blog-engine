@@ -189,7 +189,7 @@ func (a *App) initializeRoutes() {
 	fs := http.FileServer(http.Dir("public/"))
 	mux.Handle("/public/", http.StripPrefix("/public/", middleware.CacheControlMiddleware(fs)))
 
-	a.Router = a.securityMiddleware(middleware.GzipMiddleware(middleware.SetHeaderMiddleware(middleware.LogMiddleware(mux))))
+	a.Router = middleware.LogMiddleware(a.securityMiddleware(middleware.GzipMiddleware(middleware.SetHeaderMiddleware(mux))))
 }
 
 func (a *App) root(w http.ResponseWriter, r *http.Request) {
@@ -548,7 +548,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 
 		c := a.Sessions.CreateSession(model.User{Type: session.GITHUB, Name: *(user.Login)})
 		http.SetCookie(w, c)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		//http.Redirect(w, r, "/", http.StatusSeeOther)
 		log.Println("You have logged in as github user :", *(user.Login))
 		return
 
