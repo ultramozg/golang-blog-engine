@@ -176,7 +176,8 @@ func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 	hashedPwd := ""
 	err := db.QueryRow(`select pass from users where name = ?`, u.Name).Scan(&hashedPwd)
 	if err != nil {
-		log.Fatal("Unable to fetch user pass")
+		log.Println("Unable to login, no such user", u.Name)
+		return false
 	}
 
 	byteHash := []byte(hashedPwd)
