@@ -45,6 +45,7 @@ type App struct {
 	Config   *Config
 	stop     chan os.Signal
 	OAuth    *oauth2.Config
+	Courses  model.Courses
 }
 
 //NewApp return App struct
@@ -76,6 +77,13 @@ func (a *App) Initialize() {
 			}
 		}
 	}
+
+	//Convert Yaml data to struct
+	a.Courses, err = model.ConvertYaml("data/courses.yml")
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println(a.Courses)
 
 	a.initializeRoutes()
 

@@ -2,9 +2,11 @@ package model
 
 import (
 	"database/sql"
+	"io/ioutil"
 	"log"
 
 	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/yaml.v2"
 )
 
 //TODO need to delete it as in the seesion.go aleady exists this constant
@@ -189,4 +191,27 @@ func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 		return false
 	}
 	return true
+}
+
+// Course holds information about courses which is located under data/courses.yml
+type Course struct {
+	Title       string `yaml:"title"`
+	Link        string `yaml:"link"`
+	Description string `yaml:"description"`
+}
+
+type Courses struct {
+	List []Course `yaml:"courses,flow"`
+}
+
+func ConvertYaml(path string) (c Courses, err error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return
+	}
+	err = yaml.Unmarshal(b, &c)
+	if err != nil {
+		return
+	}
+	return
 }
