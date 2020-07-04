@@ -450,7 +450,14 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 func (a *App) links(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "links.gohtml", a.Sessions.IsAdmin(r))
+		data := struct {
+			LogAsAdmin bool
+			Courses    []model.Course
+		}{
+			a.Sessions.IsAdmin(r),
+			a.Courses.List,
+		}
+		a.Temp.ExecuteTemplate(w, "links.gohtml", data)
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return

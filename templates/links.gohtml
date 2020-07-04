@@ -1,9 +1,11 @@
-{{template "header" .}}
+{{template "header" .LogAsAdmin}}
 <div class="container">
-	<h4>Links</h4>
-	<h5><a href="https://github.com/ultramozg">github</a></h5>
-	<h5><a href="https://exercism.io/profiles/ultramozg">exercism</a></h5>
-	<h5><a href="https://www.linkedin.com/in/dmitri-candu-0928a515a/">linkedin</a></h5>
+	{{range .Courses}}
+		<div>
+			<h5><a href={{.Link}}>{{.Title}}</a></h5>
+			<p>{{.Description}}</p>
+		</div>
+	{{end}}
 	<div class="docs-section" style="margin:0px;padding:10px"></div>
 </div>
 {{template "footer"}}	
