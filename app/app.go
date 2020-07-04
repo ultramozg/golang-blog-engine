@@ -83,7 +83,6 @@ func (a *App) Initialize() {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(a.Courses)
 
 	a.initializeRoutes()
 
