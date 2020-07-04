@@ -1,6 +1,7 @@
 *.swp
 *.sqlite
 cert/
+data/
 webserver
 conf.d/
 Session.vim
