@@ -201,7 +201,7 @@ type Info struct {
 }
 
 type Infos struct {
-	List []Info `yaml:"courses,flow"`
+	List []Info `yaml:"infos,flow"`
 }
 
 func ConverYamlToStruct(path string) (i Infos, err error) {

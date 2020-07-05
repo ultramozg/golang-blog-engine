@@ -46,6 +46,7 @@ type App struct {
 	stop     chan os.Signal
 	OAuth    *oauth2.Config
 	Courses  model.Infos
+	Links    model.Infos
 }
 
 //NewApp return App struct
@@ -80,6 +81,10 @@ func (a *App) Initialize() {
 
 	//Convert Yaml data to struct
 	a.Courses, err = model.ConverYamlToStruct("data/courses.yml")
+	if err != nil {
+		log.Println(err)
+	}
+	a.Links, err = model.ConverYamlToStruct("data/links.yml")
 	if err != nil {
 		log.Println(err)
 	}
@@ -452,10 +457,10 @@ func (a *App) links(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		data := struct {
 			LogAsAdmin bool
-			Courses    []model.Info
+			Links      []model.Info
 		}{
 			a.Sessions.IsAdmin(r),
-			a.Courses.List,
+			a.Links.List,
 		}
 		a.Temp.ExecuteTemplate(w, "links.gohtml", data)
 	case http.MethodHead:
