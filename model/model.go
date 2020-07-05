@@ -197,7 +197,7 @@ func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 type Course struct {
 	Title       string `yaml:"title"`
 	Link        string `yaml:"link"`
-	Description string `yaml:"description"`
+	Description string `yaml:"description,omitempty"`
 }
 
 type Courses struct {
