@@ -194,22 +194,22 @@ func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 }
 
 // Course holds information about courses which is located under data/courses.yml
-type Course struct {
+type Info struct {
 	Title       string `yaml:"title"`
 	Link        string `yaml:"link"`
 	Description string `yaml:"description,omitempty"`
 }
 
-type Courses struct {
-	List []Course `yaml:"courses,flow"`
+type Infos struct {
+	List []Info `yaml:"courses,flow"`
 }
 
-func ConverYamlToCourses(path string) (c Courses, err error) {
+func ConverYamlToStruct(path string) (i Infos, err error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
 	}
-	err = yaml.Unmarshal(b, &c)
+	err = yaml.Unmarshal(b, &i)
 	if err != nil {
 		return
 	}
