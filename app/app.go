@@ -79,7 +79,7 @@ func (a *App) Initialize() {
 	}
 
 	//Convert Yaml data to struct
-	a.Courses, err = model.ConvertYaml("data/courses.yml")
+	a.Courses, err = model.ConverYamlToCourses("data/courses.yml")
 	if err != nil {
 		log.Println(err)
 	}

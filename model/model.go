@@ -204,7 +204,7 @@ type Courses struct {
 	List []Course `yaml:"courses,flow"`
 }
 
-func ConvertYaml(path string) (c Courses, err error) {
+func ConverYamlToCourses(path string) (c Courses, err error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return
