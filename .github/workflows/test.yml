@@ -24,7 +24,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -52,7 +52,7 @@ jobs:
         fail_ci_if_error: false
 
     - name: Upload coverage reports as artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports-go${{ matrix.go-version }}
         path: |
@@ -78,7 +78,7 @@ jobs:
         args: '-fmt sarif -out gosec.sarif ./...'
 
     - name: Upload SARIF file
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: gosec.sarif
 
@@ -101,7 +101,7 @@ jobs:
         go-version: '1.22'
 
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v6
       with:
         version: latest
         args: --timeout=5m
@@ -130,7 +130,7 @@ jobs:
         GOOS=windows GOARCH=amd64 go build -o blog-windows-amd64.exe .
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: |
