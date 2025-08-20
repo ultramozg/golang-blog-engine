@@ -130,9 +130,15 @@ jobs:
 
     - name: Build for multiple platforms
       run: |
+        # AMD64
         GOOS=linux GOARCH=amd64 go build -o blog-linux-amd64 .
         GOOS=darwin GOARCH=amd64 go build -o blog-darwin-amd64 .
         GOOS=windows GOARCH=amd64 go build -o blog-windows-amd64.exe .
+
+        # ARMv7 (Orange Pi)
+        sudo apt-get update && sudo apt-get install -y gcc-arm-linux-gnueabihf
+        GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-gnueabihf-gcc go build -o blog-linux-armv7 .
+
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -142,3 +148,4 @@ jobs:
           blog-linux-amd64
           blog-darwin-amd64
           blog-windows-amd64.exe
+          blog-linux-armv7
