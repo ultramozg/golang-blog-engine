@@ -52,7 +52,7 @@ jobs:
         fail_ci_if_error: false
 
     - name: Upload coverage reports as artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports-go${{ matrix.go-version }}
         path: |
@@ -130,7 +130,7 @@ jobs:
         GOOS=windows GOARCH=amd64 go build -o blog-windows-amd64.exe .
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: |
