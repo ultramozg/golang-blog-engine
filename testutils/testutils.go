@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,7 +29,7 @@ type TestConfig struct {
 
 // NewTestConfig creates a new test configuration
 func NewTestConfig() *TestConfig {
-	tempDir, _ := ioutil.TempDir("", "blog_test_")
+	tempDir, _ := os.MkdirTemp("", "blog_test_")
 	return &TestConfig{
 		DBPath:      filepath.Join(tempDir, "test.db"),
 		TempDir:     tempDir,
@@ -166,11 +165,11 @@ func NewHTTPTestHelper(t *testing.T, testDB *TestDatabase) *HTTPTestHelper {
     link: "https://example.com/link"
     description: "Test link description"`
 
-	if err := ioutil.WriteFile("data/courses.yml", []byte(coursesContent), 0644); err != nil {
+	if err := os.WriteFile("data/courses.yml", []byte(coursesContent), 0644); err != nil {
 		t.Fatalf("Failed to create courses.yml: %v", err)
 	}
 
-	if err := ioutil.WriteFile("data/links.yml", []byte(linksContent), 0644); err != nil {
+	if err := os.WriteFile("data/links.yml", []byte(linksContent), 0644); err != nil {
 		t.Fatalf("Failed to create links.yml: %v", err)
 	}
 
@@ -268,7 +267,7 @@ func (h *HTTPTestHelper) LoginAsAdmin() (*http.Cookie, error) {
 
 	// Check for redirect status codes (302, 303, etc.)
 	if resp.StatusCode < 300 || resp.StatusCode >= 400 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("login failed with status: %d, body: %s", resp.StatusCode, string(body))
 	}
 
@@ -388,7 +387,7 @@ func WaitForCondition(condition func() bool, timeout time.Duration, interval tim
 
 // CreateTempFile creates a temporary file with given content
 func CreateTempFile(t *testing.T, content string) string {
-	tmpFile, err := ioutil.TempFile("", "test_*.txt")
+	tmpFile, err := os.CreateTemp("", "test_*.txt")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}

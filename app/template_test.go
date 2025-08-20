@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,7 +11,7 @@ import (
 
 func TestTemplateInitialization(t *testing.T) {
 	// Create temporary directory for test templates
-	tempDir, err := ioutil.TempDir("", "template_test_")
+	tempDir, err := os.MkdirTemp("", "template_test_")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -68,7 +67,7 @@ func TestTemplateInitialization(t *testing.T) {
 			// Create test template files
 			for filename, content := range tt.templateFiles {
 				filePath := filepath.Join(tempDir, filename)
-				if err := ioutil.WriteFile(filePath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 					t.Fatalf("Failed to create test template file: %v", err)
 				}
 			}
@@ -102,7 +101,7 @@ func TestTemplateInitialization(t *testing.T) {
 
 func TestTemplateExecution(t *testing.T) {
 	// Create temporary directory for test templates
-	tempDir, err := ioutil.TempDir("", "template_exec_test_")
+	tempDir, err := os.MkdirTemp("", "template_exec_test_")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -118,7 +117,7 @@ func TestTemplateExecution(t *testing.T) {
 
 	for filename, content := range templates {
 		filePath := filepath.Join(tempDir, filename)
-		if err := ioutil.WriteFile(filePath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 			t.Fatalf("Failed to create test template file: %v", err)
 		}
 	}
@@ -237,7 +236,7 @@ func TestTemplateExecution(t *testing.T) {
 
 func TestTemplateWithComplexData(t *testing.T) {
 	// Create temporary directory for test templates
-	tempDir, err := ioutil.TempDir("", "template_complex_test_")
+	tempDir, err := os.MkdirTemp("", "template_complex_test_")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -276,7 +275,7 @@ func TestTemplateWithComplexData(t *testing.T) {
 </html>`
 
 	templatePath := filepath.Join(tempDir, "complex.gohtml")
-	if err := ioutil.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
 		t.Fatalf("Failed to create test template file: %v", err)
 	}
 
@@ -350,7 +349,7 @@ func TestTemplateWithComplexData(t *testing.T) {
 
 func TestTemplateErrorHandling(t *testing.T) {
 	// Create temporary directory for test templates
-	tempDir, err := ioutil.TempDir("", "template_error_test_")
+	tempDir, err := os.MkdirTemp("", "template_error_test_")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -360,7 +359,7 @@ func TestTemplateErrorHandling(t *testing.T) {
 	templateContent := `{{.User.Name}} - {{.User.Email}} - {{.User.Profile.Bio}}`
 
 	templatePath := filepath.Join(tempDir, "error_test.gohtml")
-	if err := ioutil.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
 		t.Fatalf("Failed to create test template file: %v", err)
 	}
 

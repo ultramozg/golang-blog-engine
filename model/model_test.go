@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +15,7 @@ import (
 
 // createTestDB creates a test database with migrations
 func createTestDB(t *testing.T) (*sql.DB, func()) {
-	tempDir, err := ioutil.TempDir("", "model_test_")
+	tempDir, err := os.MkdirTemp("", "model_test_")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -92,7 +91,7 @@ func createTestUser(db *sql.DB, name, password string, userType int) error {
 
 // createTempFile creates a temporary file with given content
 func createTempFile(t *testing.T, content string) string {
-	tmpFile, err := ioutil.TempFile("", "test_*.txt")
+	tmpFile, err := os.CreateTemp("", "test_*.txt")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}

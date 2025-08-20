@@ -2,7 +2,7 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -58,7 +58,7 @@ func testHomePage(t *testing.T, runner *testutils.TestRunner) {
 
 	testutils.AssertStatusCode(t, resp, http.StatusOK)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("Failed to read response body: %v", err)
 	}
@@ -125,7 +125,7 @@ func testPostOperations(t *testing.T, runner *testutils.TestRunner) {
 
 	testutils.AssertStatusCode(t, resp, http.StatusOK)
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("Failed to read post body: %v", err)
 	}

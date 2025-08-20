@@ -2,7 +2,6 @@ package app
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,7 +20,7 @@ import (
 
 // createTestApp creates a test app with isolated database
 func createTestApp(t *testing.T) (*App, func()) {
-	tempDir, err := ioutil.TempDir("", "handler_test_")
+	tempDir, err := os.MkdirTemp("", "handler_test_")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
@@ -44,11 +43,11 @@ func createTestApp(t *testing.T) (*App, func()) {
     link: "https://example.com/link"
     description: "Test link description"`
 
-	if err := ioutil.WriteFile("data/courses.yml", []byte(coursesContent), 0644); err != nil {
+	if err := os.WriteFile("data/courses.yml", []byte(coursesContent), 0644); err != nil {
 		t.Fatalf("Failed to create courses.yml: %v", err)
 	}
 
-	if err := ioutil.WriteFile("data/links.yml", []byte(linksContent), 0644); err != nil {
+	if err := os.WriteFile("data/links.yml", []byte(linksContent), 0644); err != nil {
 		t.Fatalf("Failed to create links.yml: %v", err)
 	}
 

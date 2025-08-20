@@ -2,8 +2,8 @@ package model
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/yaml.v2"
@@ -208,7 +208,7 @@ type Infos struct {
 }
 
 func ConverYamlToStruct(path string) (i Infos, err error) {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return
 	}
