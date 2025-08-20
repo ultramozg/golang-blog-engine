@@ -69,7 +69,7 @@ func GzipMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-//TODO domain hardcoded need to get it from config.
+// TODO domain hardcoded need to get it from config.
 func RedirectTLSMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "https://"+"dcandu.name"+r.RequestURI, http.StatusMovedPermanently)
@@ -85,7 +85,7 @@ func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
 	return &loggingResponseWriter{w, http.StatusOK}
 }
 
-//WriterHeader catch status code
+// WriterHeader catch status code
 func (l *loggingResponseWriter) WriteHeader(code int) {
 	l.statusCode = code
 	l.ResponseWriter.WriteHeader(code)

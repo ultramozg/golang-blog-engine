@@ -49,7 +49,7 @@ type TestDatabase struct {
 // NewTestDatabase creates a new test database instance
 func NewTestDatabase(t *testing.T) *TestDatabase {
 	config := NewTestConfig()
-	
+
 	// Create test database
 	db, err := sql.Open("sqlite3", config.DBPath)
 	if err != nil {
@@ -94,7 +94,7 @@ func (td *TestDatabase) SeedTestData() error {
 
 	// Insert test comments
 	testComments := []struct {
-		postID      int
+		postID              int
 		name, date, comment string
 	}{
 		{1, "Test User", "Mon Jan 1 13:00:00 2024", "This is a test comment"},
@@ -160,7 +160,7 @@ func NewHTTPTestHelper(t *testing.T, testDB *TestDatabase) *HTTPTestHelper {
   - title: "Test Course"
     link: "https://example.com/course"
     description: "Test course description"`
-	
+
 	linksContent := `infos:
   - title: "Test Link"
     link: "https://example.com/link"
@@ -374,8 +374,6 @@ func AssertCookieExists(t *testing.T, resp *http.Response, cookieName string) *h
 	return nil
 }
 
-
-
 // WaitForCondition waits for a condition to be true with timeout
 func WaitForCondition(condition func() bool, timeout time.Duration, interval time.Duration) bool {
 	deadline := time.Now().Add(timeout)
@@ -401,8 +399,9 @@ func CreateTempFile(t *testing.T, content string) string {
 	}
 
 	return tmpFile.Name()
-}// Rem
-oveTempFile removes a temporary file
+}
+
+// RemoveTempFile removes a temporary file
 func RemoveTempFile(path string) error {
 	return os.Remove(path)
 }

@@ -7,12 +7,12 @@ import (
 
 func TestGetEnv(t *testing.T) {
 	tests := []struct {
-		name         string
-		key          string
-		defaultVal   string
-		envValue     string
-		setEnv       bool
-		expected     string
+		name       string
+		key        string
+		defaultVal string
+		envValue   string
+		setEnv     bool
+		expected   string
 	}{
 		{
 			name:       "Environment variable exists",
@@ -69,19 +69,19 @@ func TestGetEnv(t *testing.T) {
 func TestNewConfig(t *testing.T) {
 	// Save original environment variables
 	originalVars := map[string]string{
-		"IP_ADDR":               os.Getenv("IP_ADDR"),
-		"HTTP_PORT":             os.Getenv("HTTP_PORT"),
-		"HTTPS_PORT":            os.Getenv("HTTPS_PORT"),
-		"GITHUB_AUTHORIZE_URL":  os.Getenv("GITHUB_AUTHORIZE_URL"),
-		"GITHUB_TOKEN_URL":      os.Getenv("GITHUB_TOKEN_URL"),
-		"REDIRECT_URL":          os.Getenv("REDIRECT_URL"),
-		"CLIENT_ID":             os.Getenv("CLIENT_ID"),
-		"CLIENT_SECRET":         os.Getenv("CLIENT_SECRET"),
-		"TEMPLATES":             os.Getenv("TEMPLATES"),
-		"PRODUCTION":            os.Getenv("PRODUCTION"),
-		"DBURI":                 os.Getenv("DBURI"),
-		"DOMAIN":                os.Getenv("DOMAIN"),
-		"ADMIN_PASSWORD":        os.Getenv("ADMIN_PASSWORD"),
+		"IP_ADDR":              os.Getenv("IP_ADDR"),
+		"HTTP_PORT":            os.Getenv("HTTP_PORT"),
+		"HTTPS_PORT":           os.Getenv("HTTPS_PORT"),
+		"GITHUB_AUTHORIZE_URL": os.Getenv("GITHUB_AUTHORIZE_URL"),
+		"GITHUB_TOKEN_URL":     os.Getenv("GITHUB_TOKEN_URL"),
+		"REDIRECT_URL":         os.Getenv("REDIRECT_URL"),
+		"CLIENT_ID":            os.Getenv("CLIENT_ID"),
+		"CLIENT_SECRET":        os.Getenv("CLIENT_SECRET"),
+		"TEMPLATES":            os.Getenv("TEMPLATES"),
+		"PRODUCTION":           os.Getenv("PRODUCTION"),
+		"DBURI":                os.Getenv("DBURI"),
+		"DOMAIN":               os.Getenv("DOMAIN"),
+		"ADMIN_PASSWORD":       os.Getenv("ADMIN_PASSWORD"),
 	}
 
 	// Restore environment variables after test

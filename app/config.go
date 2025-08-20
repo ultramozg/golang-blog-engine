@@ -18,8 +18,8 @@ type OAuth struct {
 	ClientSecret       string
 }
 
-//Config is strcuct which holds necesary data such as server conf
-//database, log, cert, oauth
+// Config is strcuct which holds necesary data such as server conf
+// database, log, cert, oauth
 type Config struct {
 	Server     Server
 	OAuth      OAuth
@@ -30,7 +30,7 @@ type Config struct {
 	Templates  string
 }
 
-//NewConfig create config structure
+// NewConfig create config structure
 func newConfig() *Config {
 	return &Config{
 		Server: Server{

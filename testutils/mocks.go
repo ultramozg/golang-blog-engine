@@ -13,17 +13,17 @@ import (
 
 // MockSessionDB provides a mock implementation of session.SessionDB for testing
 type MockSessionDB struct {
-	sessions map[string]model.User
+	sessions      map[string]model.User
 	adminSessions map[string]bool
-	userSessions map[string]bool
+	userSessions  map[string]bool
 }
 
 // NewMockSessionDB creates a new mock session database
 func NewMockSessionDB() *MockSessionDB {
 	return &MockSessionDB{
-		sessions: make(map[string]model.User),
+		sessions:      make(map[string]model.User),
 		adminSessions: make(map[string]bool),
-		userSessions: make(map[string]bool),
+		userSessions:  make(map[string]bool),
 	}
 }
 
@@ -31,7 +31,7 @@ func NewMockSessionDB() *MockSessionDB {
 func (m *MockSessionDB) CreateSession(user model.User) *http.Cookie {
 	sessionID := fmt.Sprintf("test_session_%d", time.Now().UnixNano())
 	m.sessions[sessionID] = user
-	
+
 	if user.Type == session.ADMIN {
 		m.adminSessions[sessionID] = true
 	} else {

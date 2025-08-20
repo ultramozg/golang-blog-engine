@@ -41,7 +41,7 @@ type App struct {
 	Router   http.Handler
 	DB       *sql.DB
 	Temp     *template.Template
-	Sessions session.SessionDB
+	Sessions *session.SessionDB
 	Config   *Config
 	stop     chan os.Signal
 	OAuth    *oauth2.Config
@@ -49,12 +49,12 @@ type App struct {
 	Links    model.Infos
 }
 
-//NewApp return App struct
+// NewApp return App struct
 func NewApp() App {
 	return App{}
 }
 
-//Initialize Is using to initialize the app(connect to DB, initialize routes,logs, sessions and etc.
+// Initialize Is using to initialize the app(connect to DB, initialize routes,logs, sessions and etc.
 func (a *App) Initialize() {
 	var err error
 	a.Config = newConfig()
@@ -113,7 +113,7 @@ func (a *App) Initialize() {
 	signal.Notify(a.stop, syscall.SIGTERM)
 }
 
-//Run is using to launch and serve app web requests
+// Run is using to launch and serve app web requests
 func (a *App) Run() {
 	//Get the cert
 	cert := autocert.Manager{
@@ -168,7 +168,8 @@ func (a *App) Run() {
 	log.Println("Caught SIGINT or SIGTERM stopping the app")
 
 	//close all connections
-	ctx, _ := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 	if err := secureServer.Shutdown(ctx); err != nil {
 		log.Println("Unable to shutdown http server")
 	}
@@ -210,7 +211,6 @@ func (a *App) root(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/page?p=0", http.StatusFound)
-	return
 }
 
 func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +300,9 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 			absolute(page - 1),
 			absolute(page + 1),
 		}
-		a.Temp.ExecuteTemplate(w, "posts.gohtml", data)
+		if err := a.Temp.ExecuteTemplate(w, "posts.gohtml", data); err != nil {
+			log.Println("Template execution error:", err)
+		}
 
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
@@ -315,7 +317,9 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "create.gohtml", a.Sessions.IsAdmin(r))
+		if err := a.Temp.ExecuteTemplate(w, "create.gohtml", a.Sessions.IsAdmin(r)); err != nil {
+			log.Println("Template execution error:", err)
+		}
 
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -441,7 +445,9 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "about.gohtml", a.Sessions.IsAdmin(r))
+		if err := a.Temp.ExecuteTemplate(w, "about.gohtml", a.Sessions.IsAdmin(r)); err != nil {
+			log.Println("Template execution error:", err)
+		}
 		return
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
@@ -462,7 +468,9 @@ func (a *App) links(w http.ResponseWriter, r *http.Request) {
 			a.Sessions.IsAdmin(r),
 			a.Links.List,
 		}
-		a.Temp.ExecuteTemplate(w, "links.gohtml", data)
+		if err := a.Temp.ExecuteTemplate(w, "links.gohtml", data); err != nil {
+			log.Println("Template execution error:", err)
+		}
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
@@ -482,7 +490,9 @@ func (a *App) courses(w http.ResponseWriter, r *http.Request) {
 			a.Sessions.IsAdmin(r),
 			a.Courses.List,
 		}
-		a.Temp.ExecuteTemplate(w, "courses.gohtml", data)
+		if err := a.Temp.ExecuteTemplate(w, "courses.gohtml", data); err != nil {
+			log.Println("Template execution error:", err)
+		}
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
 		return
@@ -495,7 +505,9 @@ func (a *App) courses(w http.ResponseWriter, r *http.Request) {
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		a.Temp.ExecuteTemplate(w, "login.gohtml", a.Sessions.IsAdmin(r))
+		if err := a.Temp.ExecuteTemplate(w, "login.gohtml", a.Sessions.IsAdmin(r)); err != nil {
+			log.Println("Template execution error:", err)
+		}
 
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
@@ -555,7 +567,7 @@ func (a *App) logout(w http.ResponseWriter, r *http.Request) {
 func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		token, err := a.OAuth.Exchange(oauth2.NoContext, r.URL.Query().Get("code"))
+		token, err := a.OAuth.Exchange(context.Background(), r.URL.Query().Get("code"))
 		if err != nil {
 			log.Println(w, "there was an issue getting your token: ", err.Error())
 			return
@@ -565,7 +577,7 @@ func (a *App) oauth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		client := github.NewClient(a.OAuth.Client(oauth2.NoContext, token))
+		client := github.NewClient(a.OAuth.Client(context.Background(), token))
 		user, _, err := client.Users.Get(context.Background(), "")
 		if err != nil {
 			log.Println(w, "error getting name")
