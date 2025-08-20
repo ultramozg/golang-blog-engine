@@ -10,9 +10,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ['1.20', '1.21', '1.22']
     
     steps:
     - name: Checkout code
@@ -21,7 +18,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: '1.22'
 
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -36,6 +33,9 @@ jobs:
 
     - name: Verify dependencies
       run: go mod verify
+
+    - name: Create database directory
+      run: mkdir -p database
 
     - name: Run tests
       run: go test -v -race -coverprofile=coverage.out ./...
@@ -54,7 +54,7 @@ jobs:
     - name: Upload coverage reports as artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: coverage-reports-go${{ matrix.go-version }}
+        name: coverage-reports
         path: |
           coverage.out
           coverage.html

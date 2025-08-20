@@ -5,7 +5,7 @@ Also i have rewritten all the part of my code to look more clear and readabble. 
 This project uses GitHub Actions for continuous integration and deployment. The pipeline includes:
 
 ### Automated Testing
-- **Multi-version testing**: Tests run on Go 1.20, 1.21, and 1.22
+- **Go 1.22 testing**: Tests run on the latest stable Go version
 - **Race condition detection**: Tests run with `-race` flag
 - **Code coverage**: Generates coverage reports and uploads to Codecov
 - **Target coverage**: 80% minimum code coverage
