@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ultramozg/golang-blog-engine/model"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ultramozg/golang-blog-engine/model"
 )
 
 func TestMain(m *testing.M) {
@@ -164,7 +164,7 @@ func TestFailedLogin(t *testing.T) {
 func TestSuccesfullLogin(t *testing.T) {
 	// Ensure admin user exists
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -197,7 +197,7 @@ func TestSuccesfullLogin(t *testing.T) {
 func TestCreatePost(t *testing.T) {
 	// Ensure admin user exists
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -238,7 +238,7 @@ func TestCreatePost(t *testing.T) {
 func TestGetPost(t *testing.T) {
 	// Ensure we have test data
 	setupTestData(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -265,7 +265,7 @@ func TestDeletePost(t *testing.T) {
 	// Ensure we have test data and admin user
 	setupTestData(t)
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -297,5 +297,254 @@ func TestDeletePost(t *testing.T) {
 
 	if status := rr.Code; status != http.StatusSeeOther {
 		t.Errorf("GetPage handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
+	}
+}
+func TestPostRedirectMiddleware(t *testing.T) {
+	// Ensure we have test data
+	setupTestData(t)
+
+	a := NewApp()
+	a.Initialize()
+
+	// Get the first available post ID and its slug
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	var postID int
+	var slug string
+	err = db.QueryRow("SELECT id, slug FROM posts WHERE slug IS NOT NULL AND slug != '' ORDER BY id LIMIT 1").Scan(&postID, &slug)
+	if err != nil {
+		t.Fatalf("Failed to get post with slug: %v", err)
+	}
+
+	// Test redirect from old ID-based URL to slug-based URL
+	req, err := http.NewRequest(http.MethodGet, "/post?id="+strconv.Itoa(postID), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	a.Router.ServeHTTP(rr, req)
+
+	// Should get a 301 redirect
+	if status := rr.Code; status != http.StatusMovedPermanently {
+		t.Errorf("Redirect middleware returned wrong status code: got %v want %v", status, http.StatusMovedPermanently)
+	}
+
+	// Should redirect to slug-based URL
+	expectedLocation := "/p/" + slug
+	if location := rr.Header().Get("Location"); location != expectedLocation {
+		t.Errorf("Redirect middleware returned wrong location: got %v want %v", location, expectedLocation)
+	}
+}
+
+func TestPostRedirectMiddleware_InvalidID(t *testing.T) {
+	a := NewApp()
+	a.Initialize()
+
+	// Test with invalid ID - should not redirect
+	req, err := http.NewRequest(http.MethodGet, "/post?id=invalid", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	a.Router.ServeHTTP(rr, req)
+
+	// Should get a 400 bad request (not a redirect)
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("Handler returned wrong status code for invalid ID: got %v want %v", status, http.StatusBadRequest)
+	}
+}
+
+func TestPostRedirectMiddleware_NonExistentID(t *testing.T) {
+	a := NewApp()
+	a.Initialize()
+
+	// Test with non-existent ID - should not redirect
+	req, err := http.NewRequest(http.MethodGet, "/post?id=99999", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	a.Router.ServeHTTP(rr, req)
+
+	// Should get a 404 not found (not a redirect)
+	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf("Handler returned wrong status code for non-existent ID: got %v want %v", status, http.StatusNotFound)
+	}
+}
+
+func TestGetPostBySlug(t *testing.T) {
+	// Ensure we have test data
+	setupTestData(t)
+
+	a := NewApp()
+	a.Initialize()
+
+	// Get a post with a slug
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	var slug string
+	err = db.QueryRow("SELECT slug FROM posts WHERE slug IS NOT NULL AND slug != '' ORDER BY id LIMIT 1").Scan(&slug)
+	if err != nil {
+		t.Fatalf("Failed to get post with slug: %v", err)
+	}
+
+	// Test accessing post by slug
+	req, err := http.NewRequest(http.MethodGet, "/p/"+slug, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(a.getPostBySlug)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("GetPostBySlug handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expectedBody := "test body"
+	if !strings.Contains(rr.Body.String(), expectedBody) {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expectedBody)
+	}
+}
+
+func TestUpdatePostWithSlug(t *testing.T) {
+	// Ensure we have test data and admin user
+	setupTestData(t)
+	createTestAdmin(t)
+
+	a := NewApp()
+	a.Initialize()
+
+	// Login first
+	payload := url.Values{}
+	payload.Set("login", "admin")
+	payload.Set("password", "12345")
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handlerLogin := http.HandlerFunc(a.login)
+	handlerLogin.ServeHTTP(rr, req)
+
+	// Get a post with a slug
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	var slug string
+	err = db.QueryRow("SELECT slug FROM posts WHERE slug IS NOT NULL AND slug != '' ORDER BY id LIMIT 1").Scan(&slug)
+	if err != nil {
+		t.Fatalf("Failed to get post with slug: %v", err)
+	}
+
+	// Test GET request to update form with slug
+	req, err = http.NewRequest(http.MethodGet, "/update?slug="+slug, nil)
+	cookies := rr.Result().Cookies()
+	if len(cookies) > 0 {
+		req.AddCookie(cookies[0])
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerUpdate := http.HandlerFunc(a.updatePost)
+	handlerUpdate.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("UpdatePost GET handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	// Test POST request to update post with slug
+	payload = url.Values{}
+	payload.Set("slug", slug)
+	payload.Set("title", "Updated Test Post")
+	payload.Set("body", "updated test body")
+
+	req, err = http.NewRequest(http.MethodPost, "/update", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if len(cookies) > 0 {
+		req.AddCookie(cookies[0])
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerUpdate.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusSeeOther {
+		t.Errorf("UpdatePost POST handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
+	}
+}
+
+func TestDeletePostWithSlug(t *testing.T) {
+	// Ensure we have test data and admin user
+	setupTestData(t)
+	createTestAdmin(t)
+
+	a := NewApp()
+	a.Initialize()
+
+	// Login first
+	payload := url.Values{}
+	payload.Set("login", "admin")
+	payload.Set("password", "12345")
+
+	req, err := http.NewRequest(http.MethodPost, "/login", strings.NewReader(payload.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	handlerLogin := http.HandlerFunc(a.login)
+	handlerLogin.ServeHTTP(rr, req)
+
+	// Get a post with a slug
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	var slug string
+	err = db.QueryRow("SELECT slug FROM posts WHERE slug IS NOT NULL AND slug != '' ORDER BY id LIMIT 1").Scan(&slug)
+	if err != nil {
+		t.Fatalf("Failed to get post with slug: %v", err)
+	}
+
+	// Test delete post with slug
+	req, err = http.NewRequest(http.MethodGet, "/delete?slug="+slug, nil)
+	cookies := rr.Result().Cookies()
+	if len(cookies) > 0 {
+		req.AddCookie(cookies[0])
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr = httptest.NewRecorder()
+	handlerDelete := http.HandlerFunc(a.deletePost)
+	handlerDelete.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusSeeOther {
+		t.Errorf("DeletePost handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
 	}
 }

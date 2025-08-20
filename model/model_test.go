@@ -42,7 +42,7 @@ func createTestDB(t *testing.T) (*sql.DB, func()) {
 func seedTestData(db *sql.DB) error {
 	// Create slug service for generating slugs
 	slugService := services.NewSlugService(db)
-	
+
 	// Insert test posts with slugs
 	testPosts := []Post{
 		{Title: "Test Post 1", Body: "This is the body of test post 1", Date: "Mon Jan 1 12:00:00 2024"},
@@ -54,13 +54,13 @@ func seedTestData(db *sql.DB) error {
 		// Generate slug for the post
 		slug := slugService.GenerateSlug(post.Title)
 		post.Slug = slugService.EnsureUniqueSlug(slug, 0) // 0 for new post
-		
+
 		// Insert post with slug
 		result, err := db.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, post.Title, post.Body, post.Date, post.Slug)
 		if err != nil {
 			return err
 		}
-		
+
 		// Get the ID of the newly created post
 		id, err := result.LastInsertId()
 		if err != nil {

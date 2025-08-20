@@ -207,7 +207,7 @@ func (a *App) initializeRoutes() {
 	fs := http.FileServer(http.Dir("public/"))
 	mux.Handle("/public/", http.StripPrefix("/public/", middleware.CacheControlMiddleware(fs)))
 
-	a.Router = middleware.LogMiddleware(a.securityMiddleware(middleware.GzipMiddleware(middleware.SetHeaderMiddleware(mux))))
+	a.Router = middleware.LogMiddleware(a.securityMiddleware(middleware.PostRedirectMiddleware(a.DB)(middleware.GzipMiddleware(middleware.SetHeaderMiddleware(mux)))))
 }
 
 func (a *App) root(w http.ResponseWriter, r *http.Request) {
@@ -397,18 +397,18 @@ func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		p := model.Post{Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
-		
+
 		// Generate slug for the new post
 		slug := a.SlugService.GenerateSlug(title)
 		p.Slug = a.SlugService.EnsureUniqueSlug(slug, 0) // 0 for new post
-		
+
 		// Create post with slug
 		result, err := a.DB.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date, p.Slug)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		
+
 		// Get the ID of the newly created post
 		id, err := result.LastInsertId()
 		if err != nil {
@@ -427,14 +427,32 @@ func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		id, err := strconv.Atoi(r.FormValue("id"))
-		if err != nil {
-			http.Error(w, "Invalid ID", http.StatusBadRequest)
+		// Support both slug and id parameters for backward compatibility
+		slug := r.FormValue("slug")
+		idStr := r.FormValue("id")
+
+		var p model.Post
+		var err error
+
+		if slug != "" {
+			// Use slug to get post
+			p = model.Post{Slug: slug}
+			err = p.GetPostBySlug(a.DB)
+		} else if idStr != "" {
+			// Fallback to ID for backward compatibility
+			id, parseErr := strconv.Atoi(idStr)
+			if parseErr != nil {
+				http.Error(w, "Invalid ID", http.StatusBadRequest)
+				return
+			}
+			p = model.Post{ID: id}
+			err = p.GetPost(a.DB)
+		} else {
+			http.Error(w, "Missing post identifier", http.StatusBadRequest)
 			return
 		}
 
-		p := model.Post{ID: id}
-		if err := p.GetPost(a.DB); err != nil {
+		if err != nil {
 			switch err {
 			case sql.ErrNoRows:
 				http.Error(w, "Post not found", http.StatusNotFound)
@@ -460,11 +478,36 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		id, err := strconv.Atoi(r.FormValue("id"))
-		if err != nil {
-			http.Error(w, "Invalid id value", http.StatusBadRequest)
+		// Support both slug and id parameters for backward compatibility
+		slug := r.FormValue("slug")
+		idStr := r.FormValue("id")
+
+		var p model.Post
+		var err error
+
+		if slug != "" {
+			// Use slug to get post
+			p = model.Post{Slug: slug}
+			err = p.GetPostBySlug(a.DB)
+		} else if idStr != "" {
+			// Fallback to ID for backward compatibility
+			id, parseErr := strconv.Atoi(idStr)
+			if parseErr != nil {
+				http.Error(w, "Invalid id value", http.StatusBadRequest)
+				return
+			}
+			p = model.Post{ID: id}
+			err = p.GetPost(a.DB)
+		} else {
+			http.Error(w, "Missing post identifier", http.StatusBadRequest)
 			return
 		}
+
+		if err != nil {
+			http.Error(w, "Post not found", http.StatusNotFound)
+			return
+		}
+
 		title := r.FormValue("title")
 		body := r.FormValue("body")
 		if title == "" || body == "" {
@@ -473,27 +516,24 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Get current post data to check if title changed
-		var currentTitle string
-		err = a.DB.QueryRow(`select title from posts where id = ?`, id).Scan(&currentTitle)
-		if err != nil {
-			http.Error(w, "Post not found", http.StatusNotFound)
-			return
-		}
-		
-		p := model.Post{ID: id, Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
-		
+		currentTitle := p.Title
+
+		p.Title = title
+		p.Body = body
+		p.Date = time.Now().Format("Mon Jan _2 15:04:05 2006")
+
 		// If title changed, regenerate slug
 		if currentTitle != title {
 			newSlug := a.SlugService.GenerateSlug(title)
-			p.Slug = a.SlugService.EnsureUniqueSlug(newSlug, id)
-			
+			p.Slug = a.SlugService.EnsureUniqueSlug(newSlug, p.ID)
+
 			// Update post with new slug
 			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, slug = $4, updated_at = CURRENT_TIMESTAMP where id = $5`, p.Title, p.Body, p.Date, p.Slug, p.ID)
 		} else {
 			// Update post without changing slug
 			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, updated_at = CURRENT_TIMESTAMP where id = $4`, p.Title, p.Body, p.Date, p.ID)
 		}
-		
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -513,14 +553,33 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
-		id, err := strconv.Atoi(r.FormValue("id"))
-		if err != nil {
-			http.Error(w, "Invalid Id", http.StatusBadRequest)
+
+		// Support both slug and id parameters for backward compatibility
+		slug := r.FormValue("slug")
+		idStr := r.FormValue("id")
+
+		var p model.Post
+		var err error
+
+		if slug != "" {
+			// Use slug to get post
+			p = model.Post{Slug: slug}
+			err = p.GetPostBySlug(a.DB)
+		} else if idStr != "" {
+			// Fallback to ID for backward compatibility
+			id, parseErr := strconv.Atoi(idStr)
+			if parseErr != nil {
+				http.Error(w, "Invalid Id", http.StatusBadRequest)
+				return
+			}
+			p = model.Post{ID: id}
+			err = p.GetPost(a.DB)
+		} else {
+			http.Error(w, "Missing post identifier", http.StatusBadRequest)
 			return
 		}
 
-		p := model.Post{ID: id}
-		if err = p.GetPost(a.DB); err != nil {
+		if err != nil {
 			switch err {
 			case sql.ErrNoRows:
 				http.Error(w, "Not Found", http.StatusNotFound)

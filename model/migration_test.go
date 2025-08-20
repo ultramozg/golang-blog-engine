@@ -89,7 +89,7 @@ func TestMigrateExistingDatabase(t *testing.T) {
 		if err := rows.Scan(&id, &title, &slug); err != nil {
 			t.Fatal(err)
 		}
-		
+
 		if slug == "" {
 			t.Errorf("Post %d ('%s') does not have a slug", id, title)
 		} else {

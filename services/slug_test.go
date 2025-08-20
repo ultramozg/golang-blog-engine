@@ -50,7 +50,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 func TestNewSlugService(t *testing.T) {
 	db := setupTestDB(t)
 	service := NewSlugService(db)
-	
+
 	if service == nil {
 		t.Error("NewSlugService should return a non-nil service")
 	}
@@ -59,7 +59,7 @@ func TestNewSlugService(t *testing.T) {
 func TestSanitizeTitle(t *testing.T) {
 	db := setupTestDB(t)
 	service := NewSlugService(db)
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -145,7 +145,7 @@ func TestSanitizeTitle(t *testing.T) {
 func TestGenerateSlug(t *testing.T) {
 	db := setupTestDB(t)
 	service := NewSlugService(db)
-	
+
 	tests := []struct {
 		name     string
 		input    string
@@ -181,13 +181,13 @@ func TestGenerateSlug(t *testing.T) {
 func TestIsSlugUnique(t *testing.T) {
 	db := setupTestDB(t)
 	service := NewSlugService(db)
-	
+
 	// Insert test data
 	_, err := db.Exec("INSERT INTO posts (id, title, body, datepost, slug) VALUES (1, 'Test Post', 'Body', '2024-01-01', 'test-post')")
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	tests := []struct {
 		name          string
 		slug          string
@@ -233,7 +233,7 @@ func TestIsSlugUnique(t *testing.T) {
 func TestEnsureUniqueSlug(t *testing.T) {
 	db := setupTestDB(t)
 	service := NewSlugService(db)
-	
+
 	// Insert test data
 	_, err := db.Exec("INSERT INTO posts (id, title, body, datepost, slug) VALUES (1, 'Test Post', 'Body', '2024-01-01', 'test-post')")
 	if err != nil {
@@ -321,7 +321,7 @@ func TestSlugServiceWithoutSlugColumn(t *testing.T) {
 	}
 
 	service := NewSlugService(db)
-	
+
 	// Test that IsSlugUnique returns false when column doesn't exist
 	result := service.IsSlugUnique("test-slug", 0)
 	if result != false {
@@ -332,13 +332,13 @@ func TestSlugServiceWithoutSlugColumn(t *testing.T) {
 func TestSlugServiceEdgeCases(t *testing.T) {
 	db := setupTestDB(t)
 	service := NewSlugService(db)
-	
+
 	// Test with various edge cases
 	edgeCases := []struct {
-		name     string
-		input    string
-		minLen   int
-		maxLen   int
+		name   string
+		input  string
+		minLen int
+		maxLen int
 	}{
 		{
 			name:   "Single character",
@@ -380,9 +380,9 @@ func TestSlugServiceEdgeCases(t *testing.T) {
 func BenchmarkGenerateSlug(b *testing.B) {
 	db := setupTestDB(&testing.T{})
 	service := NewSlugService(db)
-	
+
 	title := "This is a Sample Blog Post Title for Benchmarking"
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		service.GenerateSlug(title)
@@ -392,9 +392,9 @@ func BenchmarkGenerateSlug(b *testing.B) {
 func BenchmarkSanitizeTitle(b *testing.B) {
 	db := setupTestDB(&testing.T{})
 	service := NewSlugService(db)
-	
+
 	title := "This is a Sample Blog Post Title with Special Characters!@#$%^&*() and Accented Letters like café"
-	
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		service.SanitizeTitle(title)
