@@ -103,6 +103,7 @@ func LogMiddleware(h http.Handler) http.Handler {
 		}
 	})
 }
+
 // PostRedirectMiddleware handles redirects from old ID-based URLs to new slug-based URLs
 func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
@@ -124,7 +125,7 @@ func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 					}
 				}
 			}
-			
+
 			// Continue with normal request processing
 			h.ServeHTTP(w, r)
 		})

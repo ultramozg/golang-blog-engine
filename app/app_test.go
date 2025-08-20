@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ultramozg/golang-blog-engine/model"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ultramozg/golang-blog-engine/model"
 )
 
 func TestMain(m *testing.M) {
@@ -164,7 +164,7 @@ func TestFailedLogin(t *testing.T) {
 func TestSuccesfullLogin(t *testing.T) {
 	// Ensure admin user exists
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -197,7 +197,7 @@ func TestSuccesfullLogin(t *testing.T) {
 func TestCreatePost(t *testing.T) {
 	// Ensure admin user exists
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -238,7 +238,7 @@ func TestCreatePost(t *testing.T) {
 func TestGetPost(t *testing.T) {
 	// Ensure we have test data
 	setupTestData(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -265,7 +265,7 @@ func TestDeletePost(t *testing.T) {
 	// Ensure we have test data and admin user
 	setupTestData(t)
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -302,7 +302,7 @@ func TestDeletePost(t *testing.T) {
 func TestPostRedirectMiddleware(t *testing.T) {
 	// Ensure we have test data
 	setupTestData(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -325,15 +325,15 @@ func TestPostRedirectMiddleware(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr := httptest.NewRecorder()
 	a.Router.ServeHTTP(rr, req)
-	
+
 	// Should get a 301 redirect
 	if status := rr.Code; status != http.StatusMovedPermanently {
 		t.Errorf("Redirect middleware returned wrong status code: got %v want %v", status, http.StatusMovedPermanently)
 	}
-	
+
 	// Should redirect to slug-based URL
 	expectedLocation := "/p/" + slug
 	if location := rr.Header().Get("Location"); location != expectedLocation {
@@ -350,10 +350,10 @@ func TestPostRedirectMiddleware_InvalidID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr := httptest.NewRecorder()
 	a.Router.ServeHTTP(rr, req)
-	
+
 	// Should get a 400 bad request (not a redirect)
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("Handler returned wrong status code for invalid ID: got %v want %v", status, http.StatusBadRequest)
@@ -369,10 +369,10 @@ func TestPostRedirectMiddleware_NonExistentID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr := httptest.NewRecorder()
 	a.Router.ServeHTTP(rr, req)
-	
+
 	// Should get a 404 not found (not a redirect)
 	if status := rr.Code; status != http.StatusNotFound {
 		t.Errorf("Handler returned wrong status code for non-existent ID: got %v want %v", status, http.StatusNotFound)
@@ -382,7 +382,7 @@ func TestPostRedirectMiddleware_NonExistentID(t *testing.T) {
 func TestGetPostBySlug(t *testing.T) {
 	// Ensure we have test data
 	setupTestData(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -404,15 +404,15 @@ func TestGetPostBySlug(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(a.getPostBySlug)
 	handler.ServeHTTP(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("GetPostBySlug handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
-	
+
 	expectedBody := "test body"
 	if !strings.Contains(rr.Body.String(), expectedBody) {
 		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expectedBody)
@@ -423,7 +423,7 @@ func TestUpdatePostWithSlug(t *testing.T) {
 	// Ensure we have test data and admin user
 	setupTestData(t)
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -463,11 +463,11 @@ func TestUpdatePostWithSlug(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr = httptest.NewRecorder()
 	handlerUpdate := http.HandlerFunc(a.updatePost)
 	handlerUpdate.ServeHTTP(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("UpdatePost GET handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
@@ -486,10 +486,10 @@ func TestUpdatePostWithSlug(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr = httptest.NewRecorder()
 	handlerUpdate.ServeHTTP(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusSeeOther {
 		t.Errorf("UpdatePost POST handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
 	}
@@ -499,7 +499,7 @@ func TestDeletePostWithSlug(t *testing.T) {
 	// Ensure we have test data and admin user
 	setupTestData(t)
 	createTestAdmin(t)
-	
+
 	a := NewApp()
 	a.Initialize()
 
@@ -539,11 +539,11 @@ func TestDeletePostWithSlug(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	rr = httptest.NewRecorder()
 	handlerDelete := http.HandlerFunc(a.deletePost)
 	handlerDelete.ServeHTTP(rr, req)
-	
+
 	if status := rr.Code; status != http.StatusSeeOther {
 		t.Errorf("DeletePost handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
 	}

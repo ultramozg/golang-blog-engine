@@ -77,7 +77,7 @@ func (td *TestDatabase) Close() error {
 func (td *TestDatabase) SeedTestData() error {
 	// Create slug service for generating slugs
 	slugService := services.NewSlugService(td.DB)
-	
+
 	// Insert test posts with slugs
 	testPosts := []struct {
 		title, body, date string
@@ -91,7 +91,7 @@ func (td *TestDatabase) SeedTestData() error {
 		// Generate slug for the post
 		slug := slugService.GenerateSlug(post.title)
 		uniqueSlug := slugService.EnsureUniqueSlug(slug, 0) // 0 for new post
-		
+
 		_, err := td.DB.Exec(`INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
 			post.title, post.body, post.date, uniqueSlug)
 		if err != nil {

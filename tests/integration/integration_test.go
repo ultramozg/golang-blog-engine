@@ -72,7 +72,7 @@ func testHomePage(t *testing.T, runner *testutils.TestRunner) {
 	testutils.AssertContains(t, bodyStr, "Test Post 1")
 	testutils.AssertContains(t, bodyStr, "Test Post 2")
 	testutils.AssertContains(t, bodyStr, "Test Post 3")
-	
+
 	// Verify that the page contains slug-based links instead of ID-based links
 	testutils.AssertContains(t, bodyStr, "/p/test-post-1")
 	testutils.AssertContains(t, bodyStr, "/p/test-post-2")
@@ -454,7 +454,7 @@ func TestConcurrentAccess(t *testing.T) {
 func testSlugBasedRouting(t *testing.T, runner *testutils.TestRunner) {
 	// Test accessing posts by slug
 	// The test data should have posts with slugs like "test-post-1", "test-post-2", etc.
-	
+
 	// Test accessing first post by slug
 	resp, err := runner.HTTP.MakeRequest("GET", "/p/test-post-1", "", nil)
 	if err != nil {

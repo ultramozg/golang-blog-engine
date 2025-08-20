@@ -56,14 +56,14 @@ func (p *Post) CreatePost(db *sql.DB) error {
 	if err != nil {
 		return err
 	}
-	
+
 	// Get the ID of the newly created post
 	id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 	p.ID = int(id)
-	
+
 	return nil
 }
 
@@ -278,8 +278,6 @@ func GenerateSlugsForExistingPosts(db *sql.DB) {
 	}
 }
 
-
-
 // User struct holds information about user
 type User struct {
 	Type int
@@ -396,10 +394,10 @@ func (s *migrationSlugService) GenerateSlug(title string) string {
 	if title == "" {
 		return "untitled"
 	}
-	
+
 	// Simple slug generation for migration
 	slug := strings.ToLower(title)
-	
+
 	// Handle common accented characters
 	replacements := map[string]string{
 		"é": "e", "è": "e", "ê": "e", "ë": "e",
@@ -409,27 +407,27 @@ func (s *migrationSlugService) GenerateSlug(title string) string {
 		"ú": "u", "ù": "u", "û": "u", "ü": "u",
 		"ç": "c", "ñ": "n",
 	}
-	
+
 	for accented, replacement := range replacements {
 		slug = strings.ReplaceAll(slug, accented, replacement)
 	}
-	
+
 	// Remove special characters except spaces
 	slug = regexp.MustCompile(`[^a-z0-9\s]`).ReplaceAllString(slug, "")
 	// Replace spaces with hyphens
 	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
 	// Remove leading/trailing hyphens
 	slug = strings.Trim(slug, "-")
-	
+
 	if slug == "" {
 		return "untitled"
 	}
-	
+
 	if len(slug) > 100 {
 		slug = slug[:100]
 		slug = strings.TrimRight(slug, "-")
 	}
-	
+
 	return slug
 }
 
@@ -451,16 +449,16 @@ func (s *migrationSlugService) EnsureUniqueSlug(slug string, postID int) string 
 func (s *migrationSlugService) IsSlugUnique(slug string, excludePostID int) bool {
 	var count int
 	var err error
-	
+
 	if excludePostID > 0 {
 		err = s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE slug = ? AND id != ?", slug, excludePostID).Scan(&count)
 	} else {
 		err = s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE slug = ?", slug).Scan(&count)
 	}
-	
+
 	if err != nil {
 		return false
 	}
-	
+
 	return count == 0
 }
