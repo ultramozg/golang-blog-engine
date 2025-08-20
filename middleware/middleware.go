@@ -2,10 +2,12 @@ package middleware
 
 import (
 	"compress/gzip"
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -100,4 +102,31 @@ func LogMiddleware(h http.Handler) http.Handler {
 			log.Println("Cannot write to file", err)
 		}
 	})
+}
+// PostRedirectMiddleware handles redirects from old ID-based URLs to new slug-based URLs
+func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Check if this is a request to /post with an id parameter
+			if r.URL.Path == "/post" && r.Method == "GET" {
+				idStr := r.URL.Query().Get("id")
+				if idStr != "" {
+					id, err := strconv.Atoi(idStr)
+					if err == nil {
+						// Get the post slug from database
+						var slug string
+						err = db.QueryRow("SELECT slug FROM posts WHERE id = ?", id).Scan(&slug)
+						if err == nil && slug != "" {
+							// Redirect to slug-based URL with 301 (permanent redirect)
+							http.Redirect(w, r, "/p/"+slug, http.StatusMovedPermanently)
+							return
+						}
+					}
+				}
+			}
+			
+			// Continue with normal request processing
+			h.ServeHTTP(w, r)
+		})
+	}
 }

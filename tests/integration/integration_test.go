@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/ultramozg/golang-blog-engine/testutils"
@@ -125,10 +126,27 @@ func testPostOperations(t *testing.T, runner *testutils.TestRunner) {
 		t.Fatalf("Failed to get post ID: %v", err)
 	}
 
-	// Test post viewing
-	resp, err = runner.HTTP.MakeRequest("GET", "/post?id="+string(rune(postID+'0')), "", nil)
+	// Test post viewing - old ID-based URL should redirect
+	resp, err = runner.HTTP.MakeRequest("GET", "/post?id="+strconv.Itoa(postID), "", nil)
 	if err != nil {
 		t.Fatalf("Failed to view post: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Should get a redirect to slug-based URL
+	testutils.AssertStatusCode(t, resp, http.StatusMovedPermanently)
+
+	// Get the slug for the post to test slug-based access
+	var slug string
+	err = runner.DB.DB.QueryRow("SELECT slug FROM posts WHERE id = ?", postID).Scan(&slug)
+	if err != nil {
+		t.Fatalf("Failed to get post slug: %v", err)
+	}
+
+	// Test post viewing with slug-based URL
+	resp, err = runner.HTTP.MakeRequest("GET", "/p/"+slug, "", nil)
+	if err != nil {
+		t.Fatalf("Failed to view post by slug: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -143,8 +161,8 @@ func testPostOperations(t *testing.T, runner *testutils.TestRunner) {
 	testutils.AssertContains(t, bodyStr, "Integration Test Post")
 	testutils.AssertContains(t, bodyStr, "This is a test post created during integration testing")
 
-	// Test post update form
-	resp, err = runner.HTTP.MakeRequestWithCookies("GET", "/update?id="+string(rune(postID+'0')), "", nil, []*http.Cookie{sessionCookie})
+	// Test post update form - use slug-based URL
+	resp, err = runner.HTTP.MakeRequestWithCookies("GET", "/update?slug="+slug, "", nil, []*http.Cookie{sessionCookie})
 	if err != nil {
 		t.Fatalf("Failed to get update form: %v", err)
 	}
@@ -163,8 +181,8 @@ func testPostOperations(t *testing.T, runner *testutils.TestRunner) {
 	testutils.AssertRedirect(t, resp, "/")
 
 	// Verify post was updated
-	var updatedTitle string
-	err = runner.DB.DB.QueryRow("SELECT title FROM posts WHERE id = ?", postID).Scan(&updatedTitle)
+	var updatedTitle, updatedSlug string
+	err = runner.DB.DB.QueryRow("SELECT title, slug FROM posts WHERE id = ?", postID).Scan(&updatedTitle, &updatedSlug)
 	if err != nil {
 		t.Fatalf("Failed to query updated post: %v", err)
 	}
@@ -172,8 +190,8 @@ func testPostOperations(t *testing.T, runner *testutils.TestRunner) {
 		t.Errorf("Expected 'Updated Integration Test Post', got '%s'", updatedTitle)
 	}
 
-	// Test post deletion
-	resp, err = runner.HTTP.MakeRequestWithCookies("GET", "/delete?id="+string(rune(postID+'0')), "", nil, []*http.Cookie{sessionCookie})
+	// Test post deletion - use updated slug-based URL
+	resp, err = runner.HTTP.MakeRequestWithCookies("GET", "/delete?slug="+updatedSlug, "", nil, []*http.Cookie{sessionCookie})
 	if err != nil {
 		t.Fatalf("Failed to delete post: %v", err)
 	}
