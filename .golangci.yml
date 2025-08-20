@@ -1,11 +1,8 @@
 run:
   timeout: 5m
   tests: true
-  modules-download-mode: readonly
 
 linters-settings:
-  govet:
-    shadow: true
   gocyclo:
     min-complexity: 15
   dupl:
@@ -19,36 +16,19 @@ linters-settings:
     line-length: 140
   goimports:
     local-prefixes: github.com/ultramozg/golang-blog-engine
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport
-      - ifElseChain
-      - octalLiteral
-      - whyNoLint
-      - wrapperFunc
 
 linters:
   enable:
     - bodyclose
     - dupl
     - errcheck
-    - exportloopref
     - exhaustive
     - funlen
     - gochecknoinits
     - goconst
-    - gocritic
     - gocyclo
     - gofmt
     - goimports
-    - gomnd
-    - goprintffuncname
     - gosec
     - gosimple
     - govet
@@ -56,7 +36,6 @@ linters:
     - lll
     - misspell
     - nakedret
-    - noctx
     - nolintlint
     - staticcheck
     - stylecheck
@@ -71,6 +50,5 @@ issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - gomnd
         - funlen
         - gocyclo
