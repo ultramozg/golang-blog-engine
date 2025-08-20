@@ -1,7 +1,7 @@
 package testutils
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"testing"
@@ -49,7 +49,7 @@ func TestTestingInfrastructure(t *testing.T) {
 
 		AssertStatusCode(t, resp, http.StatusOK)
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			t.Fatalf("Failed to read response body: %v", err)
 		}
@@ -169,7 +169,7 @@ func TestFileManagerUtilities(t *testing.T) {
 		t.Errorf("File was not created: %s", filePath)
 	}
 
-	readContent, err := ioutil.ReadFile(filePath)
+	readContent, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatalf("Failed to read file: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestAssertionHelpers(t *testing.T) {
 	AssertStatusCode(t, resp, http.StatusOK)
 
 	// Test content assertions
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("Failed to read response body: %v", err)
 	}
