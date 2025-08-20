@@ -15,8 +15,8 @@ func TestNewSessionDB(t *testing.T) {
 		t.Errorf("NewSessionDB() returned nil")
 	}
 
-	if len(sessionDB) != 0 {
-		t.Errorf("NewSessionDB() should return empty map, got length %d", len(sessionDB))
+	if sessionDB.Len() != 0 {
+		t.Errorf("NewSessionDB() should return empty map, got length %d", sessionDB.Len())
 	}
 }
 
@@ -55,7 +55,7 @@ func TestSessionDB_CreateSession(t *testing.T) {
 			}
 
 			// Verify session was stored
-			storedUser, exists := sessionDB[cookie.Value]
+			storedUser, exists := sessionDB.GetSession(cookie.Value)
 			if !exists {
 				t.Errorf("Session was not stored in SessionDB")
 			}
@@ -184,7 +184,7 @@ func TestSessionDB_DelSession(t *testing.T) {
 	sessionID := cookie.Value
 
 	// Verify session exists
-	if _, exists := sessionDB[sessionID]; !exists {
+	if _, exists := sessionDB.GetSession(sessionID); !exists {
 		t.Fatalf("Session should exist before deletion")
 	}
 
@@ -221,7 +221,7 @@ func TestSessionDB_DelSession(t *testing.T) {
 
 			// Verify session was removed (for existing session)
 			if tt.sessionID == sessionID {
-				if _, exists := sessionDB[sessionID]; exists {
+				if _, exists := sessionDB.GetSession(sessionID); exists {
 					t.Errorf("Session should be deleted from SessionDB")
 				}
 			}
@@ -263,8 +263,8 @@ func TestSessionDB_ConcurrentAccess(t *testing.T) {
 	}
 
 	// Verify all sessions were created
-	if len(sessionDB) != 10 {
-		t.Errorf("Expected 10 sessions, got %d", len(sessionDB))
+	if sessionDB.Len() != 10 {
+		t.Errorf("Expected 10 sessions, got %d", sessionDB.Len())
 	}
 }
 

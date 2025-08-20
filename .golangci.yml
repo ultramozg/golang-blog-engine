@@ -5,13 +5,9 @@ run:
 
 linters-settings:
   govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0
+    shadow: true
   gocyclo:
     min-complexity: 15
-  maligned:
-    suggest-new: true
   dupl:
     threshold: 100
   goconst:
@@ -22,7 +18,7 @@ linters-settings:
   lll:
     line-length: 140
   goimports:
-    local-prefixes: github.com/your-org/blog-platform
+    local-prefixes: github.com/ultramozg/golang-blog-engine
   gocritic:
     enabled-tags:
       - diagnostic
@@ -40,9 +36,6 @@ linters-settings:
 linters:
   enable:
     - bodyclose
-    - deadcode
-    - depguard
-    - dogsled
     - dupl
     - errcheck
     - exportloopref
@@ -65,16 +58,14 @@ linters:
     - nakedret
     - noctx
     - nolintlint
-    - rowserrcheck
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace
+    - revive
 
 issues:
   exclude-rules:

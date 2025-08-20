@@ -28,7 +28,7 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 To enable branch protection rules (recommended):
 
 1. Go to repository Settings → Branches
-2. Add rule for `main` branch:
+2. Add rule for `master` branch:
    - Require status checks to pass before merging
    - Require branches to be up to date before merging
    - Select required status checks: `Test`, `Security Scan`, `Lint`, `Build`
