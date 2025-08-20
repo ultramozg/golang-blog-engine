@@ -43,11 +43,11 @@ func createTestApp(t *testing.T) (*App, func()) {
     link: "https://example.com/link"
     description: "Test link description"`
 
-	if err := os.WriteFile("data/courses.yml", []byte(coursesContent), 0644); err != nil {
+	if err := os.WriteFile("data/courses.yml", []byte(coursesContent), 0600); err != nil {
 		t.Fatalf("Failed to create courses.yml: %v", err)
 	}
 
-	if err := os.WriteFile("data/links.yml", []byte(linksContent), 0644); err != nil {
+	if err := os.WriteFile("data/links.yml", []byte(linksContent), 0600); err != nil {
 		t.Fatalf("Failed to create links.yml: %v", err)
 	}
 

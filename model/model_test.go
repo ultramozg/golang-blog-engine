@@ -91,7 +91,7 @@ func createTestUser(db *sql.DB, name, password string, userType int) error {
 
 // createTempFile creates a temporary file with given content
 func createTempFile(t *testing.T, content string) string {
-	tmpFile, err := os.CreateTemp("", "test_*.txt")
+	tmpFile, err := os.CreateTemp("", "test_*.yml")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}

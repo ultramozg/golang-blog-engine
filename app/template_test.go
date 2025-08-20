@@ -67,7 +67,7 @@ func TestTemplateInitialization(t *testing.T) {
 			// Create test template files
 			for filename, content := range tt.templateFiles {
 				filePath := filepath.Join(tempDir, filename)
-				if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+				if err := os.WriteFile(filePath, []byte(content), 0600); err != nil {
 					t.Fatalf("Failed to create test template file: %v", err)
 				}
 			}
@@ -117,7 +117,7 @@ func TestTemplateExecution(t *testing.T) {
 
 	for filename, content := range templates {
 		filePath := filepath.Join(tempDir, filename)
-		if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte(content), 0600); err != nil {
 			t.Fatalf("Failed to create test template file: %v", err)
 		}
 	}
@@ -275,7 +275,7 @@ func TestTemplateWithComplexData(t *testing.T) {
 </html>`
 
 	templatePath := filepath.Join(tempDir, "complex.gohtml")
-	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0600); err != nil {
 		t.Fatalf("Failed to create test template file: %v", err)
 	}
 
@@ -359,7 +359,7 @@ func TestTemplateErrorHandling(t *testing.T) {
 	templateContent := `{{.User.Name}} - {{.User.Email}} - {{.User.Profile.Bio}}`
 
 	templatePath := filepath.Join(tempDir, "error_test.gohtml")
-	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0600); err != nil {
 		t.Fatalf("Failed to create test template file: %v", err)
 	}
 
