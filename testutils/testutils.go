@@ -401,4 +401,8 @@ func CreateTempFile(t *testing.T, content string) string {
 	}
 
 	return tmpFile.Name()
+}// Rem
+oveTempFile removes a temporary file
+func RemoveTempFile(path string) error {
+	return os.Remove(path)
 }
