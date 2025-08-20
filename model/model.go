@@ -213,33 +213,33 @@ type Infos struct {
 func ConverYamlToStruct(path string) (i Infos, err error) {
 	// Sanitize path to prevent directory traversal attacks
 	cleanPath := filepath.Clean(path)
-	
+
 	// Check for directory traversal attempts
 	if strings.Contains(cleanPath, "..") {
 		return i, errors.New("invalid file path: directory traversal not allowed")
 	}
-	
+
 	// Additional validation: only allow .yml and .yaml files
 	ext := filepath.Ext(cleanPath)
 	if ext != ".yml" && ext != ".yaml" {
 		return i, errors.New("invalid file type: only YAML files are allowed")
 	}
-	
+
 	// For production use, ensure the path is within expected directories
 	// Allow data/ directory and temp files for testing
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
 		return i, errors.New("invalid file path: cannot resolve absolute path")
 	}
-	
+
 	// Check if it's a temp file (for testing) or in data directory
 	isTempFile := strings.Contains(absPath, os.TempDir())
 	isDataFile := strings.Contains(absPath, "data/") || strings.HasSuffix(absPath, ".yml") || strings.HasSuffix(absPath, ".yaml")
-	
+
 	if !isTempFile && !isDataFile {
 		return i, errors.New("invalid file path: access denied")
 	}
-	
+
 	b, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return
