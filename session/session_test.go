@@ -77,7 +77,7 @@ func TestSessionDB_IsAdmin(t *testing.T) {
 	// Create test sessions
 	adminUser := model.User{Type: ADMIN, Name: "admin"}
 	githubUser := model.User{Type: GITHUB, Name: "github_user"}
-	
+
 	adminCookie := sessionDB.CreateSession(adminUser)
 	githubCookie := sessionDB.CreateSession(githubUser)
 
@@ -129,7 +129,7 @@ func TestSessionDB_IsLoggedin(t *testing.T) {
 	// Create test sessions
 	adminUser := model.User{Type: ADMIN, Name: "admin"}
 	githubUser := model.User{Type: GITHUB, Name: "github_user"}
-	
+
 	adminCookie := sessionDB.CreateSession(adminUser)
 	githubCookie := sessionDB.CreateSession(githubUser)
 
@@ -240,19 +240,19 @@ func TestSessionDB_ConcurrentAccess(t *testing.T) {
 		go func(id int) {
 			user := model.User{Type: ADMIN, Name: "admin"}
 			cookie := sessionDB.CreateSession(user)
-			
+
 			// Verify the session can be accessed
 			req := httptest.NewRequest("GET", "/", nil)
 			req.AddCookie(cookie)
-			
+
 			if !sessionDB.IsAdmin(req) {
 				t.Errorf("Session %d should be admin", id)
 			}
-			
+
 			if !sessionDB.IsLoggedin(req) {
 				t.Errorf("Session %d should be logged in", id)
 			}
-			
+
 			done <- true
 		}(i)
 	}

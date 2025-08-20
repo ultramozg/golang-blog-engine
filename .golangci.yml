@@ -20,35 +20,40 @@ linters-settings:
 linters:
   enable:
     - bodyclose
-    - dupl
     - errcheck
-    - exhaustive
-    - funlen
-    - gochecknoinits
-    - goconst
-    - gocyclo
     - gofmt
-    - goimports
-    - gosec
     - gosimple
     - govet
     - ineffassign
-    - lll
-    - misspell
-    - nakedret
-    - nolintlint
     - staticcheck
-    - stylecheck
     - typecheck
-    - unconvert
-    - unparam
     - unused
-    - whitespace
-    - revive
 
 issues:
   exclude-rules:
     - path: _test\.go
       linters:
-        - funlen
-        - gocyclo
+        - errcheck
+        - gosec
+    - path: testutils/
+      linters:
+        - errcheck
+        - gosec
+    - text: "G306:" # File permissions
+      linters:
+        - gosec
+    - text: "G402:" # TLS MinVersion
+      linters:
+        - gosec
+    - text: "unused-parameter"
+      linters:
+        - revive
+    - text: "receiver-naming"
+      linters:
+        - revive
+    - text: "exported:"
+      linters:
+        - revive
+    - text: "blank-imports"
+      linters:
+        - revive

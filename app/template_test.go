@@ -83,7 +83,7 @@ func TestTemplateInitialization(t *testing.T) {
 			}()
 
 			tmpl, err := template.ParseGlob(tt.templateGlob)
-			
+
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
@@ -110,10 +110,10 @@ func TestTemplateExecution(t *testing.T) {
 
 	// Create test templates
 	templates := map[string]string{
-		"simple.gohtml": `<h1>{{.Title}}</h1><p>{{.Content}}</p>`,
+		"simple.gohtml":     `<h1>{{.Title}}</h1><p>{{.Content}}</p>`,
 		"with_logic.gohtml": `{{if .IsAdmin}}<p>Admin Panel</p>{{else}}<p>User Panel</p>{{end}}`,
-		"with_loop.gohtml": `<ul>{{range .Items}}<li>{{.}}</li>{{end}}</ul>`,
-		"nested.gohtml": `<div>{{template "simple.gohtml" .}}</div>`,
+		"with_loop.gohtml":  `<ul>{{range .Items}}<li>{{.}}</li>{{end}}</ul>`,
+		"nested.gohtml":     `<div>{{template "simple.gohtml" .}}</div>`,
 	}
 
 	for filename, content := range templates {
@@ -130,11 +130,11 @@ func TestTemplateExecution(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		templateName string
-		data         interface{}
+		name            string
+		templateName    string
+		data            interface{}
 		expectedContent string
-		expectError  bool
+		expectError     bool
 	}{
 		{
 			name:         "Simple template execution",
@@ -405,8 +405,8 @@ func TestTemplateErrorHandling(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "Nil data",
-			data: nil,
+			name:        "Nil data",
+			data:        nil,
 			expectError: false, // Go templates can handle nil data, just produces empty output
 		},
 		{

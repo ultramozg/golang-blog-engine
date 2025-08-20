@@ -59,7 +59,7 @@ func seedTestData(db *sql.DB) error {
 
 	// Insert test comments
 	testComments := []struct {
-		postID      int
+		postID              int
 		name, date, comment string
 	}{
 		{1, "Test User", "Mon Jan 1 13:00:00 2024", "This is a test comment"},
@@ -115,9 +115,9 @@ func TestPost_GetPost(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		postID      int
-		expectError bool
+		name         string
+		postID       int
+		expectError  bool
 		expectedPost Post
 	}{
 		{
@@ -224,7 +224,7 @@ func TestPost_CreatePost(t *testing.T) {
 
 				// Verify the post was created by trying to retrieve it
 				var count int
-				err = db.QueryRow("SELECT COUNT(*) FROM posts WHERE title = ? AND body = ?", 
+				err = db.QueryRow("SELECT COUNT(*) FROM posts WHERE title = ? AND body = ?",
 					tt.post.Title, tt.post.Body).Scan(&count)
 				if err != nil {
 					t.Errorf("Error checking if post was created: %v", err)
@@ -289,7 +289,7 @@ func TestPost_UpdatePost(t *testing.T) {
 				// For existing post, verify the update
 				if tt.post.ID == 1 {
 					var title, body, date string
-					err = db.QueryRow("SELECT title, body, datepost FROM posts WHERE id = ?", 
+					err = db.QueryRow("SELECT title, body, datepost FROM posts WHERE id = ?",
 						tt.post.ID).Scan(&title, &body, &date)
 					if err != nil {
 						t.Errorf("Error retrieving updated post: %v", err)
@@ -529,7 +529,7 @@ func TestComment_CreateComment(t *testing.T) {
 
 				// Verify the comment was created
 				var count int
-				err = db.QueryRow("SELECT COUNT(*) FROM comments WHERE postid = ? AND name = ? AND comment = ?", 
+				err = db.QueryRow("SELECT COUNT(*) FROM comments WHERE postid = ? AND name = ? AND comment = ?",
 					tt.comment.PostID, tt.comment.Name, tt.comment.Data).Scan(&count)
 				if err != nil {
 					t.Errorf("Error checking if comment was created: %v", err)
@@ -771,7 +771,7 @@ func TestUser_CreateUser(t *testing.T) {
 
 				// Verify the user was created
 				var count int
-				err = db.QueryRow("SELECT COUNT(*) FROM users WHERE name = ? AND type = ?", 
+				err = db.QueryRow("SELECT COUNT(*) FROM users WHERE name = ? AND type = ?",
 					"admin", tt.user.Type).Scan(&count) // Note: CreateUser hardcodes "admin" as name
 				if err != nil {
 					t.Errorf("Error checking if user was created: %v", err)
@@ -921,21 +921,21 @@ func TestMigrateDatabase(t *testing.T) {
 
 	// Verify we can insert data into each table
 	// Test posts table
-	_, err = db.Exec(`INSERT INTO posts (title, body, datepost) VALUES (?, ?, ?)`, 
+	_, err = db.Exec(`INSERT INTO posts (title, body, datepost) VALUES (?, ?, ?)`,
 		"Test", "Body", "Date")
 	if err != nil {
 		t.Errorf("Error inserting into posts table: %v", err)
 	}
 
 	// Test comments table
-	_, err = db.Exec(`INSERT INTO comments (postid, name, date, comment) VALUES (?, ?, ?, ?)`, 
+	_, err = db.Exec(`INSERT INTO comments (postid, name, date, comment) VALUES (?, ?, ?, ?)`,
 		1, "Name", "Date", "Comment")
 	if err != nil {
 		t.Errorf("Error inserting into comments table: %v", err)
 	}
 
 	// Test users table
-	_, err = db.Exec(`INSERT INTO users (name, type, pass) VALUES (?, ?, ?)`, 
+	_, err = db.Exec(`INSERT INTO users (name, type, pass) VALUES (?, ?, ?)`,
 		"user", 1, "pass")
 	if err != nil {
 		t.Errorf("Error inserting into users table: %v", err)

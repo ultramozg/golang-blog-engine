@@ -8,20 +8,20 @@ import (
 	"github.com/ultramozg/golang-blog-engine/model"
 )
 
-//ADMIN is identificator constant
-//GITHUB is user which is loged in via github
+// ADMIN is identificator constant
+// GITHUB is user which is loged in via github
 const (
 	ADMIN = iota + 1
 	GITHUB
 )
 
-//SessionDB is a thread-safe map which holds active sessions
+// SessionDB is a thread-safe map which holds active sessions
 type SessionDB struct {
 	sessions map[string]model.User
 	mutex    sync.RWMutex
 }
 
-//NewSessionDB generate new SessionDB struct
+// NewSessionDB generate new SessionDB struct
 func NewSessionDB() *SessionDB {
 	return &SessionDB{
 		sessions: make(map[string]model.User),
@@ -33,10 +33,10 @@ func (s *SessionDB) IsAdmin(r *http.Request) bool {
 	if err == http.ErrNoCookie {
 		return false
 	}
-	
+
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	
+
 	if v, ok := s.sessions[c.Value]; ok && v.Type == ADMIN {
 		return true
 	}
@@ -48,10 +48,10 @@ func (s *SessionDB) IsLoggedin(r *http.Request) bool {
 	if err == http.ErrNoCookie {
 		return false
 	}
-	
+
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	
+
 	if _, ok := s.sessions[c.Value]; ok {
 		return true
 	}
@@ -89,7 +89,7 @@ func (s *SessionDB) DelSession(session string) *http.Cookie {
 func (s *SessionDB) GetSession(sessionID string) (model.User, bool) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	
+
 	user, exists := s.sessions[sessionID]
 	return user, exists
 }
@@ -98,6 +98,6 @@ func (s *SessionDB) GetSession(sessionID string) (model.User, bool) {
 func (s *SessionDB) Len() int {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	
+
 	return len(s.sessions)
 }

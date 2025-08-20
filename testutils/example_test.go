@@ -119,7 +119,7 @@ func TestTestEnvironment(t *testing.T) {
 	// Test environment variable management
 	originalValue := "original"
 	testKey := "TEST_KEY"
-	
+
 	// Set original value
 	env.SetEnv(testKey, originalValue)
 	if value := os.Getenv(testKey); value != originalValue {
@@ -216,7 +216,7 @@ func TestAssertionHelpers(t *testing.T) {
 	}
 
 	bodyStr := string(body)
-	AssertContains(t, bodyStr, "Test Post") // Should contain test data
+	AssertContains(t, bodyStr, "Test Post")             // Should contain test data
 	AssertNotContains(t, bodyStr, "NonExistentContent") // Should not contain this
 
 	// Test redirect assertion

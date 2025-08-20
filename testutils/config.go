@@ -128,7 +128,7 @@ func NewTestFileManager(baseDir string) *TestFileManager {
 // CreateFile creates a test file with given content
 func (tfm *TestFileManager) CreateFile(relativePath, content string) (string, error) {
 	fullPath := filepath.Join(tfm.baseDir, relativePath)
-	
+
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(fullPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {

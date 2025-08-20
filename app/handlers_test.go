@@ -27,7 +27,7 @@ func createTestApp(t *testing.T) (*App, func()) {
 	}
 
 	dbPath := filepath.Join(tempDir, "test.db")
-	
+
 	// Create data directory and files in current directory
 	if err := os.MkdirAll("data", 0755); err != nil {
 		t.Fatalf("Failed to create data directory: %v", err)
@@ -38,7 +38,7 @@ func createTestApp(t *testing.T) (*App, func()) {
   - title: "Test Course"
     link: "https://example.com/course"
     description: "Test course description"`
-	
+
 	linksContent := `infos:
   - title: "Test Link"
     link: "https://example.com/link"
@@ -72,7 +72,7 @@ func createTestApp(t *testing.T) (*App, func()) {
 			app.DB.Close()
 		}
 		os.RemoveAll(tempDir)
-		
+
 		// Restore original environment variables
 		if originalDBURI != "" {
 			os.Setenv("DBURI", originalDBURI)
@@ -144,12 +144,12 @@ func makeRequest(method, path, body string, cookies []*http.Cookie, headers map[
 	} else {
 		req = httptest.NewRequest(method, path, nil)
 	}
-	
+
 	// Set headers
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
-	
+
 	// Set cookies
 	for _, cookie := range cookies {
 		req.AddCookie(cookie)
@@ -165,17 +165,17 @@ func TestRootHandler(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		path           string
-		method         string
-		expectedStatus int
+		name             string
+		path             string
+		method           string
+		expectedStatus   int
 		expectedLocation string
 	}{
 		{
-			name:           "Root path redirects to page 0",
-			path:           "/",
-			method:         http.MethodGet,
-			expectedStatus: http.StatusFound,
+			name:             "Root path redirects to page 0",
+			path:             "/",
+			method:           http.MethodGet,
+			expectedStatus:   http.StatusFound,
 			expectedLocation: "/page?p=0",
 		},
 		{
@@ -216,19 +216,19 @@ func TestGetPageHandler(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		path           string
-		method         string
-		expectedStatus int
-		checkContent   bool
+		name            string
+		path            string
+		method          string
+		expectedStatus  int
+		checkContent    bool
 		expectedContent string
 	}{
 		{
-			name:           "Get first page",
-			path:           "/page?p=0",
-			method:         http.MethodGet,
-			expectedStatus: http.StatusOK,
-			checkContent:   true,
+			name:            "Get first page",
+			path:            "/page?p=0",
+			method:          http.MethodGet,
+			expectedStatus:  http.StatusOK,
+			checkContent:    true,
 			expectedContent: "Test Post",
 		},
 		{
@@ -278,19 +278,19 @@ func TestGetPostHandler(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		path           string
-		method         string
-		expectedStatus int
-		checkContent   bool
+		name            string
+		path            string
+		method          string
+		expectedStatus  int
+		checkContent    bool
 		expectedContent string
 	}{
 		{
-			name:           "Get existing post",
-			path:           "/post?id=1",
-			method:         http.MethodGet,
-			expectedStatus: http.StatusOK,
-			checkContent:   true,
+			name:            "Get existing post",
+			path:            "/post?id=1",
+			method:          http.MethodGet,
+			expectedStatus:  http.StatusOK,
+			checkContent:    true,
 			expectedContent: "Test Post 1",
 		},
 		{
@@ -341,12 +341,12 @@ func TestLoginHandler(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		method         string
-		formData       string
-		expectedStatus int
-		checkCookie    bool
-		checkLocation  bool
+		name             string
+		method           string
+		formData         string
+		expectedStatus   int
+		checkCookie      bool
+		checkLocation    bool
 		expectedLocation string
 	}{
 		{
@@ -355,12 +355,12 @@ func TestLoginHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "Valid admin login",
-			method:         http.MethodPost,
-			formData:       "login=admin&password=testpass123",
-			expectedStatus: http.StatusSeeOther,
-			checkCookie:    true,
-			checkLocation:  true,
+			name:             "Valid admin login",
+			method:           http.MethodPost,
+			formData:         "login=admin&password=testpass123",
+			expectedStatus:   http.StatusSeeOther,
+			checkCookie:      true,
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 		{
@@ -437,19 +437,19 @@ func TestLogoutHandler(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		method         string
-		withSession    bool
-		expectedStatus int
-		checkLocation  bool
+		name             string
+		method           string
+		withSession      bool
+		expectedStatus   int
+		checkLocation    bool
 		expectedLocation string
 	}{
 		{
-			name:           "Logout with admin session",
-			method:         http.MethodGet,
-			withSession:    true,
-			expectedStatus: http.StatusSeeOther,
-			checkLocation:  true,
+			name:             "Logout with admin session",
+			method:           http.MethodGet,
+			withSession:      true,
+			expectedStatus:   http.StatusSeeOther,
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 		{
@@ -502,12 +502,12 @@ func TestCreatePostHandler(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		method         string
-		withSession    bool
-		formData       string
-		expectedStatus int
-		checkLocation  bool
+		name             string
+		method           string
+		withSession      bool
+		formData         string
+		expectedStatus   int
+		checkLocation    bool
 		expectedLocation string
 	}{
 		{
@@ -517,12 +517,12 @@ func TestCreatePostHandler(t *testing.T) {
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "Create valid post",
-			method:         http.MethodPost,
-			withSession:    true,
-			formData:       "title=New Test Post&body=This is a new test post body",
-			expectedStatus: http.StatusSeeOther,
-			checkLocation:  true,
+			name:             "Create valid post",
+			method:           http.MethodPost,
+			withSession:      true,
+			formData:         "title=New Test Post&body=This is a new test post body",
+			expectedStatus:   http.StatusSeeOther,
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 		{
@@ -540,12 +540,12 @@ func TestCreatePostHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "Create post without session (handler only, no middleware)",
-			method:         http.MethodPost,
-			withSession:    false,
-			formData:       "title=Test Post&body=Test body",
-			expectedStatus: http.StatusSeeOther, // Handler doesn't check auth, middleware does
-			checkLocation:  true,
+			name:             "Create post without session (handler only, no middleware)",
+			method:           http.MethodPost,
+			withSession:      false,
+			formData:         "title=Test Post&body=Test body",
+			expectedStatus:   http.StatusSeeOther, // Handler doesn't check auth, middleware does
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 		{
@@ -596,13 +596,13 @@ func TestUpdatePostHandler(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		method         string
-		path           string
-		withSession    bool
-		formData       string
-		expectedStatus int
-		checkLocation  bool
+		name             string
+		method           string
+		path             string
+		withSession      bool
+		formData         string
+		expectedStatus   int
+		checkLocation    bool
 		expectedLocation string
 	}{
 		{
@@ -627,13 +627,13 @@ func TestUpdatePostHandler(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "Update existing post",
-			method:         http.MethodPost,
-			path:           "/update",
-			withSession:    true,
-			formData:       "id=1&title=Updated Post&body=Updated body",
-			expectedStatus: http.StatusSeeOther,
-			checkLocation:  true,
+			name:             "Update existing post",
+			method:           http.MethodPost,
+			path:             "/update",
+			withSession:      true,
+			formData:         "id=1&title=Updated Post&body=Updated body",
+			expectedStatus:   http.StatusSeeOther,
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 		{
@@ -653,13 +653,13 @@ func TestUpdatePostHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "Update without session (handler only, no middleware)",
-			method:         http.MethodPost,
-			path:           "/update",
-			withSession:    false,
-			formData:       "id=1&title=Updated Post&body=Updated body",
-			expectedStatus: http.StatusSeeOther, // Handler doesn't check auth, middleware does
-			checkLocation:  true,
+			name:             "Update without session (handler only, no middleware)",
+			method:           http.MethodPost,
+			path:             "/update",
+			withSession:      false,
+			formData:         "id=1&title=Updated Post&body=Updated body",
+			expectedStatus:   http.StatusSeeOther, // Handler doesn't check auth, middleware does
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 	}
@@ -704,19 +704,19 @@ func TestDeletePostHandler(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		path           string
-		withSession    bool
-		expectedStatus int
-		checkLocation  bool
+		name             string
+		path             string
+		withSession      bool
+		expectedStatus   int
+		checkLocation    bool
 		expectedLocation string
 	}{
 		{
-			name:           "Delete existing post",
-			path:           "/delete?id=1",
-			withSession:    true,
-			expectedStatus: http.StatusSeeOther,
-			checkLocation:  true,
+			name:             "Delete existing post",
+			path:             "/delete?id=1",
+			withSession:      true,
+			expectedStatus:   http.StatusSeeOther,
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 		{
@@ -732,11 +732,11 @@ func TestDeletePostHandler(t *testing.T) {
 			expectedStatus: http.StatusNotFound,
 		},
 		{
-			name:           "Delete without session (handler only, no middleware)",
-			path:           "/delete?id=2",
-			withSession:    false,
-			expectedStatus: http.StatusSeeOther, // Handler doesn't check auth, middleware does
-			checkLocation:  true,
+			name:             "Delete without session (handler only, no middleware)",
+			path:             "/delete?id=2",
+			withSession:      false,
+			expectedStatus:   http.StatusSeeOther, // Handler doesn't check auth, middleware does
+			checkLocation:    true,
 			expectedLocation: "/",
 		},
 	}
@@ -810,17 +810,17 @@ func TestLinksHandler(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		method         string
-		expectedStatus int
-		checkContent   bool
+		name            string
+		method          string
+		expectedStatus  int
+		checkContent    bool
 		expectedContent string
 	}{
 		{
-			name:           "GET request returns OK",
-			method:         http.MethodGet,
-			expectedStatus: http.StatusOK,
-			checkContent:   true,
+			name:            "GET request returns OK",
+			method:          http.MethodGet,
+			expectedStatus:  http.StatusOK,
+			checkContent:    true,
 			expectedContent: "Test Link",
 		},
 		{
@@ -857,17 +857,17 @@ func TestCoursesHandler(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
-		name           string
-		method         string
-		expectedStatus int
-		checkContent   bool
+		name            string
+		method          string
+		expectedStatus  int
+		checkContent    bool
 		expectedContent string
 	}{
 		{
-			name:           "GET request returns OK",
-			method:         http.MethodGet,
-			expectedStatus: http.StatusOK,
-			checkContent:   true,
+			name:            "GET request returns OK",
+			method:          http.MethodGet,
+			expectedStatus:  http.StatusOK,
+			checkContent:    true,
 			expectedContent: "Test Course",
 		},
 		{
@@ -1159,7 +1159,7 @@ func TestSecurityMiddleware(t *testing.T) {
 			}
 
 			req, rr := makeRequest(http.MethodGet, tt.path, "", cookies, nil)
-			
+
 			// Apply security middleware
 			securedHandler := app.securityMiddleware(testHandler)
 			securedHandler.ServeHTTP(rr, req)

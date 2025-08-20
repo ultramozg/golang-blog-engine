@@ -9,15 +9,15 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//TODO need to delete it as in the seesion.go aleady exists this constant
-//ADMIN is identificator constant
-//GITHUB is user which is loged in via github
+// TODO need to delete it as in the seesion.go aleady exists this constant
+// ADMIN is identificator constant
+// GITHUB is user which is loged in via github
 const (
 	ADMIN = iota + 1
 	GITHUB
 )
 
-//Post is struct which holds model representation of one post
+// Post is struct which holds model representation of one post
 type Post struct {
 	ID    int
 	Title string
@@ -73,7 +73,7 @@ func CountPosts(db *sql.DB) int {
 	return c
 }
 
-//Comment is struct which holds model representation of one comment
+// Comment is struct which holds model representation of one comment
 type Comment struct {
 	PostID    int
 	CommentID int
@@ -141,7 +141,7 @@ func MigrateDatabase(db *sql.DB) {
 	}
 }
 
-//User struct holds information about user
+// User struct holds information about user
 type User struct {
 	Type int
 	Name string
@@ -149,7 +149,10 @@ type User struct {
 
 func (u *User) IsUserExist(db *sql.DB) bool {
 	status := 0
-	db.QueryRow(`select count(*) from users where name = ?`, u.Name).Scan(&status)
+	if err := db.QueryRow(`select count(*) from users where name = ?`, u.Name).Scan(&status); err != nil {
+		log.Println("Database scan error:", err)
+		return false
+	}
 	if int(status) != 0 {
 		return true
 	}

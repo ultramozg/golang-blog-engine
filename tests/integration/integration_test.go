@@ -206,7 +206,7 @@ func testCommentOperations(t *testing.T, runner *testutils.TestRunner) {
 
 	// Verify comment was created
 	var count int
-	err = runner.DB.DB.QueryRow("SELECT COUNT(*) FROM comments WHERE name = ? AND comment = ?", 
+	err = runner.DB.DB.QueryRow("SELECT COUNT(*) FROM comments WHERE name = ? AND comment = ?",
 		"Integration Tester", "This is an integration test comment").Scan(&count)
 	if err != nil {
 		t.Fatalf("Failed to query new comment: %v", err)
@@ -217,14 +217,14 @@ func testCommentOperations(t *testing.T, runner *testutils.TestRunner) {
 
 	// Get comment ID for deletion test
 	var commentID int
-	err = runner.DB.DB.QueryRow("SELECT commentid FROM comments WHERE name = ? AND comment = ?", 
+	err = runner.DB.DB.QueryRow("SELECT commentid FROM comments WHERE name = ? AND comment = ?",
 		"Integration Tester", "This is an integration test comment").Scan(&commentID)
 	if err != nil {
 		t.Fatalf("Failed to get comment ID: %v", err)
 	}
 
 	// Test comment deletion (admin only)
-	resp, err = runner.HTTP.MakeRequestWithCookies("GET", "/delete-comment?id="+string(rune(commentID+'0')), "", 
+	resp, err = runner.HTTP.MakeRequestWithCookies("GET", "/delete-comment?id="+string(rune(commentID+'0')), "",
 		map[string]string{"Referer": "/post?id=1"}, []*http.Cookie{sessionCookie})
 	if err != nil {
 		t.Fatalf("Failed to delete comment: %v", err)
