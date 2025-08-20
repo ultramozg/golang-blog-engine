@@ -36,7 +36,7 @@
   - Configure branch protection rules requiring tests to pass
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 4. Update vulnerable dependencies
+- [x] 4. Update vulnerable dependencies
   - Update golang.org/x/crypto to latest secure version
   - Update golang.org/x/oauth2 to latest version
   - Update github.com/mattn/go-sqlite3 to non-retracted version
