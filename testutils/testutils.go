@@ -15,6 +15,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/app"
 	"github.com/ultramozg/golang-blog-engine/model"
+	"github.com/ultramozg/golang-blog-engine/services"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -74,7 +75,10 @@ func (td *TestDatabase) Close() error {
 
 // SeedTestData inserts test data into the database
 func (td *TestDatabase) SeedTestData() error {
-	// Insert test posts
+	// Create slug service for generating slugs
+	slugService := services.NewSlugService(td.DB)
+	
+	// Insert test posts with slugs
 	testPosts := []struct {
 		title, body, date string
 	}{
@@ -84,8 +88,12 @@ func (td *TestDatabase) SeedTestData() error {
 	}
 
 	for _, post := range testPosts {
-		_, err := td.DB.Exec(`INSERT INTO posts (title, body, datepost) VALUES (?, ?, ?)`,
-			post.title, post.body, post.date)
+		// Generate slug for the post
+		slug := slugService.GenerateSlug(post.title)
+		uniqueSlug := slugService.EnsureUniqueSlug(slug, 0) // 0 for new post
+		
+		_, err := td.DB.Exec(`INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+			post.title, post.body, post.date, uniqueSlug)
 		if err != nil {
 			return fmt.Errorf("failed to seed post data: %v", err)
 		}

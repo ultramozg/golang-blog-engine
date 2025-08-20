@@ -5,7 +5,7 @@
 {{range .Posts}}
 <div class="docs-section">
 	<h4>
-		<a href="/post?id={{.ID}}">{{.Title}}</a>
+		<a href="/p/{{.Slug}}">{{.Title}}</a>
 		{{if $adm}}
 		(<a href="/update?id={{.ID}}">Update</a>|<a href="/delete?id={{.ID}}">Delete</a>)
 		{{end}}

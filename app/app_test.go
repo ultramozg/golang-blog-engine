@@ -1,12 +1,18 @@
 package app
 
 import (
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/ultramozg/golang-blog-engine/model"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestMain(m *testing.M) {
@@ -14,6 +20,84 @@ func TestMain(m *testing.M) {
 	os.Setenv("TEMPLATES", "../templates/*.gohtml")
 
 	os.Exit(m.Run())
+}
+
+// setupTestData ensures the database has test posts for tests that need them
+func setupTestData(t *testing.T) {
+	// Connect to the database
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Check if we have any posts, if not create some test posts
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM posts").Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to count posts: %v", err)
+	}
+
+	// If we have fewer than 3 posts, create some test posts
+	if count < 3 {
+		testPosts := []model.Post{
+			{Title: "Test Post 1", Body: "test body", Date: time.Now().Format("Mon Jan _2 15:04:05 2006")},
+			{Title: "Test Post 2", Body: "test body", Date: time.Now().Format("Mon Jan _2 15:04:05 2006")},
+			{Title: "Test Post 3", Body: "test body", Date: time.Now().Format("Mon Jan _2 15:04:05 2006")},
+		}
+
+		for _, post := range testPosts {
+			err := post.CreatePost(db)
+			if err != nil {
+				t.Fatalf("Failed to create test post: %v", err)
+			}
+		}
+	}
+}
+
+// getFirstPostID returns the ID of the first available post in the database
+func getFirstPostID(t *testing.T) int {
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	var id int
+	err = db.QueryRow("SELECT id FROM posts ORDER BY id LIMIT 1").Scan(&id)
+	if err != nil {
+		t.Fatalf("Failed to get first post ID: %v", err)
+	}
+	return id
+}
+
+// createTestAdmin ensures there's an admin user for login tests
+func createTestAdmin(t *testing.T) {
+	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	if err != nil {
+		t.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
+	// Check if admin user exists
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE name = 'admin'").Scan(&count)
+	if err != nil {
+		t.Fatalf("Failed to check for admin user: %v", err)
+	}
+
+	// If no admin user exists, create one
+	if count == 0 {
+		user := model.User{Name: "admin", Type: model.ADMIN}
+		success, hashedPassword := HashPassword("12345")
+		if !success {
+			t.Fatalf("Failed to hash password")
+		}
+		err = user.CreateUser(db, hashedPassword)
+		if err != nil {
+			t.Fatalf("Failed to create admin user: %v", err)
+		}
+	}
 }
 
 func TestRoot(t *testing.T) {
@@ -78,6 +162,9 @@ func TestFailedLogin(t *testing.T) {
 }
 
 func TestSuccesfullLogin(t *testing.T) {
+	// Ensure admin user exists
+	createTestAdmin(t)
+	
 	a := NewApp()
 	a.Initialize()
 
@@ -94,7 +181,7 @@ func TestSuccesfullLogin(t *testing.T) {
 	handler := http.HandlerFunc(a.login)
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusSeeOther {
-		t.Errorf("login handler returned wrong status code: got %v want %v", status, http.StatusOK)
+		t.Errorf("login handler returned wrong status code: got %v want %v", status, http.StatusSeeOther)
 	}
 
 	cookies := rr.Result().Cookies()
@@ -108,6 +195,9 @@ func TestSuccesfullLogin(t *testing.T) {
 }
 
 func TestCreatePost(t *testing.T) {
+	// Ensure admin user exists
+	createTestAdmin(t)
+	
 	a := NewApp()
 	a.Initialize()
 
@@ -146,10 +236,16 @@ func TestCreatePost(t *testing.T) {
 }
 
 func TestGetPost(t *testing.T) {
+	// Ensure we have test data
+	setupTestData(t)
+	
 	a := NewApp()
 	a.Initialize()
 
-	req, err := http.NewRequest(http.MethodGet, "/post?id=1", nil)
+	// Get the first available post ID
+	postID := getFirstPostID(t)
+
+	req, err := http.NewRequest(http.MethodGet, "/post?id="+strconv.Itoa(postID), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,7 +253,7 @@ func TestGetPost(t *testing.T) {
 	handler := http.HandlerFunc(a.getPost)
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusFound)
+		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 	expectedBody := "test body"
 	if !strings.Contains(rr.Body.String(), expectedBody) {
@@ -166,6 +262,10 @@ func TestGetPost(t *testing.T) {
 }
 
 func TestDeletePost(t *testing.T) {
+	// Ensure we have test data and admin user
+	setupTestData(t)
+	createTestAdmin(t)
+	
 	a := NewApp()
 	a.Initialize()
 
@@ -182,8 +282,11 @@ func TestDeletePost(t *testing.T) {
 	handlerLogin := http.HandlerFunc(a.login)
 	handlerLogin.ServeHTTP(rr, req)
 
+	// Get a post ID to delete (use the first available post)
+	postID := getFirstPostID(t)
+
 	//delete post
-	req, err = http.NewRequest(http.MethodGet, "/delete?id=1", strings.NewReader(payload.Encode()))
+	req, err = http.NewRequest(http.MethodGet, "/delete?id="+strconv.Itoa(postID), strings.NewReader(payload.Encode()))
 	req.AddCookie(rr.Result().Cookies()[0])
 	if err != nil {
 		t.Fatal(err)

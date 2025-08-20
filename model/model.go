@@ -3,9 +3,11 @@ package model
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -22,18 +24,25 @@ const (
 
 // Post is struct which holds model representation of one post
 type Post struct {
-	ID    int
-	Title string
-	Body  string
-	Date  string
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Body      string `json:"body"`
+	Date      string `json:"date"`
+	Slug      string `json:"slug"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 func (p *Post) GetPost(db *sql.DB) error {
-	return db.QueryRow(`select * from posts where id = ?`, p.ID).Scan(&p.ID, &p.Title, &p.Body, &p.Date)
+	return db.QueryRow(`select id, title, body, datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') from posts where id = ?`, p.ID).Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt)
+}
+
+func (p *Post) GetPostBySlug(db *sql.DB) error {
+	return db.QueryRow(`select id, title, body, datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') from posts where slug = ?`, p.Slug).Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt)
 }
 
 func (p *Post) UpdatePost(db *sql.DB) error {
-	_, err := db.Exec(`update posts set title = $1, body = $2, datepost = $3 where id = $4`, p.Title, p.Body, p.Date, p.ID)
+	_, err := db.Exec(`update posts set title = $1, body = $2, datepost = $3, updated_at = CURRENT_TIMESTAMP where id = $4`, p.Title, p.Body, p.Date, p.ID)
 	return err
 }
 
@@ -43,12 +52,23 @@ func (p *Post) DeletePost(db *sql.DB) error {
 }
 
 func (p *Post) CreatePost(db *sql.DB) error {
-	_, err := db.Exec(`insert into posts (title, body, datepost) values ($1, $2, $3)`, p.Title, p.Body, p.Date)
-	return err
+	result, err := db.Exec(`insert into posts (title, body, datepost, created_at, updated_at) values ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date)
+	if err != nil {
+		return err
+	}
+	
+	// Get the ID of the newly created post
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	p.ID = int(id)
+	
+	return nil
 }
 
 func GetPosts(db *sql.DB, count, start int) ([]Post, error) {
-	rows, err := db.Query(`select id, title, substr(body,1,950), datepost from posts order by id desc limit ? offset ?;`, count, start)
+	rows, err := db.Query(`select id, title, substr(body,1,950), datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') from posts order by id desc limit ? offset ?;`, count, start)
 
 	if err != nil {
 		return nil, err
@@ -59,7 +79,7 @@ func GetPosts(db *sql.DB, count, start int) ([]Post, error) {
 
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Body, &p.Date); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt); err != nil {
 			return nil, err
 		}
 		posts = append(posts, p)
@@ -74,6 +94,16 @@ func CountPosts(db *sql.DB) int {
 		log.Println(err)
 	}
 	return c
+}
+
+// GetPostBySlug retrieves a post by its slug
+func GetPostBySlug(db *sql.DB, slug string) (*Post, error) {
+	post := &Post{Slug: slug}
+	err := post.GetPostBySlug(db)
+	if err != nil {
+		return nil, err
+	}
+	return post, nil
 }
 
 // Comment is struct which holds model representation of one comment
@@ -121,7 +151,10 @@ func MigrateDatabase(db *sql.DB) {
 	id integer primary key autoincrement,
 	title string not null,
 	body string not null,
-	datepost string not null);
+	datepost string not null,
+	slug text unique,
+	created_at datetime default current_timestamp,
+	updated_at datetime default current_timestamp);
 
 	create table if not exists comments (
 	postid integer not null,
@@ -142,7 +175,110 @@ func MigrateDatabase(db *sql.DB) {
 	if err != nil {
 		panic(err)
 	}
+
+	// Run additional migrations for existing databases
+	MigrateExistingDatabase(db)
 }
+
+// MigrateExistingDatabase adds new columns to existing posts table
+func MigrateExistingDatabase(db *sql.DB) {
+	// Check if slug column exists
+	var columnExists int
+	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('posts') WHERE name='slug'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add slug column
+		_, err = db.Exec("ALTER TABLE posts ADD COLUMN slug TEXT")
+		if err != nil {
+			log.Println("Warning: Could not add slug column:", err)
+		}
+	}
+
+	// Check if created_at column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('posts') WHERE name='created_at'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add created_at column (SQLite doesn't support DEFAULT CURRENT_TIMESTAMP in ALTER TABLE)
+		_, err = db.Exec("ALTER TABLE posts ADD COLUMN created_at DATETIME")
+		if err != nil {
+			log.Println("Warning: Could not add created_at column:", err)
+		} else {
+			// Set default values for existing rows
+			_, err = db.Exec("UPDATE posts SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+			if err != nil {
+				log.Println("Warning: Could not set default created_at values:", err)
+			}
+		}
+	}
+
+	// Check if updated_at column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('posts') WHERE name='updated_at'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add updated_at column
+		_, err = db.Exec("ALTER TABLE posts ADD COLUMN updated_at DATETIME")
+		if err != nil {
+			log.Println("Warning: Could not add updated_at column:", err)
+		} else {
+			// Set default values for existing rows
+			_, err = db.Exec("UPDATE posts SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL")
+			if err != nil {
+				log.Println("Warning: Could not set default updated_at values:", err)
+			}
+		}
+	}
+
+	// Create unique index on slug column for performance and uniqueness
+	_, err = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug)")
+	if err != nil {
+		log.Println("Warning: Could not create unique slug index:", err)
+	}
+
+	// Generate slugs for existing posts that don't have them
+	GenerateSlugsForExistingPosts(db)
+}
+
+// GenerateSlugsForExistingPosts creates slugs for posts that don't have them
+func GenerateSlugsForExistingPosts(db *sql.DB) {
+	// Create a simple slug service for migration
+	slugService := &migrationSlugService{db: db}
+
+	// Get all posts without slugs - collect them first to avoid cursor issues
+	rows, err := db.Query("SELECT id, title FROM posts WHERE slug IS NULL OR slug = ''")
+	if err != nil {
+		log.Println("Warning: Could not query posts for slug generation:", err)
+		return
+	}
+
+	// Collect all posts that need slugs
+	type postData struct {
+		id    int
+		title string
+	}
+	var posts []postData
+
+	for rows.Next() {
+		var p postData
+		if err := rows.Scan(&p.id, &p.title); err != nil {
+			log.Println("Warning: Could not scan post for slug generation:", err)
+			continue
+		}
+		posts = append(posts, p)
+	}
+	rows.Close()
+
+	// Now update each post
+	for _, post := range posts {
+		// Generate and ensure unique slug
+		slug := slugService.GenerateSlug(post.title)
+		uniqueSlug := slugService.EnsureUniqueSlug(slug, post.id)
+
+		// Update the post with the generated slug
+		_, err = db.Exec("UPDATE posts SET slug = ? WHERE id = ?", uniqueSlug, post.id)
+		if err != nil {
+			log.Printf("Warning: Could not update slug for post %d: %v", post.id, err)
+		}
+	}
+}
+
+
 
 // User struct holds information about user
 type User struct {
@@ -249,4 +385,82 @@ func ConverYamlToStruct(path string) (i Infos, err error) {
 		return
 	}
 	return
+}
+
+// migrationSlugService is a simple implementation for migration purposes
+type migrationSlugService struct {
+	db *sql.DB
+}
+
+func (s *migrationSlugService) GenerateSlug(title string) string {
+	if title == "" {
+		return "untitled"
+	}
+	
+	// Simple slug generation for migration
+	slug := strings.ToLower(title)
+	
+	// Handle common accented characters
+	replacements := map[string]string{
+		"é": "e", "è": "e", "ê": "e", "ë": "e",
+		"á": "a", "à": "a", "â": "a", "ä": "a", "ã": "a",
+		"í": "i", "ì": "i", "î": "i", "ï": "i",
+		"ó": "o", "ò": "o", "ô": "o", "ö": "o", "õ": "o",
+		"ú": "u", "ù": "u", "û": "u", "ü": "u",
+		"ç": "c", "ñ": "n",
+	}
+	
+	for accented, replacement := range replacements {
+		slug = strings.ReplaceAll(slug, accented, replacement)
+	}
+	
+	// Remove special characters except spaces
+	slug = regexp.MustCompile(`[^a-z0-9\s]`).ReplaceAllString(slug, "")
+	// Replace spaces with hyphens
+	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
+	// Remove leading/trailing hyphens
+	slug = strings.Trim(slug, "-")
+	
+	if slug == "" {
+		return "untitled"
+	}
+	
+	if len(slug) > 100 {
+		slug = slug[:100]
+		slug = strings.TrimRight(slug, "-")
+	}
+	
+	return slug
+}
+
+func (s *migrationSlugService) EnsureUniqueSlug(slug string, postID int) string {
+	originalSlug := slug
+	counter := 1
+
+	for !s.IsSlugUnique(slug, postID) {
+		slug = fmt.Sprintf("%s-%d", originalSlug, counter)
+		counter++
+		if counter > 1000 {
+			break
+		}
+	}
+
+	return slug
+}
+
+func (s *migrationSlugService) IsSlugUnique(slug string, excludePostID int) bool {
+	var count int
+	var err error
+	
+	if excludePostID > 0 {
+		err = s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE slug = ? AND id != ?", slug, excludePostID).Scan(&count)
+	} else {
+		err = s.db.QueryRow("SELECT COUNT(*) FROM posts WHERE slug = ?", slug).Scan(&count)
+	}
+	
+	if err != nil {
+		return false
+	}
+	
+	return count == 0
 }

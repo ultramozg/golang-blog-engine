@@ -44,22 +44,22 @@
   - Test application functionality after dependency updates
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 5. Implement URL slug system foundation
-- [ ] 5.1 Create slug generation service
+- [-] 5. Implement URL slug system foundation
+- [x] 5.1 Create slug generation service
   - Implement SlugService interface with slug generation logic
   - Create function to sanitize titles and generate URL-safe slugs
   - Implement unique slug generation with conflict resolution
   - Write comprehensive unit tests for slug generation
   - _Requirements: 4.1, 4.4_
 
-- [ ] 5.2 Update database schema for slugs
+- [x] 5.2 Update database schema for slugs
   - Create database migration to add slug column to posts table
   - Add created_at and updated_at columns to posts table
   - Generate slugs for all existing posts in database
   - Create database indexes for slug column performance
   - _Requirements: 4.1, 4.2_
 
-- [ ] 5.3 Implement slug-based routing
+- [x] 5.3 Implement slug-based routing
   - Update Post model to include slug field and methods
   - Create GetPostBySlug method in Post model
   - Implement slug-based URL handlers alongside existing ID-based handlers
