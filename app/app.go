@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strconv"
+	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -18,6 +19,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/middleware"
 	"github.com/ultramozg/golang-blog-engine/model"
+	"github.com/ultramozg/golang-blog-engine/services"
 	"github.com/ultramozg/golang-blog-engine/session"
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/bcrypt"
@@ -38,15 +40,16 @@ a.Initialize(conf)
 a.Run()
 */
 type App struct {
-	Router   http.Handler
-	DB       *sql.DB
-	Temp     *template.Template
-	Sessions *session.SessionDB
-	Config   *Config
-	stop     chan os.Signal
-	OAuth    *oauth2.Config
-	Courses  model.Infos
-	Links    model.Infos
+	Router      http.Handler
+	DB          *sql.DB
+	Temp        *template.Template
+	Sessions    *session.SessionDB
+	Config      *Config
+	stop        chan os.Signal
+	OAuth       *oauth2.Config
+	Courses     model.Infos
+	Links       model.Infos
+	SlugService services.SlugService
 }
 
 // NewApp return App struct
@@ -93,6 +96,7 @@ func (a *App) Initialize() {
 
 	a.Temp = template.Must(template.ParseGlob(a.Config.Templates))
 	a.Sessions = session.NewSessionDB()
+	a.SlugService = services.NewSlugService(a.DB)
 
 	//Setting up OAuth authentication via github
 	a.OAuth = &oauth2.Config{
@@ -188,6 +192,7 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/login", a.login)
 	mux.HandleFunc("/logout", a.logout)
 	mux.HandleFunc("/post", a.getPost)
+	mux.HandleFunc("/p/", a.getPostBySlug)
 	mux.HandleFunc("/update", a.updatePost)
 	mux.HandleFunc("/create", a.createPost)
 	mux.HandleFunc("/delete", a.deletePost)
@@ -235,6 +240,63 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 
 		comms, err := model.GetComments(a.DB, id)
+		if err != nil {
+			log.Println("Grab comment error: ", err.Error())
+		}
+
+		data := struct {
+			Post        model.Post
+			Comms       []model.Comment
+			LogAsAdmin  bool
+			LogAsUser   bool
+			AuthURL     string
+			ClientID    string
+			RedirectURL string
+		}{
+			p,
+			comms,
+			a.Sessions.IsAdmin(r),
+			a.Sessions.IsLoggedin(r),
+			a.Config.OAuth.GithubAuthorizeURL,
+			a.Config.OAuth.ClientID,
+			a.Config.OAuth.RedirectURL,
+		}
+		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
+	// Extract slug from URL path /p/slug-here
+	slug := strings.TrimPrefix(r.URL.Path, "/p/")
+	if slug == "" {
+		http.Error(w, "Invalid post slug", http.StatusBadRequest)
+		return
+	}
+
+	p := model.Post{Slug: slug}
+	if err := p.GetPostBySlug(a.DB); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			http.Error(w, "Not Found", http.StatusNotFound)
+		default:
+			http.Error(w, "Internal error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		comms, err := model.GetComments(a.DB, p.ID)
 		if err != nil {
 			log.Println("Grab comment error: ", err.Error())
 		}
@@ -335,10 +397,25 @@ func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		p := model.Post{Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
-		if err := p.CreatePost(a.DB); err != nil {
+		
+		// Generate slug for the new post
+		slug := a.SlugService.GenerateSlug(title)
+		p.Slug = a.SlugService.EnsureUniqueSlug(slug, 0) // 0 for new post
+		
+		// Create post with slug
+		result, err := a.DB.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date, p.Slug)
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		
+		// Get the ID of the newly created post
+		id, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		p.ID = int(id)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 
 	default:
@@ -395,8 +472,29 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Get current post data to check if title changed
+		var currentTitle string
+		err = a.DB.QueryRow(`select title from posts where id = ?`, id).Scan(&currentTitle)
+		if err != nil {
+			http.Error(w, "Post not found", http.StatusNotFound)
+			return
+		}
+		
 		p := model.Post{ID: id, Title: title, Body: body, Date: time.Now().Format("Mon Jan _2 15:04:05 2006")}
-		if err := p.UpdatePost(a.DB); err != nil {
+		
+		// If title changed, regenerate slug
+		if currentTitle != title {
+			newSlug := a.SlugService.GenerateSlug(title)
+			p.Slug = a.SlugService.EnsureUniqueSlug(newSlug, id)
+			
+			// Update post with new slug
+			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, slug = $4, updated_at = CURRENT_TIMESTAMP where id = $5`, p.Title, p.Body, p.Date, p.Slug, p.ID)
+		} else {
+			// Update post without changing slug
+			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, updated_at = CURRENT_TIMESTAMP where id = $4`, p.Title, p.Body, p.Date, p.ID)
+		}
+		
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

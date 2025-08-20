@@ -37,6 +37,10 @@ func TestBlogPlatformIntegration(t *testing.T) {
 	t.Run("Authorization", func(t *testing.T) {
 		testAuthorization(t, runner)
 	})
+
+	t.Run("SlugBasedRouting", func(t *testing.T) {
+		testSlugBasedRouting(t, runner)
+	})
 }
 
 func testHomePage(t *testing.T, runner *testutils.TestRunner) {
@@ -67,6 +71,11 @@ func testHomePage(t *testing.T, runner *testutils.TestRunner) {
 	testutils.AssertContains(t, bodyStr, "Test Post 1")
 	testutils.AssertContains(t, bodyStr, "Test Post 2")
 	testutils.AssertContains(t, bodyStr, "Test Post 3")
+	
+	// Verify that the page contains slug-based links instead of ID-based links
+	testutils.AssertContains(t, bodyStr, "/p/test-post-1")
+	testutils.AssertContains(t, bodyStr, "/p/test-post-2")
+	testutils.AssertContains(t, bodyStr, "/p/test-post-3")
 }
 
 func testPostOperations(t *testing.T, runner *testutils.TestRunner) {
@@ -294,7 +303,7 @@ func testAuthentication(t *testing.T, runner *testutils.TestRunner) {
 
 func testAuthorization(t *testing.T, runner *testutils.TestRunner) {
 	// Test unauthorized access to admin endpoints
-	adminEndpoints := []string{"/create", "/update?id=1", "/delete?id=1"}
+	adminEndpoints := []string{"/create", "/update?id=1", "/delete?id=999"}
 
 	for _, endpoint := range adminEndpoints {
 		resp, err := runner.HTTP.MakeRequest("GET", endpoint, "", nil)
@@ -423,4 +432,112 @@ func TestConcurrentAccess(t *testing.T) {
 			t.Errorf("Concurrent request failed: %v", err)
 		}
 	}
+}
+func testSlugBasedRouting(t *testing.T, runner *testutils.TestRunner) {
+	// Test accessing posts by slug
+	// The test data should have posts with slugs like "test-post-1", "test-post-2", etc.
+	
+	// Test accessing first post by slug
+	resp, err := runner.HTTP.MakeRequest("GET", "/p/test-post-1", "", nil)
+	if err != nil {
+		t.Fatalf("Failed to access post by slug: %v", err)
+	}
+	defer resp.Body.Close()
+
+	testutils.AssertStatusCode(t, resp, http.StatusOK)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body: %v", err)
+	}
+
+	bodyStr := string(body)
+	testutils.AssertContains(t, bodyStr, "Test Post 1")
+	testutils.AssertContains(t, bodyStr, "This is the body of test post 1")
+
+	// Test accessing second post by slug
+	resp, err = runner.HTTP.MakeRequest("GET", "/p/test-post-2", "", nil)
+	if err != nil {
+		t.Fatalf("Failed to access second post by slug: %v", err)
+	}
+	defer resp.Body.Close()
+
+	testutils.AssertStatusCode(t, resp, http.StatusOK)
+
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body: %v", err)
+	}
+
+	bodyStr = string(body)
+	testutils.AssertContains(t, bodyStr, "Test Post 2")
+	testutils.AssertContains(t, bodyStr, "This is the body of test post 2")
+
+	// Test accessing non-existent slug
+	resp, err = runner.HTTP.MakeRequest("GET", "/p/non-existent-slug", "", nil)
+	if err != nil {
+		t.Fatalf("Failed to make request for non-existent slug: %v", err)
+	}
+	defer resp.Body.Close()
+
+	testutils.AssertStatusCode(t, resp, http.StatusNotFound)
+
+	// Test empty slug
+	resp, err = runner.HTTP.MakeRequest("GET", "/p/", "", nil)
+	if err != nil {
+		t.Fatalf("Failed to make request for empty slug: %v", err)
+	}
+	defer resp.Body.Close()
+
+	testutils.AssertStatusCode(t, resp, http.StatusBadRequest)
+
+	// Test that new posts get slugs when created
+	sessionCookie, err := runner.HTTP.LoginAsAdmin()
+	if err != nil {
+		t.Fatalf("Failed to login as admin: %v", err)
+	}
+
+	// Create a new post with a title that should generate a specific slug
+	formData := "title=My+Awesome+New+Post&body=This+is+a+test+post+for+slug+generation"
+	headers := map[string]string{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+
+	resp, err = runner.HTTP.MakeRequestWithCookies("POST", "/create", formData, headers, []*http.Cookie{sessionCookie})
+	if err != nil {
+		t.Fatalf("Failed to create post: %v", err)
+	}
+	defer resp.Body.Close()
+
+	testutils.AssertRedirect(t, resp, "/")
+
+	// Verify the post was created with a slug
+	var slug string
+	err = runner.DB.DB.QueryRow("SELECT slug FROM posts WHERE title = ?", "My Awesome New Post").Scan(&slug)
+	if err != nil {
+		t.Fatalf("Failed to query new post slug: %v", err)
+	}
+
+	expectedSlug := "my-awesome-new-post"
+	if slug != expectedSlug {
+		t.Errorf("Expected slug '%s', got '%s'", expectedSlug, slug)
+	}
+
+	// Test accessing the new post by its slug
+	resp, err = runner.HTTP.MakeRequest("GET", "/p/"+slug, "", nil)
+	if err != nil {
+		t.Fatalf("Failed to access new post by slug: %v", err)
+	}
+	defer resp.Body.Close()
+
+	testutils.AssertStatusCode(t, resp, http.StatusOK)
+
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("Failed to read response body: %v", err)
+	}
+
+	bodyStr = string(body)
+	testutils.AssertContains(t, bodyStr, "My Awesome New Post")
+	testutils.AssertContains(t, bodyStr, "This is a test post for slug generation")
 }

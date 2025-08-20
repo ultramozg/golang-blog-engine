@@ -8,6 +8,7 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ultramozg/golang-blog-engine/services"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,21 +40,33 @@ func createTestDB(t *testing.T) (*sql.DB, func()) {
 
 // seedTestData inserts test data into the database
 func seedTestData(db *sql.DB) error {
-	// Insert test posts
-	testPosts := []struct {
-		title, body, date string
-	}{
-		{"Test Post 1", "This is the body of test post 1", "Mon Jan 1 12:00:00 2024"},
-		{"Test Post 2", "This is the body of test post 2", "Mon Jan 2 12:00:00 2024"},
-		{"Test Post 3", "This is the body of test post 3", "Mon Jan 3 12:00:00 2024"},
+	// Create slug service for generating slugs
+	slugService := services.NewSlugService(db)
+	
+	// Insert test posts with slugs
+	testPosts := []Post{
+		{Title: "Test Post 1", Body: "This is the body of test post 1", Date: "Mon Jan 1 12:00:00 2024"},
+		{Title: "Test Post 2", Body: "This is the body of test post 2", Date: "Mon Jan 2 12:00:00 2024"},
+		{Title: "Test Post 3", Body: "This is the body of test post 3", Date: "Mon Jan 3 12:00:00 2024"},
 	}
 
 	for _, post := range testPosts {
-		_, err := db.Exec(`INSERT INTO posts (title, body, datepost) VALUES (?, ?, ?)`,
-			post.title, post.body, post.date)
+		// Generate slug for the post
+		slug := slugService.GenerateSlug(post.Title)
+		post.Slug = slugService.EnsureUniqueSlug(slug, 0) // 0 for new post
+		
+		// Insert post with slug
+		result, err := db.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, post.Title, post.Body, post.Date, post.Slug)
 		if err != nil {
 			return err
 		}
+		
+		// Get the ID of the newly created post
+		id, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+		post.ID = int(id)
 	}
 
 	// Insert test comments
@@ -164,6 +177,125 @@ func TestPost_GetPost(t *testing.T) {
 				}
 				if post.Date != tt.expectedPost.Date {
 					t.Errorf("Expected Date %s, got %s", tt.expectedPost.Date, post.Date)
+				}
+			}
+		})
+	}
+}
+
+func TestPost_GetPostBySlug(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		slug         string
+		expectError  bool
+		expectedPost Post
+	}{
+		{
+			name:        "Get existing post by slug",
+			slug:        "test-post-1",
+			expectError: false,
+			expectedPost: Post{
+				ID:    1,
+				Title: "Test Post 1",
+				Body:  "This is the body of test post 1",
+				Date:  "Mon Jan 1 12:00:00 2024",
+				Slug:  "test-post-1",
+			},
+		},
+		{
+			name:        "Get non-existing post by slug",
+			slug:        "non-existing-slug",
+			expectError: true,
+		},
+		{
+			name:        "Get post with empty slug",
+			slug:        "",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			post := Post{Slug: tt.slug}
+			err := post.GetPostBySlug(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if post.ID != tt.expectedPost.ID {
+					t.Errorf("Expected ID %d, got %d", tt.expectedPost.ID, post.ID)
+				}
+				if post.Title != tt.expectedPost.Title {
+					t.Errorf("Expected Title %s, got %s", tt.expectedPost.Title, post.Title)
+				}
+				if post.Slug != tt.expectedPost.Slug {
+					t.Errorf("Expected Slug %s, got %s", tt.expectedPost.Slug, post.Slug)
+				}
+			}
+		})
+	}
+}
+
+func TestGetPostBySlug(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		slug        string
+		expectError bool
+	}{
+		{
+			name:        "Get existing post by slug",
+			slug:        "test-post-1",
+			expectError: false,
+		},
+		{
+			name:        "Get non-existing post by slug",
+			slug:        "non-existing-slug",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			post, err := GetPostBySlug(db, tt.slug)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				if post != nil {
+					t.Errorf("Expected nil post but got %+v", post)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if post == nil {
+					t.Error("Expected post to be returned")
+					return
+				}
+				if post.Slug != tt.slug {
+					t.Errorf("Expected slug %s, got %s", tt.slug, post.Slug)
 				}
 			}
 		})
