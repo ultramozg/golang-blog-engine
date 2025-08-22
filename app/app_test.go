@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/model"
+	_ "modernc.org/sqlite"
 )
 
 func TestMain(m *testing.M) {
@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 // setupTestData ensures the database has test posts for tests that need them
 func setupTestData(t *testing.T) {
 	// Connect to the database
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -57,7 +57,7 @@ func setupTestData(t *testing.T) {
 
 // getFirstPostID returns the ID of the first available post in the database
 func getFirstPostID(t *testing.T) int {
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -73,7 +73,7 @@ func getFirstPostID(t *testing.T) int {
 
 // createTestAdmin ensures there's an admin user for login tests
 func createTestAdmin(t *testing.T) {
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestPostRedirectMiddleware(t *testing.T) {
 	a.Initialize()
 
 	// Get the first available post ID and its slug
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -387,7 +387,7 @@ func TestGetPostBySlug(t *testing.T) {
 	a.Initialize()
 
 	// Get a post with a slug
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -442,7 +442,7 @@ func TestUpdatePostWithSlug(t *testing.T) {
 	handlerLogin.ServeHTTP(rr, req)
 
 	// Get a post with a slug
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -518,7 +518,7 @@ func TestDeletePostWithSlug(t *testing.T) {
 	handlerLogin.ServeHTTP(rr, req)
 
 	// Get a post with a slug
-	db, err := sql.Open("sqlite3", "../database/database.sqlite")
+	db, err := sql.Open("sqlite", "../database/database.sqlite")
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}

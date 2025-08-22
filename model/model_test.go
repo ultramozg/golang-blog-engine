@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/services"
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 // Test helper functions to avoid circular dependency with testutils
@@ -22,7 +22,7 @@ func createTestDB(t *testing.T) (*sql.DB, func()) {
 	}
 
 	dbPath := filepath.Join(tempDir, "test.db")
-	db, err := sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}
@@ -1027,7 +1027,7 @@ func TestUser_CheckCredentials(t *testing.T) {
 
 func TestMigrateDatabase(t *testing.T) {
 	// Create a fresh database without migrations
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}

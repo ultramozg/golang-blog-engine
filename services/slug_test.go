@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
@@ -17,7 +17,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	tmpfile.Close()
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", tmpfile.Name())
+	db, err := sql.Open("sqlite", tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestSlugServiceWithoutSlugColumn(t *testing.T) {
 	tmpfile.Close()
 	defer os.Remove(tmpfile.Name())
 
-	db, err := sql.Open("sqlite3", tmpfile.Name())
+	db, err := sql.Open("sqlite", tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
