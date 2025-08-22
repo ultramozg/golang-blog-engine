@@ -12,11 +12,11 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/app"
 	"github.com/ultramozg/golang-blog-engine/model"
 	"github.com/ultramozg/golang-blog-engine/services"
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 // TestConfig holds configuration for testing
@@ -51,7 +51,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 	config := NewTestConfig()
 
 	// Create test database
-	db, err := sql.Open("sqlite3", config.DBPath)
+	db, err := sql.Open("sqlite", config.DBPath)
 	if err != nil {
 		t.Fatalf("Failed to create test database: %v", err)
 	}

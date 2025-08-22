@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/middleware"
 	"github.com/ultramozg/golang-blog-engine/model"
 	"github.com/ultramozg/golang-blog-engine/services"
@@ -24,6 +23,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
+	_ "modernc.org/sqlite"
 )
 
 const (
@@ -62,7 +62,7 @@ func (a *App) Initialize() {
 	var err error
 	a.Config = newConfig()
 
-	a.DB, err = sql.Open("sqlite3", a.Config.DBURI)
+	a.DB, err = sql.Open("sqlite", a.Config.DBURI)
 	log.Println("Trying connect to DB:", a.Config.DBURI)
 	if err != nil {
 		log.Fatal("Error connecting to dabase", err)

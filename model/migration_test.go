@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func TestMigrateExistingDatabase(t *testing.T) {
@@ -18,7 +18,7 @@ func TestMigrateExistingDatabase(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", tmpfile.Name())
+	db, err := sql.Open("sqlite", tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestGenerateSlugsForExistingPosts(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", tmpfile.Name())
+	db, err := sql.Open("sqlite", tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func TestSlugUniqueness(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", tmpfile.Name())
+	db, err := sql.Open("sqlite", tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +266,7 @@ func TestMigrationIdempotency(t *testing.T) {
 	defer os.Remove(tmpfile.Name())
 
 	// Open database connection
-	db, err := sql.Open("sqlite3", tmpfile.Name())
+	db, err := sql.Open("sqlite", tmpfile.Name())
 	if err != nil {
 		t.Fatal(err)
 	}

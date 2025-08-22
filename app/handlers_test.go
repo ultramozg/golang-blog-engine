@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/ultramozg/golang-blog-engine/model"
 	"github.com/ultramozg/golang-blog-engine/session"
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 // Test helper functions for handler tests
