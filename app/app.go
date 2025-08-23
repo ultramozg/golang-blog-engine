@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"database/sql"
+	"encoding/json"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -50,6 +51,7 @@ type App struct {
 	Courses     model.Infos
 	Links       model.Infos
 	SlugService services.SlugService
+	FileService services.FileService
 }
 
 // NewApp return App struct
@@ -92,11 +94,21 @@ func (a *App) Initialize() {
 		log.Println(err)
 	}
 
-	a.initializeRoutes()
-
-	a.Temp = template.Must(template.ParseGlob(a.Config.Templates))
+	// Create template with custom functions
+	funcMap := template.FuncMap{
+		"processFileReferences": a.processFileReferences,
+	}
+	a.Temp = template.Must(template.New("").Funcs(funcMap).ParseGlob(a.Config.Templates))
 	a.Sessions = session.NewSessionDB()
 	a.SlugService = services.NewSlugService(a.DB)
+	a.FileService = services.NewFileService(a.DB, "uploads", 10*1024*1024) // 10MB max file size
+
+	// Ensure upload directories exist
+	if err := a.FileService.EnsureUploadDirectories(); err != nil {
+		log.Printf("Warning: Failed to create upload directories: %v", err)
+	}
+
+	a.initializeRoutes()
 
 	//Setting up OAuth authentication via github
 	a.OAuth = &oauth2.Config{
@@ -202,6 +214,9 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/auth-callback", a.oauth)
 	mux.HandleFunc("/create-comment", a.createComment)
 	mux.HandleFunc("/delete-comment", a.deleteComment)
+	mux.HandleFunc("/upload-file", a.uploadFile)
+	mux.HandleFunc("/files/", a.serveFile)
+	mux.HandleFunc("/api/files", a.listFiles)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -844,6 +859,214 @@ func HashPassword(password string) (bool, string) {
 	return true, string(hashedPassword)
 }
 
+func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		// Parse multipart form with 32MB max memory
+		if err := r.ParseMultipartForm(32 << 20); err != nil {
+			http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
+			return
+		}
+
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, "Failed to get file from form", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		// Upload file using file service
+		fileRecord, err := a.FileService.UploadFile(file, header)
+		if err != nil {
+			http.Error(w, "Failed to upload file: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Return JSON response with file information
+		w.Header().Set("Content-Type", "application/json")
+		response := struct {
+			Success      bool   `json:"success"`
+			UUID         string `json:"uuid"`
+			OriginalName string `json:"original_name"`
+			Size         int64  `json:"size"`
+			MimeType     string `json:"mime_type"`
+			DownloadURL  string `json:"download_url"`
+		}{
+			Success:      true,
+			UUID:         fileRecord.UUID,
+			OriginalName: fileRecord.OriginalName,
+			Size:         fileRecord.Size,
+			MimeType:     fileRecord.MimeType,
+			DownloadURL:  "/files/" + fileRecord.UUID,
+		}
+
+		// Use proper JSON encoding
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Failed to encode JSON response", http.StatusInternalServerError)
+			return
+		}
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) serveFile(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Extract UUID from URL path /files/uuid-here
+		uuid := strings.TrimPrefix(r.URL.Path, "/files/")
+		if uuid == "" {
+			http.Error(w, "Invalid file UUID", http.StatusBadRequest)
+			return
+		}
+
+		// Get file information
+		fileRecord, err := a.FileService.GetFile(uuid)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+
+		// Get file path
+		filePath, err := a.FileService.GetFilePath(uuid)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+
+		// Increment download count
+		if err := fileRecord.IncrementDownloadCount(a.DB); err != nil {
+			log.Printf("Failed to increment download count for file %s: %v", uuid, err)
+		}
+
+		// Set appropriate headers
+		w.Header().Set("Content-Type", fileRecord.MimeType)
+		w.Header().Set("Content-Disposition", `attachment; filename="`+fileRecord.OriginalName+`"`)
+		w.Header().Set("Content-Length", strconv.FormatInt(fileRecord.Size, 10))
+
+		// Serve the file
+		http.ServeFile(w, r, filePath)
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Parse pagination parameters
+		limitStr := r.URL.Query().Get("limit")
+		offsetStr := r.URL.Query().Get("offset")
+
+		limit := 20 // default
+		offset := 0 // default
+
+		if limitStr != "" {
+			if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 && parsedLimit <= 100 {
+				limit = parsedLimit
+			}
+		}
+
+		if offsetStr != "" {
+			if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+				offset = parsedOffset
+			}
+		}
+
+		// Get files from service
+		files, err := a.FileService.ListFiles(limit, offset)
+		if err != nil {
+			http.Error(w, "Failed to list files", http.StatusInternalServerError)
+			return
+		}
+
+		// Build JSON response
+		w.Header().Set("Content-Type", "application/json")
+		
+		// Create response structure
+		type FileResponse struct {
+			UUID          string `json:"uuid"`
+			OriginalName  string `json:"original_name"`
+			Size          int64  `json:"size"`
+			MimeType      string `json:"mime_type"`
+			DownloadCount int    `json:"download_count"`
+			CreatedAt     string `json:"created_at"`
+			DownloadURL   string `json:"download_url"`
+		}
+		
+		fileResponses := make([]FileResponse, len(files))
+		for i, file := range files {
+			fileResponses[i] = FileResponse{
+				UUID:          file.UUID,
+				OriginalName:  file.OriginalName,
+				Size:          file.Size,
+				MimeType:      file.MimeType,
+				DownloadCount: file.DownloadCount,
+				CreatedAt:     file.CreatedAt,
+				DownloadURL:   "/files/" + file.UUID,
+			}
+		}
+		
+		response := struct {
+			Files []FileResponse `json:"files"`
+		}{
+			Files: fileResponses,
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Failed to encode JSON response", http.StatusInternalServerError)
+			return
+		}
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+// processFileReferences processes [file:filename] references in post content
+func (a *App) processFileReferences(content string) template.HTML {
+	// Regular expression to match [file:filename] patterns
+	fileRefRegex := regexp.MustCompile(`\[file:([^\]]+)\]`)
+	
+	// Replace file references with download links
+	processedContent := fileRefRegex.ReplaceAllStringFunc(content, func(match string) string {
+		// Extract filename from the match
+		filename := fileRefRegex.FindStringSubmatch(match)[1]
+		
+		// Query database to find file by original name
+		// Note: This is a simple implementation. In production, you might want to cache this or use a more efficient lookup
+		rows, err := a.DB.Query("SELECT uuid, original_name FROM files WHERE original_name = ? ORDER BY created_at DESC LIMIT 1", filename)
+		if err != nil {
+			log.Printf("Error querying file: %v", err)
+			return match // Return original if error
+		}
+		defer rows.Close()
+		
+		if rows.Next() {
+			var uuid, originalName string
+			if err := rows.Scan(&uuid, &originalName); err != nil {
+				log.Printf("Error scanning file: %v", err)
+				return match
+			}
+			
+			// Return HTML link
+			return `<a href="/files/` + uuid + `" target="_blank">📎 ` + originalName + `</a>`
+		}
+		
+		// If file not found, return original text
+		return match
+	})
+	
+	// Convert newlines to HTML breaks and return as HTML
+	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
+	return template.HTML(processedContent)
+}
+
 func (app *App) securityMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if match, _ := regexp.MatchString("/(create|delete)-comment", r.URL.RequestURI()); match {
@@ -851,7 +1074,7 @@ func (app *App) securityMiddleware(h http.Handler) http.Handler {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return
 			}
-		} else if match, _ := regexp.MatchString("/(delete|update|create)", r.URL.RequestURI()); match {
+		} else if match, _ := regexp.MatchString("/(delete|update|create|upload-file)", r.URL.RequestURI()); match {
 			if !app.Sessions.IsAdmin(r) {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 				return

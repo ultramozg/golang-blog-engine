@@ -73,22 +73,22 @@
   - Test redirect functionality for existing and new posts
   - _Requirements: 4.3, 4.5_
 
-- [ ] 6. Implement direct file attachment system for posts
-- [ ] 6.1 Create file storage infrastructure
+- [x] 6. Implement direct file attachment system for posts
+- [x] 6.1 Create file storage infrastructure
   - Create File model with database schema for file metadata
   - Implement file storage directory structure creation
   - Create FileService interface and implementation for file operations
   - Implement secure file naming and path generation with UUID
   - _Requirements: 5.1, 5.2_
 
-- [ ] 6.2 Implement file upload handlers for post integration
+- [x] 6.2 Implement file upload handlers for post integration
   - Create file upload endpoint with multipart form handling for post editor
   - Implement file validation (size, type, security checks)
   - Create file metadata storage in database
   - Implement file serving endpoint with proper headers and content types
   - _Requirements: 5.1, 5.3, 5.4_
 
-- [ ] 6.3 Integrate file upload directly into post creation/editing interface
+- [x] 6.3 Integrate file upload directly into post creation/editing interface
   - Add drag-and-drop file upload zone to post creation and editing forms
   - Implement real-time file upload with progress feedback
   - Create file reference system using [file:filename] syntax in post content
