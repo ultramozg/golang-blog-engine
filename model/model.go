@@ -106,6 +106,71 @@ func GetPostBySlug(db *sql.DB, slug string) (*Post, error) {
 	return post, nil
 }
 
+// File is struct which holds model representation of one file
+type File struct {
+	ID            int    `json:"id"`
+	UUID          string `json:"uuid"`
+	OriginalName  string `json:"original_name"`
+	StoredName    string `json:"stored_name"`
+	Path          string `json:"path"`
+	Size          int64  `json:"size"`
+	MimeType      string `json:"mime_type"`
+	DownloadCount int    `json:"download_count"`
+	CreatedAt     string `json:"created_at"`
+}
+
+func (f *File) GetFile(db *sql.DB) error {
+	return db.QueryRow(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at from files where id = ?`, f.ID).Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt)
+}
+
+func (f *File) GetFileByUUID(db *sql.DB) error {
+	return db.QueryRow(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at from files where uuid = ?`, f.UUID).Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt)
+}
+
+func (f *File) CreateFile(db *sql.DB) error {
+	result, err := db.Exec(`insert into files (uuid, original_name, stored_name, path, size, mime_type, download_count, created_at) values ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`, f.UUID, f.OriginalName, f.StoredName, f.Path, f.Size, f.MimeType, f.DownloadCount)
+	if err != nil {
+		return err
+	}
+
+	// Get the ID of the newly created file
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	f.ID = int(id)
+
+	return nil
+}
+
+func (f *File) DeleteFile(db *sql.DB) error {
+	_, err := db.Exec(`delete from files where id = ?`, f.ID)
+	return err
+}
+
+func (f *File) IncrementDownloadCount(db *sql.DB) error {
+	_, err := db.Exec(`update files set download_count = download_count + 1 where id = ?`, f.ID)
+	return err
+}
+
+func GetFiles(db *sql.DB, limit, offset int) ([]File, error) {
+	rows, err := db.Query(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at from files order by created_at desc limit ? offset ?`, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	files := []File{}
+	for rows.Next() {
+		var f File
+		if err := rows.Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt); err != nil {
+			return nil, err
+		}
+		files = append(files, f)
+	}
+	return files, nil
+}
+
 // Comment is struct which holds model representation of one comment
 type Comment struct {
 	PostID    int
@@ -168,6 +233,17 @@ func MigrateDatabase(db *sql.DB) {
 	name string not null unique,
 	type integer not null,
 	pass string not null);
+
+	create table if not exists files (
+	id integer primary key autoincrement,
+	uuid text unique not null,
+	original_name text not null,
+	stored_name text not null,
+	path text not null,
+	size integer not null,
+	mime_type text not null,
+	download_count integer default 0,
+	created_at datetime default current_timestamp);
 	`
 
 	_, err := db.Exec(sql)

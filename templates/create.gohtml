@@ -2,8 +2,348 @@
 <div class="container">
 	<form method="POST" action="/create">
 		<label>Title</label><input name="title" class="u-full-width" type="text" value="" />
-		<label>Body</label><textarea name="body" class="u-full-width" placeholder="Article"></textarea>
+		<label>Body</label><textarea name="body" id="body-textarea" class="u-full-width" placeholder="Article"></textarea>
+		
+		<!-- File Upload Section -->
+		<div class="file-upload-section">
+			<label>Attach Files</label>
+			<div class="file-upload-area" id="file-upload-area">
+				<div class="file-upload-dropzone" id="dropzone">
+					<p>Drag and drop files here or <button type="button" id="file-select-btn">click to select</button></p>
+					<input type="file" id="file-input" multiple style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.json,.xml,.rtf,.tar,.gz,.rar,.7z">
+				</div>
+				<div class="file-list" id="file-list"></div>
+			</div>
+			<div class="file-actions">
+				<button type="button" id="insert-file-ref-btn">Insert File Reference</button>
+				<button type="button" id="insert-download-link-btn">Insert Download Link</button>
+			</div>
+		</div>
+		
 		<input type="submit" value="submit" />
 	</form>
 </div>
+
+<style>
+.file-upload-section {
+	margin: 20px 0;
+	border: 1px solid #e1e1e1;
+	border-radius: 4px;
+	padding: 15px;
+}
+
+.file-upload-dropzone {
+	border: 2px dashed #ccc;
+	border-radius: 4px;
+	padding: 20px;
+	text-align: center;
+	margin-bottom: 15px;
+	transition: border-color 0.3s ease;
+}
+
+.file-upload-dropzone.dragover {
+	border-color: #33c3f0;
+	background-color: #f8f9fa;
+}
+
+.file-upload-dropzone button {
+	background: none;
+	border: none;
+	color: #33c3f0;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.file-list {
+	margin-bottom: 15px;
+}
+
+.file-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 8px;
+	border: 1px solid #e1e1e1;
+	border-radius: 4px;
+	margin-bottom: 5px;
+	background-color: #f8f9fa;
+}
+
+.file-info {
+	flex-grow: 1;
+}
+
+.file-name {
+	font-weight: bold;
+	margin-bottom: 2px;
+}
+
+.file-details {
+	font-size: 0.8em;
+	color: #666;
+}
+
+.file-actions {
+	display: flex;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.file-actions button {
+	background-color: #f8f9fa;
+	border: 1px solid #e1e1e1;
+	padding: 5px 10px;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.file-actions button:hover {
+	background-color: #e9ecef;
+}
+
+.upload-progress {
+	width: 100%;
+	height: 4px;
+	background-color: #e1e1e1;
+	border-radius: 2px;
+	overflow: hidden;
+	margin-top: 5px;
+}
+
+.upload-progress-bar {
+	height: 100%;
+	background-color: #33c3f0;
+	transition: width 0.3s ease;
+}
+
+.selected-file {
+	background-color: #e3f2fd !important;
+	border-color: #33c3f0 !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	const dropzone = document.getElementById('dropzone');
+	const fileInput = document.getElementById('file-input');
+	const fileSelectBtn = document.getElementById('file-select-btn');
+	const fileList = document.getElementById('file-list');
+	const bodyTextarea = document.getElementById('body-textarea');
+	const insertFileRefBtn = document.getElementById('insert-file-ref-btn');
+	const insertDownloadLinkBtn = document.getElementById('insert-download-link-btn');
+	
+	let uploadedFiles = [];
+	let selectedFileUuid = null;
+
+	// File select button click
+	fileSelectBtn.addEventListener('click', function(e) {
+		e.preventDefault();
+		fileInput.click();
+	});
+
+	// File input change
+	fileInput.addEventListener('change', function(e) {
+		handleFiles(e.target.files);
+	});
+
+	// Drag and drop events
+	dropzone.addEventListener('dragover', function(e) {
+		e.preventDefault();
+		dropzone.classList.add('dragover');
+	});
+
+	dropzone.addEventListener('dragleave', function(e) {
+		e.preventDefault();
+		dropzone.classList.remove('dragover');
+	});
+
+	dropzone.addEventListener('drop', function(e) {
+		e.preventDefault();
+		dropzone.classList.remove('dragover');
+		handleFiles(e.dataTransfer.files);
+	});
+
+	function handleFiles(files) {
+		for (let i = 0; i < files.length; i++) {
+			uploadFile(files[i]);
+		}
+	}
+
+	function uploadFile(file) {
+		const formData = new FormData();
+		formData.append('file', file);
+
+		// Create file item in UI
+		const fileItem = createFileItem(file, null, 'uploading');
+		fileList.appendChild(fileItem);
+
+		// Upload file
+		fetch('/upload-file', {
+			method: 'POST',
+			body: formData
+		})
+		.then(response => {
+			console.log('Response status:', response.status);
+			console.log('Response headers:', response.headers.get('content-type'));
+			
+			if (!response.ok) {
+				return response.text().then(text => {
+					console.error('Server error response:', text);
+					throw new Error('Server returned ' + response.status + ': ' + text);
+				});
+			}
+			
+			return response.text().then(text => {
+				console.log('Raw response:', text);
+				try {
+					return JSON.parse(text);
+				} catch (e) {
+					console.error('JSON parse error:', e);
+					console.error('Response text:', text);
+					throw new Error('Invalid JSON response: ' + text);
+				}
+			});
+		})
+		.then(data => {
+			console.log('Parsed data:', data);
+			if (data.success) {
+				// Update file item with success
+				updateFileItem(fileItem, data, 'uploaded');
+				uploadedFiles.push(data);
+				console.log('File added to uploadedFiles array:', data);
+				console.log('Total uploaded files:', uploadedFiles.length);
+				
+				// Automatically insert file reference into the post body
+				const fileRef = '[file:' + data.original_name + ']';
+				console.log('Auto-inserting file reference:', fileRef);
+				insertTextAtCursor(bodyTextarea, fileRef + '\n');
+			} else {
+				updateFileItem(fileItem, null, 'error');
+			}
+		})
+		.catch(error => {
+			console.error('Upload error:', error);
+			updateFileItem(fileItem, null, 'error');
+		});
+	}
+
+	function createFileItem(file, fileData, status) {
+		const fileItem = document.createElement('div');
+		fileItem.className = 'file-item';
+		
+		const fileInfo = document.createElement('div');
+		fileInfo.className = 'file-info';
+		
+		const fileName = document.createElement('div');
+		fileName.className = 'file-name';
+		fileName.textContent = file ? file.name : (fileData ? fileData.original_name : 'Unknown');
+		
+		const fileDetails = document.createElement('div');
+		fileDetails.className = 'file-details';
+		
+		if (status === 'uploading') {
+			fileDetails.innerHTML = 'Uploading... <div class="upload-progress"><div class="upload-progress-bar" style="width: 0%"></div></div>';
+		} else if (status === 'uploaded' && fileData) {
+			fileDetails.textContent = formatFileSize(fileData.size) + ' • ' + fileData.mime_type;
+		} else if (status === 'error') {
+			fileDetails.textContent = 'Upload failed';
+			fileItem.style.borderColor = '#dc3545';
+			fileItem.style.backgroundColor = '#f8d7da';
+		}
+		
+		fileInfo.appendChild(fileName);
+		fileInfo.appendChild(fileDetails);
+		fileItem.appendChild(fileInfo);
+		
+		// Add click handler for selection
+		fileItem.addEventListener('click', function() {
+			// Remove selection from other items
+			document.querySelectorAll('.file-item').forEach(item => {
+				item.classList.remove('selected-file');
+			});
+			
+			// Select this item - check both parameter and stored data
+			const currentFileData = fileData || fileItem.fileData;
+			if (currentFileData && currentFileData.uuid) {
+				fileItem.classList.add('selected-file');
+				selectedFileUuid = currentFileData.uuid;
+				console.log('Selected file:', currentFileData.original_name, 'UUID:', currentFileData.uuid);
+			}
+		});
+		
+		return fileItem;
+	}
+
+	function updateFileItem(fileItem, fileData, status) {
+		const fileDetails = fileItem.querySelector('.file-details');
+		
+		if (status === 'uploaded' && fileData) {
+			fileDetails.textContent = formatFileSize(fileData.size) + ' • ' + fileData.mime_type;
+			fileItem.style.borderColor = '#28a745';
+			fileItem.style.backgroundColor = '#d4edda';
+			
+			// Store file data for later use
+			fileItem.fileData = fileData;
+		} else if (status === 'error') {
+			fileDetails.textContent = 'Upload failed';
+			fileItem.style.borderColor = '#dc3545';
+			fileItem.style.backgroundColor = '#f8d7da';
+		}
+	}
+
+	function formatFileSize(bytes) {
+		if (bytes === 0) return '0 Bytes';
+		const k = 1024;
+		const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+	}
+
+	// Insert file reference button
+	insertFileRefBtn.addEventListener('click', function() {
+		console.log('Insert file reference clicked');
+		console.log('Selected file UUID:', selectedFileUuid);
+		console.log('Uploaded files:', uploadedFiles);
+		
+		if (selectedFileUuid) {
+			const selectedFile = uploadedFiles.find(f => f.uuid === selectedFileUuid);
+			console.log('Found selected file:', selectedFile);
+			
+			if (selectedFile) {
+				const fileRef = '[file:' + selectedFile.original_name + ']';
+				console.log('Inserting file reference:', fileRef);
+				insertTextAtCursor(bodyTextarea, fileRef);
+			} else {
+				alert('Selected file not found in uploaded files list');
+			}
+		} else {
+			alert('Please select a file first');
+		}
+	});
+
+	// Insert download link button
+	insertDownloadLinkBtn.addEventListener('click', function() {
+		if (selectedFileUuid) {
+			const selectedFile = uploadedFiles.find(f => f.uuid === selectedFileUuid);
+			if (selectedFile) {
+				const downloadLink = '[' + selectedFile.original_name + '](' + selectedFile.download_url + ')';
+				insertTextAtCursor(bodyTextarea, downloadLink);
+			}
+		} else {
+			alert('Please select a file first');
+		}
+	});
+
+	function insertTextAtCursor(textarea, text) {
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const value = textarea.value;
+		
+		textarea.value = value.substring(0, start) + text + value.substring(end);
+		textarea.selectionStart = textarea.selectionEnd = start + text.length;
+		textarea.focus();
+	}
+});
+</script>
+
 {{template "footer"}}

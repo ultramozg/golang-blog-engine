@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ultramozg/golang-blog-engine/services"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
 )
@@ -40,33 +39,27 @@ func createTestDB(t *testing.T) (*sql.DB, func()) {
 
 // seedTestData inserts test data into the database
 func seedTestData(db *sql.DB) error {
-	// Create slug service for generating slugs
-	slugService := services.NewSlugService(db)
-
-	// Insert test posts with slugs
-	testPosts := []Post{
-		{Title: "Test Post 1", Body: "This is the body of test post 1", Date: "Mon Jan 1 12:00:00 2024"},
-		{Title: "Test Post 2", Body: "This is the body of test post 2", Date: "Mon Jan 2 12:00:00 2024"},
-		{Title: "Test Post 3", Body: "This is the body of test post 3", Date: "Mon Jan 3 12:00:00 2024"},
+	// Insert test posts with simple slugs
+	testPosts := []struct {
+		title, body, date, slug string
+	}{
+		{"Test Post 1", "This is the body of test post 1", "Mon Jan 1 12:00:00 2024", "test-post-1"},
+		{"Test Post 2", "This is the body of test post 2", "Mon Jan 2 12:00:00 2024", "test-post-2"},
+		{"Test Post 3", "This is the body of test post 3", "Mon Jan 3 12:00:00 2024", "test-post-3"},
 	}
 
 	for _, post := range testPosts {
-		// Generate slug for the post
-		slug := slugService.GenerateSlug(post.Title)
-		post.Slug = slugService.EnsureUniqueSlug(slug, 0) // 0 for new post
-
 		// Insert post with slug
-		result, err := db.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, post.Title, post.Body, post.Date, post.Slug)
+		result, err := db.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, post.title, post.body, post.date, post.slug)
 		if err != nil {
 			return err
 		}
 
 		// Get the ID of the newly created post
-		id, err := result.LastInsertId()
+		_, err = result.LastInsertId()
 		if err != nil {
 			return err
 		}
-		post.ID = int(id)
 	}
 
 	// Insert test comments

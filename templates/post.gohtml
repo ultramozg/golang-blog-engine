@@ -2,7 +2,7 @@
 <div class="container">
 	<h4>{{.Post.Title}}</h4>
 	<h6 class="u-pull-right">{{.Post.Date}}</h6>
-	<p>{{.Post.Body}}</p>
+	<div>{{processFileReferences .Post.Body}}</div>
 	<div class="docs-section" style="margin:0px;padding:10px"></div>
 	<br>
 	<center>
