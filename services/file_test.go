@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
+	"image"
+	"image/png"
 	"mime/multipart"
 	"net/textproto"
 	"os"
@@ -384,5 +386,268 @@ func TestFileService_GetFilePath(t *testing.T) {
 	// Verify file exists at the path
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		t.Error("File does not exist at returned path")
+	}
+}
+
+// createTestImageFile creates a simple PNG image for testing
+func createTestImageFile(t *testing.T, filename string, width, height int) (multipart.File, *multipart.FileHeader) {
+	// Create a simple image
+	img := image.NewRGBA(image.Rect(0, 0, width, height))
+	
+	// Fill with a simple pattern
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			img.Set(x, y, image.NewRGBA(image.Rect(0, 0, 1, 1)).At(0, 0))
+		}
+	}
+
+	// Encode to PNG
+	var buf bytes.Buffer
+	err := png.Encode(&buf, img)
+	if err != nil {
+		t.Fatalf("Failed to encode PNG: %v", err)
+	}
+
+	// Create multipart file
+	var b bytes.Buffer
+	writer := multipart.NewWriter(&b)
+
+	part, err := writer.CreateFormFile("file", filename)
+	if err != nil {
+		t.Fatalf("Failed to create form file: %v", err)
+	}
+
+	_, err = part.Write(buf.Bytes())
+	if err != nil {
+		t.Fatalf("Failed to write image content: %v", err)
+	}
+
+	writer.Close()
+
+	// Parse the multipart form
+	reader := multipart.NewReader(&b, writer.Boundary())
+	form, err := reader.ReadForm(10 << 20) // 10MB max
+	if err != nil {
+		t.Fatalf("Failed to read form: %v", err)
+	}
+
+	files := form.File["file"]
+	if len(files) == 0 {
+		t.Fatal("No files found in form")
+	}
+
+	fileHeader := files[0]
+	
+	// Set PNG content type
+	if fileHeader.Header == nil {
+		fileHeader.Header = make(textproto.MIMEHeader)
+	}
+	fileHeader.Header.Set("Content-Type", "image/png")
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		t.Fatalf("Failed to open file: %v", err)
+	}
+
+	return file, fileHeader
+}
+
+func TestFileService_IsImageFile(t *testing.T) {
+	fs, _, cleanup := setupTestFileService(t)
+	defer cleanup()
+
+	tests := []struct {
+		name     string
+		mimeType string
+		expected bool
+	}{
+		{"JPEG image", "image/jpeg", true},
+		{"PNG image", "image/png", true},
+		{"GIF image", "image/gif", true},
+		{"WebP image", "image/webp", true},
+		{"Text file", "text/plain", false},
+		{"PDF file", "application/pdf", false},
+		{"Empty mime type", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := fs.IsImageFile(tt.mimeType)
+			if result != tt.expected {
+				t.Errorf("IsImageFile(%s) = %v, expected %v", tt.mimeType, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFileService_UploadImage_Success(t *testing.T) {
+	fs, tempDir, cleanup := setupTestFileService(t)
+	defer cleanup()
+
+	// Ensure directories exist
+	err := fs.EnsureUploadDirectories()
+	if err != nil {
+		t.Fatalf("Failed to ensure directories: %v", err)
+	}
+
+	// Create test image
+	file, header := createTestImageFile(t, "test.png", 100, 100)
+	defer file.Close()
+
+	// Upload image
+	fileRecord, err := fs.UploadFile(file, header)
+	if err != nil {
+		t.Fatalf("UploadFile failed: %v", err)
+	}
+
+	// Verify it's marked as an image
+	if !fileRecord.IsImage {
+		t.Error("File should be marked as an image")
+	}
+
+	// Verify dimensions are set
+	if fileRecord.Width == nil || *fileRecord.Width != 100 {
+		t.Errorf("Expected width 100, got %v", fileRecord.Width)
+	}
+
+	if fileRecord.Height == nil || *fileRecord.Height != 100 {
+		t.Errorf("Expected height 100, got %v", fileRecord.Height)
+	}
+
+	// Verify thumbnail was created
+	if fileRecord.ThumbnailPath == nil {
+		t.Error("Thumbnail path should be set")
+	} else {
+		thumbnailFullPath := filepath.Join(tempDir, *fileRecord.ThumbnailPath)
+		if _, err := os.Stat(thumbnailFullPath); os.IsNotExist(err) {
+			t.Error("Thumbnail file should exist")
+		}
+	}
+
+	// Verify file is in images subdirectory
+	if !strings.Contains(fileRecord.Path, "images") {
+		t.Errorf("Image file should be in images subdirectory, got path: %s", fileRecord.Path)
+	}
+}
+
+func TestFileService_UploadDocument_Success(t *testing.T) {
+	fs, _, cleanup := setupTestFileService(t)
+	defer cleanup()
+
+	// Ensure directories exist
+	err := fs.EnsureUploadDirectories()
+	if err != nil {
+		t.Fatalf("Failed to ensure directories: %v", err)
+	}
+
+	// Create test document
+	file, header := createTestMultipartFile(t, "test.txt", "Hello, World!", "text/plain")
+	defer file.Close()
+
+	// Upload document
+	fileRecord, err := fs.UploadFile(file, header)
+	if err != nil {
+		t.Fatalf("UploadFile failed: %v", err)
+	}
+
+	// Verify it's not marked as an image
+	if fileRecord.IsImage {
+		t.Error("File should not be marked as an image")
+	}
+
+	// Verify image fields are not set
+	if fileRecord.Width != nil {
+		t.Error("Width should not be set for non-image")
+	}
+
+	if fileRecord.Height != nil {
+		t.Error("Height should not be set for non-image")
+	}
+
+	if fileRecord.ThumbnailPath != nil {
+		t.Error("Thumbnail path should not be set for non-image")
+	}
+
+	// Verify file is in documents subdirectory
+	if !strings.Contains(fileRecord.Path, "documents") {
+		t.Errorf("Document file should be in documents subdirectory, got path: %s", fileRecord.Path)
+	}
+}
+
+func TestFileService_DeleteImage_WithThumbnail(t *testing.T) {
+	fs, tempDir, cleanup := setupTestFileService(t)
+	defer cleanup()
+
+	// Ensure directories exist
+	err := fs.EnsureUploadDirectories()
+	if err != nil {
+		t.Fatalf("Failed to ensure directories: %v", err)
+	}
+
+	// Upload a test image
+	file, header := createTestImageFile(t, "test.png", 100, 100)
+	defer file.Close()
+
+	uploadedFile, err := fs.UploadFile(file, header)
+	if err != nil {
+		t.Fatalf("Failed to upload test image: %v", err)
+	}
+
+	// Verify both image and thumbnail exist
+	imagePath := filepath.Join(tempDir, uploadedFile.Path)
+	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
+		t.Error("Image should exist before deletion")
+	}
+
+	var thumbnailPath string
+	if uploadedFile.ThumbnailPath != nil {
+		thumbnailPath = filepath.Join(tempDir, *uploadedFile.ThumbnailPath)
+		if _, err := os.Stat(thumbnailPath); os.IsNotExist(err) {
+			t.Error("Thumbnail should exist before deletion")
+		}
+	}
+
+	// Delete the file
+	err = fs.DeleteFile(uploadedFile.UUID)
+	if err != nil {
+		t.Fatalf("DeleteFile failed: %v", err)
+	}
+
+	// Verify both image and thumbnail are deleted
+	if _, err := os.Stat(imagePath); !os.IsNotExist(err) {
+		t.Error("Image should not exist after deletion")
+	}
+
+	if thumbnailPath != "" {
+		if _, err := os.Stat(thumbnailPath); !os.IsNotExist(err) {
+			t.Error("Thumbnail should not exist after deletion")
+		}
+	}
+}
+
+func TestFileService_EnsureUploadDirectories_WithImageStructure(t *testing.T) {
+	fs, tempDir, cleanup := setupTestFileService(t)
+	defer cleanup()
+
+	err := fs.EnsureUploadDirectories()
+	if err != nil {
+		t.Fatalf("EnsureUploadDirectories failed: %v", err)
+	}
+
+	// Check if all required directories were created
+	now := time.Now()
+	yearMonth := fmt.Sprintf("%d/%02d", now.Year(), now.Month())
+	
+	expectedDirs := []string{
+		filepath.Join(tempDir, "files"),
+		filepath.Join(tempDir, "files", yearMonth, "documents"),
+		filepath.Join(tempDir, "files", yearMonth, "images"),
+		filepath.Join(tempDir, "files", yearMonth, "thumbnails"),
+	}
+
+	for _, dir := range expectedDirs {
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			t.Errorf("Directory %s was not created", dir)
+		}
 	}
 }

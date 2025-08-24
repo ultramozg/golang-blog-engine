@@ -108,27 +108,33 @@ func GetPostBySlug(db *sql.DB, slug string) (*Post, error) {
 
 // File is struct which holds model representation of one file
 type File struct {
-	ID            int    `json:"id"`
-	UUID          string `json:"uuid"`
-	OriginalName  string `json:"original_name"`
-	StoredName    string `json:"stored_name"`
-	Path          string `json:"path"`
-	Size          int64  `json:"size"`
-	MimeType      string `json:"mime_type"`
-	DownloadCount int    `json:"download_count"`
-	CreatedAt     string `json:"created_at"`
+	ID            int     `json:"id"`
+	UUID          string  `json:"uuid"`
+	OriginalName  string  `json:"original_name"`
+	StoredName    string  `json:"stored_name"`
+	Path          string  `json:"path"`
+	Size          int64   `json:"size"`
+	MimeType      string  `json:"mime_type"`
+	DownloadCount int     `json:"download_count"`
+	CreatedAt     string  `json:"created_at"`
+	// Image-specific fields (NULL for non-images)
+	IsImage       bool    `json:"is_image"`
+	Width         *int    `json:"width,omitempty"`
+	Height        *int    `json:"height,omitempty"`
+	ThumbnailPath *string `json:"thumbnail_path,omitempty"`
+	AltText       *string `json:"alt_text,omitempty"`
 }
 
 func (f *File) GetFile(db *sql.DB) error {
-	return db.QueryRow(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at from files where id = ?`, f.ID).Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt)
+	return db.QueryRow(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at, COALESCE(is_image, 0), width, height, thumbnail_path, alt_text from files where id = ?`, f.ID).Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt, &f.IsImage, &f.Width, &f.Height, &f.ThumbnailPath, &f.AltText)
 }
 
 func (f *File) GetFileByUUID(db *sql.DB) error {
-	return db.QueryRow(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at from files where uuid = ?`, f.UUID).Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt)
+	return db.QueryRow(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at, COALESCE(is_image, 0), width, height, thumbnail_path, alt_text from files where uuid = ?`, f.UUID).Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt, &f.IsImage, &f.Width, &f.Height, &f.ThumbnailPath, &f.AltText)
 }
 
 func (f *File) CreateFile(db *sql.DB) error {
-	result, err := db.Exec(`insert into files (uuid, original_name, stored_name, path, size, mime_type, download_count, created_at) values ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)`, f.UUID, f.OriginalName, f.StoredName, f.Path, f.Size, f.MimeType, f.DownloadCount)
+	result, err := db.Exec(`insert into files (uuid, original_name, stored_name, path, size, mime_type, download_count, created_at, is_image, width, height, thumbnail_path, alt_text) values ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, $8, $9, $10, $11, $12)`, f.UUID, f.OriginalName, f.StoredName, f.Path, f.Size, f.MimeType, f.DownloadCount, f.IsImage, f.Width, f.Height, f.ThumbnailPath, f.AltText)
 	if err != nil {
 		return err
 	}
@@ -154,7 +160,7 @@ func (f *File) IncrementDownloadCount(db *sql.DB) error {
 }
 
 func GetFiles(db *sql.DB, limit, offset int) ([]File, error) {
-	rows, err := db.Query(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at from files order by created_at desc limit ? offset ?`, limit, offset)
+	rows, err := db.Query(`select id, uuid, original_name, stored_name, path, size, mime_type, download_count, created_at, COALESCE(is_image, 0), width, height, thumbnail_path, alt_text from files order by created_at desc limit ? offset ?`, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +169,7 @@ func GetFiles(db *sql.DB, limit, offset int) ([]File, error) {
 	files := []File{}
 	for rows.Next() {
 		var f File
-		if err := rows.Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt); err != nil {
+		if err := rows.Scan(&f.ID, &f.UUID, &f.OriginalName, &f.StoredName, &f.Path, &f.Size, &f.MimeType, &f.DownloadCount, &f.CreatedAt, &f.IsImage, &f.Width, &f.Height, &f.ThumbnailPath, &f.AltText); err != nil {
 			return nil, err
 		}
 		files = append(files, f)
@@ -243,7 +249,12 @@ func MigrateDatabase(db *sql.DB) {
 	size integer not null,
 	mime_type text not null,
 	download_count integer default 0,
-	created_at datetime default current_timestamp);
+	created_at datetime default current_timestamp,
+	is_image boolean default false,
+	width integer,
+	height integer,
+	thumbnail_path text,
+	alt_text text);
 	`
 
 	_, err := db.Exec(sql)
@@ -309,6 +320,9 @@ func MigrateExistingDatabase(db *sql.DB) {
 
 	// Generate slugs for existing posts that don't have them
 	GenerateSlugsForExistingPosts(db)
+
+	// Add image columns to existing files table
+	MigrateFilesTableForImages(db)
 }
 
 // GenerateSlugsForExistingPosts creates slugs for posts that don't have them
@@ -537,4 +551,58 @@ func (s *migrationSlugService) IsSlugUnique(slug string, excludePostID int) bool
 	}
 
 	return count == 0
+}
+
+// MigrateFilesTableForImages adds image-specific columns to existing files table
+func MigrateFilesTableForImages(db *sql.DB) {
+	// Check if is_image column exists
+	var columnExists int
+	err := db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('files') WHERE name='is_image'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add is_image column
+		_, err = db.Exec("ALTER TABLE files ADD COLUMN is_image BOOLEAN DEFAULT FALSE")
+		if err != nil {
+			log.Println("Warning: Could not add is_image column:", err)
+		}
+	}
+
+	// Check if width column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('files') WHERE name='width'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add width column
+		_, err = db.Exec("ALTER TABLE files ADD COLUMN width INTEGER")
+		if err != nil {
+			log.Println("Warning: Could not add width column:", err)
+		}
+	}
+
+	// Check if height column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('files') WHERE name='height'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add height column
+		_, err = db.Exec("ALTER TABLE files ADD COLUMN height INTEGER")
+		if err != nil {
+			log.Println("Warning: Could not add height column:", err)
+		}
+	}
+
+	// Check if thumbnail_path column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('files') WHERE name='thumbnail_path'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add thumbnail_path column
+		_, err = db.Exec("ALTER TABLE files ADD COLUMN thumbnail_path TEXT")
+		if err != nil {
+			log.Println("Warning: Could not add thumbnail_path column:", err)
+		}
+	}
+
+	// Check if alt_text column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('files') WHERE name='alt_text'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add alt_text column
+		_, err = db.Exec("ALTER TABLE files ADD COLUMN alt_text TEXT")
+		if err != nil {
+			log.Println("Warning: Could not add alt_text column:", err)
+		}
+	}
 }

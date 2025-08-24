@@ -96,61 +96,61 @@
   - Process file references in post display to show download links
   - _Requirements: 5.5, 5.6_
 
-- [ ] 7. Implement image upload and processing system
-- [ ] 7.1 Create image storage and processing infrastructure
-  - Create Image model with database schema for image metadata
-  - Implement image storage directory structure (originals/thumbnails)
-  - Create ImageService interface and implementation
-  - Set up image processing libraries for optimization and thumbnails
+- [x] 7. Extend file upload system to support automatic image processing
+- [x] 7.1 Extend file storage infrastructure for images
+  - Add image-specific fields to existing File model (is_image, width, height, thumbnail_path, alt_text)
+  - Update database schema to extend files table with image metadata columns
+  - Modify file storage directory structure to include images and thumbnails subdirectories
+  - Add image processing libraries (image/jpeg, image/png) for thumbnail generation
   - _Requirements: 6.1, 6.2_
 
-- [ ] 7.2 Implement image upload and optimization
-  - Create image upload endpoint with validation for image formats
-  - Implement automatic image optimization and WebP conversion
-  - Create thumbnail generation for multiple sizes (small/medium/large)
-  - Implement image metadata extraction and storage (dimensions, size)
-  - _Requirements: 6.1, 6.2, 6.5_
+- [x] 7.2 Implement automatic image detection and processing in file upload
+  - Extend existing file upload handler to detect image MIME types automatically
+  - Implement automatic image processing (thumbnail generation) when image files are uploaded
+  - Add image metadata extraction (width, height) during upload process
+  - Update FileService to handle image-specific operations within existing file upload flow
+  - _Requirements: 6.1, 6.2, 6.6_
 
-- [ ] 7.3 Create image embedding system for blog posts
-  - Implement image selection interface in post editor
-  - Create image embedding syntax for blog post content
-  - Implement image rendering in blog post templates with responsive design
-  - Add responsive image serving with srcset attributes for different sizes
-  - _Requirements: 6.3, 6.4_
+- [x] 7.3 Implement automatic image insertion into post content
+  - Modify file upload endpoint to automatically insert image references into post content during upload
+  - Create image embedding syntax that works with existing file reference system
+  - Update post content processing to render image references as responsive images
+  - Ensure multiple images can be attached and automatically inserted into single post
+  - _Requirements: 6.3, 6.4, 6.5_
 
-- [ ] 7.4 Implement image accessibility and management
-  - Add alt text support for uploaded images
-  - Create image management interface for admin users
-  - Implement image deletion and replacement functionality
-  - Add image usage tracking and optimization reporting
-  - _Requirements: 6.6, 6.7_
+- [x] 7.4 Implement image rendering and accessibility in blog posts
+  - Update blog post templates to render image references as responsive images with thumbnails
+  - Add alt text support for images within the existing file management system
+  - Implement responsive image display that works with existing blog post styling
+  - Test image rendering across different screen sizes and devices
+  - _Requirements: 6.5, 6.7_
 
-- [ ] 8. Create integration tests for new functionality
-  - Write integration tests for file upload and download workflows
-  - Create integration tests for image upload and processing
-  - Test complete user workflows from upload to display
-  - Test file and image management admin interfaces
+- [ ] 8. Create integration tests for extended file and image functionality
+  - Write integration tests for file upload workflows including automatic image processing
+  - Create integration tests for automatic image insertion into post content
+  - Test complete user workflows from image upload to display in blog posts
+  - Test multiple image attachments to single post functionality
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 9. Update templates and UI for new features
-  - Update post creation/editing forms to support file and image uploads
-  - Create file and image management admin interfaces
-  - Update blog post templates to render embedded images responsively
-  - Add drag-and-drop upload functionality for better user experience
-  - _Requirements: 5.5, 6.3, 6.4, 6.6_
+- [ ] 9. Update templates and UI for enhanced file and image features
+  - Update post creation/editing forms to support automatic image insertion during upload
+  - Enhance existing file upload interface to handle image processing seamlessly
+  - Update blog post templates to render both file downloads and embedded images responsively
+  - Add visual feedback for automatic image insertion into post content
+  - _Requirements: 5.5, 6.3, 6.4, 6.5_
 
-- [ ] 10. Implement error handling and validation
-  - Create comprehensive error handling for file operations
-  - Implement proper validation for all new endpoints
-  - Add user-friendly error messages for upload failures
-  - Create logging and monitoring for new functionality
+- [ ] 10. Implement error handling and validation for extended functionality
+  - Extend existing file operation error handling to cover image processing failures
+  - Add validation for automatic image insertion and thumbnail generation
+  - Implement user-friendly error messages for image processing and insertion failures
+  - Add logging for image processing operations and automatic content insertion
   - _Requirements: 5.4, 6.7_
 
-- [ ] 11. Performance optimization and security hardening
-  - Implement file size limits and storage quotas
-  - Add rate limiting for upload endpoints
-  - Create security headers for file serving
-  - Optimize database queries with proper indexing for file/image tables
+- [ ] 11. Performance optimization and security hardening for extended file system
+  - Implement file size limits with specific limits for image files
+  - Add rate limiting for upload endpoints including image processing operations
+  - Create security headers for serving both files and images
+  - Optimize database queries with proper indexing for extended files table with image fields
   - _Requirements: 3.4, 5.4, 6.7_
 
 - [ ] 12. Final integration and testing
