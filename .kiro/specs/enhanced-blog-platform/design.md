@@ -106,45 +106,54 @@ type FileInfo struct {
 **Storage Structure**
 ```
 uploads/
-├── files/
-│   ├── 2024/01/
-│   └── 2024/02/
-└── images/
+└── files/
     ├── 2024/01/
-    │   ├── originals/
-    │   └── thumbnails/
+    │   ├── documents/     # Non-image files
+    │   ├── images/        # Original images
+    │   └── thumbnails/    # Generated thumbnails
     └── 2024/02/
+        ├── documents/
+        ├── images/
+        └── thumbnails/
 ```
 
-### 5. Image Management System
+### 5. Extended File System with Image Processing
 
-**Image Processing Service**
+**Enhanced File Service with Image Support**
 ```go
-type ImageService interface {
-    UploadImage(file multipart.File, filename string) (*ImageInfo, error)
-    GenerateThumbnail(imageID string, width, height int) (*ImageInfo, error)
-    OptimizeImage(imageID string) error
-    GetImageURL(imageID string, size string) string
+type FileService interface {
+    UploadFile(file multipart.File, filename string) (*FileInfo, error)
+    UploadImage(file multipart.File, filename string) (*FileInfo, error) // Extended for images
+    GetFile(fileID string) (*FileInfo, error)
+    DeleteFile(fileID string) error
+    ListFiles(userID string) ([]*FileInfo, error)
+    IsImageFile(mimeType string) bool
+    ProcessImage(fileInfo *FileInfo) error
+    GenerateThumbnail(fileInfo *FileInfo) error
 }
 
-type ImageInfo struct {
-    ID          string
-    OriginalName string
-    StoredName   string
-    Width       int
-    Height      int
-    Size        int64
-    MimeType    string
-    AltText     string
-    UploadedAt  time.Time
+type FileInfo struct {
+    ID            string
+    OriginalName  string
+    StoredName    string
+    Size          int64
+    MimeType      string
+    UploadedAt    time.Time
+    DownloadCount int
+    // Image-specific fields (populated when IsImage = true)
+    IsImage       bool
+    Width         int
+    Height        int
+    ThumbnailPath string
+    AltText       string
 }
 ```
 
 **Image Processing Features**
-- Automatic WebP conversion for modern browsers
-- Thumbnail generation (small: 150x150, medium: 300x300, large: 800x600)
+- Automatic image detection and processing within file upload flow
+- Thumbnail generation for image files (300x300 for previews)
 - Image optimization without quality loss
-- Responsive image serving
+- Automatic insertion of image references into post content during upload
 
 ## Data Models
 
@@ -176,20 +185,24 @@ type File struct {
 }
 ```
 
-### Image Model
+### Enhanced File Model (Unified for Files and Images)
 ```go
-type Image struct {
-    ID           int       `json:"id"`
-    UUID         string    `json:"uuid"`
-    OriginalName string    `json:"original_name"`
-    StoredName   string    `json:"stored_name"`
-    Path         string    `json:"path"`
-    Width        int       `json:"width"`
-    Height       int       `json:"height"`
-    Size         int64     `json:"size"`
-    MimeType     string    `json:"mime_type"`
-    AltText      string    `json:"alt_text"`
-    CreatedAt    time.Time `json:"created_at"`
+type File struct {
+    ID            int       `json:"id"`
+    UUID          string    `json:"uuid"`
+    OriginalName  string    `json:"original_name"`
+    StoredName    string    `json:"stored_name"`
+    Path          string    `json:"path"`
+    Size          int64     `json:"size"`
+    MimeType      string    `json:"mime_type"`
+    DownloadCount int       `json:"download_count"`
+    CreatedAt     time.Time `json:"created_at"`
+    // Image-specific fields (NULL for non-images)
+    IsImage       bool      `json:"is_image"`
+    Width         *int      `json:"width,omitempty"`
+    Height        *int      `json:"height,omitempty"`
+    ThumbnailPath *string   `json:"thumbnail_path,omitempty"`
+    AltText       *string   `json:"alt_text,omitempty"`
 }
 ```
 
@@ -213,20 +226,12 @@ CREATE TABLE files (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create images table
-CREATE TABLE images (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    uuid TEXT UNIQUE NOT NULL,
-    original_name TEXT NOT NULL,
-    stored_name TEXT NOT NULL,
-    path TEXT NOT NULL,
-    width INTEGER NOT NULL,
-    height INTEGER NOT NULL,
-    size INTEGER NOT NULL,
-    mime_type TEXT NOT NULL,
-    alt_text TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+-- Extend files table to support images
+ALTER TABLE files ADD COLUMN is_image BOOLEAN DEFAULT FALSE;
+ALTER TABLE files ADD COLUMN width INTEGER;
+ALTER TABLE files ADD COLUMN height INTEGER;
+ALTER TABLE files ADD COLUMN thumbnail_path TEXT;
+ALTER TABLE files ADD COLUMN alt_text TEXT;
 ```
 
 ## Error Handling
@@ -250,10 +255,11 @@ type APIError struct {
 
 ### File Upload Error Handling
 - File size limits (configurable, default 10MB for files, 5MB for images)
-- MIME type validation
+- MIME type validation with automatic image detection
 - Storage space checks
-- Image processing failures
+- Image processing failures (thumbnail generation, optimization)
 - Malicious file detection
+- Automatic post content insertion failures
 
 ## Testing Strategy
 
@@ -304,11 +310,12 @@ type APIError struct {
 
 ## Performance Considerations
 
-### Image Optimization
+### Image Processing and Optimization
+- Automatic image processing during file upload
+- Thumbnail generation for image files (300x300 preview size)
+- Responsive image rendering in blog posts
+- Automatic image reference insertion into post content
 - Lazy loading for images in blog posts
-- WebP format support with fallbacks
-- CDN-ready file serving headers
-- Thumbnail caching strategy
 
 ### Database Performance
 - Indexes on slug column for fast lookups

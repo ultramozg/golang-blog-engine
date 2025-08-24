@@ -66,14 +66,14 @@ This feature enhances the existing Go blog platform with comprehensive testing, 
 
 ### Requirement 6
 
-**User Story:** As a content creator, I want to upload and display images in blog posts, so that I can create visually engaging content.
+**User Story:** As a content creator, I want to upload and display images in blog posts, so that I can create visually engaging content with automatic embedding.
 
 #### Acceptance Criteria
 
-1. WHEN uploading an image THEN the system SHALL accept common image formats (JPG, PNG, GIF, WebP)
-2. WHEN an image is uploaded THEN the system SHALL optimize it for web display while maintaining quality
-3. WHEN writing a blog post THEN the system SHALL provide a way to embed uploaded images
-4. WHEN images are displayed THEN the system SHALL render them responsively within blog post content
-5. WHEN images are large THEN the system SHALL provide thumbnail generation for performance
-6. WHEN images are embedded THEN the system SHALL support alt text for accessibility
-7. WHEN image storage limits are reached THEN the system SHALL provide clear error messages and management options
+1. WHEN uploading an image file THEN the system SHALL extend the existing file upload system to handle image formats (JPG, PNG, GIF, WebP)
+2. WHEN an image is uploaded THEN the system SHALL automatically process and optimize it for web display
+3. WHEN an image is uploaded during post creation/editing THEN the system SHALL automatically insert the image reference into the post content
+4. WHEN multiple images are uploaded THEN the system SHALL support attaching multiple images to a single post
+5. WHEN images are displayed in posts THEN the system SHALL render them responsively within blog post content
+6. WHEN images are processed THEN the system SHALL generate thumbnails for performance optimization
+7. WHEN images are rendered THEN the system SHALL provide proper alt text support for accessibility
