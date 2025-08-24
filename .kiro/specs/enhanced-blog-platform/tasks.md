@@ -96,29 +96,29 @@
   - Process file references in post display to show download links
   - _Requirements: 5.5, 5.6_
 
-- [ ] 7. Extend file upload system to support automatic image processing
-- [ ] 7.1 Extend file storage infrastructure for images
+- [x] 7. Extend file upload system to support automatic image processing
+- [x] 7.1 Extend file storage infrastructure for images
   - Add image-specific fields to existing File model (is_image, width, height, thumbnail_path, alt_text)
   - Update database schema to extend files table with image metadata columns
   - Modify file storage directory structure to include images and thumbnails subdirectories
   - Add image processing libraries (image/jpeg, image/png) for thumbnail generation
   - _Requirements: 6.1, 6.2_
 
-- [ ] 7.2 Implement automatic image detection and processing in file upload
+- [x] 7.2 Implement automatic image detection and processing in file upload
   - Extend existing file upload handler to detect image MIME types automatically
   - Implement automatic image processing (thumbnail generation) when image files are uploaded
   - Add image metadata extraction (width, height) during upload process
   - Update FileService to handle image-specific operations within existing file upload flow
   - _Requirements: 6.1, 6.2, 6.6_
 
-- [ ] 7.3 Implement automatic image insertion into post content
+- [x] 7.3 Implement automatic image insertion into post content
   - Modify file upload endpoint to automatically insert image references into post content during upload
   - Create image embedding syntax that works with existing file reference system
   - Update post content processing to render image references as responsive images
   - Ensure multiple images can be attached and automatically inserted into single post
   - _Requirements: 6.3, 6.4, 6.5_
 
-- [ ] 7.4 Implement image rendering and accessibility in blog posts
+- [x] 7.4 Implement image rendering and accessibility in blog posts
   - Update blog post templates to render image references as responsive images with thumbnails
   - Add alt text support for images within the existing file management system
   - Implement responsive image display that works with existing blog post styling

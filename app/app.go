@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -217,6 +218,7 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/upload-file", a.uploadFile)
 	mux.HandleFunc("/files/", a.serveFile)
 	mux.HandleFunc("/api/files", a.listFiles)
+	mux.HandleFunc("/api/files/alt-text", a.updateFileAltText)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -885,12 +887,16 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		// Return JSON response with file information
 		w.Header().Set("Content-Type", "application/json")
 		response := struct {
-			Success      bool   `json:"success"`
-			UUID         string `json:"uuid"`
-			OriginalName string `json:"original_name"`
-			Size         int64  `json:"size"`
-			MimeType     string `json:"mime_type"`
-			DownloadURL  string `json:"download_url"`
+			Success       bool    `json:"success"`
+			UUID          string  `json:"uuid"`
+			OriginalName  string  `json:"original_name"`
+			Size          int64   `json:"size"`
+			MimeType      string  `json:"mime_type"`
+			DownloadURL   string  `json:"download_url"`
+			IsImage       bool    `json:"is_image"`
+			Width         *int    `json:"width,omitempty"`
+			Height        *int    `json:"height,omitempty"`
+			ThumbnailURL  *string `json:"thumbnail_url,omitempty"`
 		}{
 			Success:      true,
 			UUID:         fileRecord.UUID,
@@ -898,6 +904,15 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 			Size:         fileRecord.Size,
 			MimeType:     fileRecord.MimeType,
 			DownloadURL:  "/files/" + fileRecord.UUID,
+			IsImage:      fileRecord.IsImage,
+			Width:        fileRecord.Width,
+			Height:       fileRecord.Height,
+		}
+
+		// Add thumbnail URL if available
+		if fileRecord.IsImage && fileRecord.ThumbnailPath != nil {
+			thumbnailURL := "/files/" + fileRecord.UUID + "/thumbnail"
+			response.ThumbnailURL = &thumbnailURL
 		}
 
 		// Use proper JSON encoding
@@ -915,11 +930,21 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 func (a *App) serveFile(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		// Extract UUID from URL path /files/uuid-here
-		uuid := strings.TrimPrefix(r.URL.Path, "/files/")
-		if uuid == "" {
+		// Extract UUID and check for thumbnail request from URL path
+		path := strings.TrimPrefix(r.URL.Path, "/files/")
+		if path == "" {
 			http.Error(w, "Invalid file UUID", http.StatusBadRequest)
 			return
+		}
+
+		// Check if this is a thumbnail request
+		var uuid string
+		var isThumbnail bool
+		if strings.HasSuffix(path, "/thumbnail") {
+			uuid = strings.TrimSuffix(path, "/thumbnail")
+			isThumbnail = true
+		} else {
+			uuid = path
 		}
 
 		// Get file information
@@ -929,22 +954,47 @@ func (a *App) serveFile(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Get file path
-		filePath, err := a.FileService.GetFilePath(uuid)
-		if err != nil {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
+		var filePath string
+		var mimeType string
+		var filename string
 
-		// Increment download count
-		if err := fileRecord.IncrementDownloadCount(a.DB); err != nil {
-			log.Printf("Failed to increment download count for file %s: %v", uuid, err)
+		if isThumbnail && fileRecord.IsImage && fileRecord.ThumbnailPath != nil {
+			// Serve thumbnail
+			filePath = filepath.Join("uploads", *fileRecord.ThumbnailPath)
+			mimeType = fileRecord.MimeType // Keep original mime type
+			filename = "thumb_" + fileRecord.OriginalName
+		} else {
+			// Serve original file
+			filePath, err = a.FileService.GetFilePath(uuid)
+			if err != nil {
+				http.Error(w, "File not found", http.StatusNotFound)
+				return
+			}
+			mimeType = fileRecord.MimeType
+			filename = fileRecord.OriginalName
+
+			// Increment download count only for original files
+			if err := fileRecord.IncrementDownloadCount(a.DB); err != nil {
+				log.Printf("Failed to increment download count for file %s: %v", uuid, err)
+			}
 		}
 
 		// Set appropriate headers
-		w.Header().Set("Content-Type", fileRecord.MimeType)
-		w.Header().Set("Content-Disposition", `attachment; filename="`+fileRecord.OriginalName+`"`)
-		w.Header().Set("Content-Length", strconv.FormatInt(fileRecord.Size, 10))
+		w.Header().Set("Content-Type", mimeType)
+		
+		// For images, set inline disposition; for others, set attachment
+		if fileRecord.IsImage && !isThumbnail {
+			w.Header().Set("Content-Disposition", `inline; filename="`+filename+`"`)
+		} else if fileRecord.IsImage && isThumbnail {
+			w.Header().Set("Content-Disposition", `inline; filename="`+filename+`"`)
+		} else {
+			w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+		}
+
+		// Get file info for content length
+		if fileInfo, err := os.Stat(filePath); err == nil {
+			w.Header().Set("Content-Length", strconv.FormatInt(fileInfo.Size(), 10))
+		}
 
 		// Serve the file
 		http.ServeFile(w, r, filePath)
@@ -1033,14 +1083,13 @@ func (a *App) processFileReferences(content string) template.HTML {
 	// Regular expression to match [file:filename] patterns
 	fileRefRegex := regexp.MustCompile(`\[file:([^\]]+)\]`)
 	
-	// Replace file references with download links
+	// Replace file references with appropriate HTML based on file type
 	processedContent := fileRefRegex.ReplaceAllStringFunc(content, func(match string) string {
 		// Extract filename from the match
 		filename := fileRefRegex.FindStringSubmatch(match)[1]
 		
-		// Query database to find file by original name
-		// Note: This is a simple implementation. In production, you might want to cache this or use a more efficient lookup
-		rows, err := a.DB.Query("SELECT uuid, original_name FROM files WHERE original_name = ? ORDER BY created_at DESC LIMIT 1", filename)
+		// Query database to find file by original name with image metadata
+		rows, err := a.DB.Query("SELECT uuid, original_name, is_image, thumbnail_path, alt_text, width, height FROM files WHERE original_name = ? ORDER BY created_at DESC LIMIT 1", filename)
 		if err != nil {
 			log.Printf("Error querying file: %v", err)
 			return match // Return original if error
@@ -1049,13 +1098,47 @@ func (a *App) processFileReferences(content string) template.HTML {
 		
 		if rows.Next() {
 			var uuid, originalName string
-			if err := rows.Scan(&uuid, &originalName); err != nil {
+			var isImage bool
+			var thumbnailPath, altText *string
+			var width, height *int
+			
+			if err := rows.Scan(&uuid, &originalName, &isImage, &thumbnailPath, &altText, &width, &height); err != nil {
 				log.Printf("Error scanning file: %v", err)
 				return match
 			}
 			
-			// Return HTML link
-			return `<a href="/files/` + uuid + `" target="_blank">📎 ` + originalName + `</a>`
+			// If it's an image, render as responsive image
+			if isImage {
+				alt := originalName
+				if altText != nil && *altText != "" {
+					alt = *altText
+				}
+				
+				// Create responsive image HTML with thumbnail fallback
+				imageHTML := `<div class="blog-image-container">`
+				
+				// Use thumbnail if available, otherwise use original
+				imageSrc := "/files/" + uuid
+				if thumbnailPath != nil && *thumbnailPath != "" {
+					// Create thumbnail serving endpoint
+					imageSrc = "/files/" + uuid + "/thumbnail"
+				}
+				
+				imageHTML += `<img src="` + imageSrc + `" alt="` + alt + `" class="blog-image" loading="lazy"`
+				
+				// Add dimensions if available
+				if width != nil && height != nil {
+					imageHTML += ` data-width="` + strconv.Itoa(*width) + `" data-height="` + strconv.Itoa(*height) + `"`
+				}
+				
+				imageHTML += ` onclick="openImageModal('` + "/files/" + uuid + `', '` + alt + `')">`
+				imageHTML += `</div>`
+				
+				return imageHTML
+			} else {
+				// Return HTML download link for non-images
+				return `<a href="/files/` + uuid + `" target="_blank">📎 ` + originalName + `</a>`
+			}
 		}
 		
 		// If file not found, return original text
@@ -1065,6 +1148,63 @@ func (a *App) processFileReferences(content string) template.HTML {
 	// Convert newlines to HTML breaks and return as HTML
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
 	return template.HTML(processedContent)
+}
+
+func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		// Parse JSON request
+		var request struct {
+			UUID    string `json:"uuid"`
+			AltText string `json:"alt_text"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		if request.UUID == "" {
+			http.Error(w, "UUID is required", http.StatusBadRequest)
+			return
+		}
+
+		// Get file record
+		fileRecord, err := a.FileService.GetFile(request.UUID)
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+
+		// Only allow alt text for images
+		if !fileRecord.IsImage {
+			http.Error(w, "Alt text can only be set for images", http.StatusBadRequest)
+			return
+		}
+
+		// Update alt text in database
+		_, err = a.DB.Exec("UPDATE files SET alt_text = ? WHERE uuid = ?", request.AltText, request.UUID)
+		if err != nil {
+			http.Error(w, "Failed to update alt text", http.StatusInternalServerError)
+			return
+		}
+
+		// Return success response
+		w.Header().Set("Content-Type", "application/json")
+		response := struct {
+			Success bool   `json:"success"`
+			Message string `json:"message"`
+		}{
+			Success: true,
+			Message: "Alt text updated successfully",
+		}
+
+		json.NewEncoder(w).Encode(response)
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
 }
 
 func (app *App) securityMiddleware(h http.Handler) http.Handler {

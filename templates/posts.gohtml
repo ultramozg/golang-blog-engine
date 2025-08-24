@@ -10,7 +10,7 @@
 		(<a href="/update?slug={{.Slug}}">Update</a>|<a href="/delete?slug={{.Slug}}">Delete</a>)
 		{{end}}
 	</h4>
-	<p>{{.Body}}</p>
+	<p>{{processFileReferences .Body}}</p>
 	<div class="u-pull-right"><h6>{{.Date}}</h6></div>
 </div>
 {{end}}
@@ -20,4 +20,40 @@
 			{{if .IsNextPage}}<a href="/page?p={{.NextPage}}">Next →</a>{{else}}<span style="color:#212222">Next →</span>{{end}}
 		</h5>
 </div>
+
+<!-- Image Modal -->
+<div id="imageModal" class="image-modal" onclick="closeImageModal()">
+	<span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+	<img class="image-modal-content" id="modalImage">
+</div>
+
+<script>
+function openImageModal(imageSrc, altText) {
+	const modal = document.getElementById('imageModal');
+	const modalImg = document.getElementById('modalImage');
+	
+	modal.style.display = 'block';
+	modalImg.src = imageSrc;
+	modalImg.alt = altText;
+	
+	// Prevent body scrolling when modal is open
+	document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+	const modal = document.getElementById('imageModal');
+	modal.style.display = 'none';
+	
+	// Restore body scrolling
+	document.body.style.overflow = 'auto';
+}
+
+// Close modal when pressing Escape key
+document.addEventListener('keydown', function(event) {
+	if (event.key === 'Escape') {
+		closeImageModal();
+	}
+});
+</script>
+
 {{template "footer"}}

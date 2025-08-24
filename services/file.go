@@ -3,6 +3,9 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"os"
@@ -22,6 +25,9 @@ type FileService interface {
 	ListFiles(limit, offset int) ([]model.File, error)
 	GetFilePath(fileUUID string) (string, error)
 	EnsureUploadDirectories() error
+	IsImageFile(mimeType string) bool
+	ProcessImage(fileRecord *model.File) error
+	GenerateThumbnail(fileRecord *model.File) error
 }
 
 // FileServiceImpl implements the FileService interface
@@ -56,9 +62,23 @@ func (fs *FileServiceImpl) EnsureUploadDirectories() error {
 	// Create year/month subdirectories for current date
 	now := time.Now()
 	yearMonth := fmt.Sprintf("%d/%02d", now.Year(), now.Month())
-	monthDir := filepath.Join(filesDir, yearMonth)
-	if err := os.MkdirAll(monthDir, 0755); err != nil {
-		return fmt.Errorf("failed to create month directory: %w", err)
+	
+	// Create documents subdirectory
+	documentsDir := filepath.Join(filesDir, yearMonth, "documents")
+	if err := os.MkdirAll(documentsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create documents directory: %w", err)
+	}
+
+	// Create images subdirectory
+	imagesDir := filepath.Join(filesDir, yearMonth, "images")
+	if err := os.MkdirAll(imagesDir, 0755); err != nil {
+		return fmt.Errorf("failed to create images directory: %w", err)
+	}
+
+	// Create thumbnails subdirectory
+	thumbnailsDir := filepath.Join(filesDir, yearMonth, "thumbnails")
+	if err := os.MkdirAll(thumbnailsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create thumbnails directory: %w", err)
 	}
 
 	return nil
@@ -82,19 +102,31 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	// Generate secure stored filename
 	storedName := fs.generateSecureFilename(fileUUID, header.Filename)
 	
+	// Determine if this is an image file
+	isImage := fs.IsImageFile(header.Header.Get("Content-Type"))
+	
 	// Create year/month directory structure
 	now := time.Now()
 	yearMonth := fmt.Sprintf("%d/%02d", now.Year(), now.Month())
-	monthDir := filepath.Join(fs.uploadDir, "files", yearMonth)
+	
+	// Choose subdirectory based on file type
+	var subDir string
+	if isImage {
+		subDir = "images"
+	} else {
+		subDir = "documents"
+	}
+	
+	targetDir := filepath.Join(fs.uploadDir, "files", yearMonth, subDir)
 	
 	// Ensure directory exists
-	if err := os.MkdirAll(monthDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
 	// Full file path
-	filePath := filepath.Join(monthDir, storedName)
-	relativePath := filepath.Join("files", yearMonth, storedName)
+	filePath := filepath.Join(targetDir, storedName)
+	relativePath := filepath.Join("files", yearMonth, subDir, storedName)
 
 	// Create the file
 	dst, err := os.Create(filePath)
@@ -120,11 +152,24 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 		Size:          header.Size,
 		MimeType:      header.Header.Get("Content-Type"),
 		DownloadCount: 0,
+		IsImage:       isImage,
+	}
+
+	// Process image if it's an image file
+	if isImage {
+		if err := fs.ProcessImage(fileRecord); err != nil {
+			// Clean up the file if image processing failed
+			os.Remove(filePath)
+			return nil, fmt.Errorf("failed to process image: %w", err)
+		}
 	}
 
 	if err := fileRecord.CreateFile(fs.db); err != nil {
-		// Clean up the file if database insert failed
+		// Clean up the file and thumbnail if database insert failed
 		os.Remove(filePath)
+		if fileRecord.ThumbnailPath != nil {
+			os.Remove(filepath.Join(fs.uploadDir, *fileRecord.ThumbnailPath))
+		}
 		return nil, fmt.Errorf("failed to save file record: %w", err)
 	}
 
@@ -152,6 +197,15 @@ func (fs *FileServiceImpl) DeleteFile(fileUUID string) error {
 	fullPath := filepath.Join(fs.uploadDir, file.Path)
 	if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete file from filesystem: %w", err)
+	}
+
+	// Delete thumbnail if it exists
+	if file.ThumbnailPath != nil && *file.ThumbnailPath != "" {
+		thumbnailPath := filepath.Join(fs.uploadDir, *file.ThumbnailPath)
+		if err := os.Remove(thumbnailPath); err != nil && !os.IsNotExist(err) {
+			// Log warning but don't fail the operation
+			fmt.Printf("Warning: failed to delete thumbnail %s: %v\n", thumbnailPath, err)
+		}
 	}
 
 	// Delete from database
@@ -190,6 +244,7 @@ func (fs *FileServiceImpl) generateSecureFilename(fileUUID, originalName string)
 // isAllowedFileType checks if the MIME type is allowed for upload
 func (fs *FileServiceImpl) isAllowedFileType(mimeType string) bool {
 	allowedTypes := map[string]bool{
+		// Document types
 		"application/pdf":                          true,
 		"application/msword":                       true,
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
@@ -209,6 +264,14 @@ func (fs *FileServiceImpl) isAllowedFileType(mimeType string) bool {
 		"application/gzip":                         true,
 		"application/x-rar-compressed":             true,
 		"application/x-7z-compressed":              true,
+		// Image types
+		"image/jpeg":                               true,
+		"image/jpg":                                true,
+		"image/png":                                true,
+		"image/gif":                                true,
+		"image/webp":                               true,
+		"image/bmp":                                true,
+		"image/tiff":                               true,
 	}
 
 	// If no content type is provided, we'll allow it but it will be treated as binary
@@ -217,4 +280,156 @@ func (fs *FileServiceImpl) isAllowedFileType(mimeType string) bool {
 	}
 
 	return allowedTypes[mimeType]
+}
+
+// IsImageFile checks if the MIME type represents an image
+func (fs *FileServiceImpl) IsImageFile(mimeType string) bool {
+	imageTypes := map[string]bool{
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+		"image/bmp":  true,
+		"image/tiff": true,
+	}
+	return imageTypes[mimeType]
+}
+
+// ProcessImage extracts image metadata and generates thumbnail
+func (fs *FileServiceImpl) ProcessImage(fileRecord *model.File) error {
+	if !fs.IsImageFile(fileRecord.MimeType) {
+		return fmt.Errorf("file is not an image")
+	}
+
+	// Get full file path
+	fullPath := filepath.Join(fs.uploadDir, fileRecord.Path)
+	
+	// Open the image file
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to open image file: %w", err)
+	}
+	defer file.Close()
+
+	// Decode image to get dimensions
+	img, _, err := image.Decode(file)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	// Get image dimensions
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	// Update file record with image metadata
+	fileRecord.IsImage = true
+	fileRecord.Width = &width
+	fileRecord.Height = &height
+
+	// Generate thumbnail
+	if err := fs.GenerateThumbnail(fileRecord); err != nil {
+		return fmt.Errorf("failed to generate thumbnail: %w", err)
+	}
+
+	return nil
+}
+
+// GenerateThumbnail creates a thumbnail for the image
+func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
+	if !fileRecord.IsImage {
+		return fmt.Errorf("file is not an image")
+	}
+
+	// Get full file path
+	fullPath := filepath.Join(fs.uploadDir, fileRecord.Path)
+	
+	// Open the original image
+	file, err := os.Open(fullPath)
+	if err != nil {
+		return fmt.Errorf("failed to open image file: %w", err)
+	}
+	defer file.Close()
+
+	// Decode the image
+	img, format, err := image.Decode(file)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+
+	// Calculate thumbnail dimensions (300x300 max, maintaining aspect ratio)
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	
+	thumbnailSize := 300
+	var newWidth, newHeight int
+	
+	if width > height {
+		newWidth = thumbnailSize
+		newHeight = (height * thumbnailSize) / width
+	} else {
+		newHeight = thumbnailSize
+		newWidth = (width * thumbnailSize) / height
+	}
+
+	// Create thumbnail using simple nearest neighbor scaling
+	thumbnail := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+	
+	// Simple scaling algorithm
+	for y := 0; y < newHeight; y++ {
+		for x := 0; x < newWidth; x++ {
+			srcX := (x * width) / newWidth
+			srcY := (y * height) / newHeight
+			thumbnail.Set(x, y, img.At(srcX, srcY))
+		}
+	}
+
+	// Generate thumbnail filename and path
+	ext := filepath.Ext(fileRecord.StoredName)
+	thumbnailName := strings.TrimSuffix(fileRecord.StoredName, ext) + "_thumb" + ext
+	
+	// Extract year/month from original path
+	pathParts := strings.Split(fileRecord.Path, string(filepath.Separator))
+	if len(pathParts) < 4 { // files/YYYY/MM/subdir/filename
+		return fmt.Errorf("invalid file path structure")
+	}
+	
+	yearMonth := filepath.Join(pathParts[1], pathParts[2]) // YYYY/MM
+	thumbnailRelativePath := filepath.Join("files", yearMonth, "thumbnails", thumbnailName)
+	thumbnailFullPath := filepath.Join(fs.uploadDir, thumbnailRelativePath)
+
+	// Ensure thumbnails directory exists
+	thumbnailDir := filepath.Dir(thumbnailFullPath)
+	if err := os.MkdirAll(thumbnailDir, 0755); err != nil {
+		return fmt.Errorf("failed to create thumbnail directory: %w", err)
+	}
+
+	// Create thumbnail file
+	thumbnailFile, err := os.Create(thumbnailFullPath)
+	if err != nil {
+		return fmt.Errorf("failed to create thumbnail file: %w", err)
+	}
+	defer thumbnailFile.Close()
+
+	// Encode thumbnail based on original format
+	switch format {
+	case "jpeg", "jpg":
+		err = jpeg.Encode(thumbnailFile, thumbnail, &jpeg.Options{Quality: 85})
+	case "png":
+		err = png.Encode(thumbnailFile, thumbnail)
+	default:
+		// Default to JPEG for other formats
+		err = jpeg.Encode(thumbnailFile, thumbnail, &jpeg.Options{Quality: 85})
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to encode thumbnail: %w", err)
+	}
+
+	// Update file record with thumbnail path
+	fileRecord.ThumbnailPath = &thumbnailRelativePath
+
+	return nil
 }
