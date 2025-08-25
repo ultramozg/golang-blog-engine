@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"html/template"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -42,6 +43,13 @@ func setupTestApp(t *testing.T) (*App, func()) {
 	app.Sessions = session.NewSessionDB()
 	app.FileService = services.NewFileService(db, tempDir, 10*1024*1024)
 	app.SlugService = services.NewSlugService(db)
+	app.SEOService = services.NewSEOService(db, "http://localhost:8080")
+	
+	// Initialize templates
+	funcMap := template.FuncMap{
+		"processFileReferences": app.processFileReferences,
+	}
+	app.Temp = template.Must(template.New("").Funcs(funcMap).ParseGlob("../templates/*.gohtml"))
 	
 	// Ensure upload directories exist
 	if err := app.FileService.EnsureUploadDirectories(); err != nil {

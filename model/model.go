@@ -2,16 +2,13 @@ package model
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+	"html"
 	"log"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/yaml.v2"
 )
 
 // TODO need to delete it as in the seesion.go aleady exists this constant
@@ -24,25 +21,32 @@ const (
 
 // Post is struct which holds model representation of one post
 type Post struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
-	Body      string `json:"body"`
-	Date      string `json:"date"`
-	Slug      string `json:"slug"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID              int    `json:"id"`
+	Title           string `json:"title"`
+	Body            string `json:"body"`
+	Date            string `json:"date"`
+	Slug            string `json:"slug"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
+	MetaDescription string `json:"meta_description,omitempty"`
+	Keywords        string `json:"keywords,omitempty"`
 }
 
 func (p *Post) GetPost(db *sql.DB) error {
-	return db.QueryRow(`select id, title, body, datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') from posts where id = ?`, p.ID).Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt)
+	return db.QueryRow(`select id, title, body, datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, ''), COALESCE(meta_description, ''), COALESCE(keywords, '') from posts where id = ?`, p.ID).Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt, &p.MetaDescription, &p.Keywords)
 }
 
 func (p *Post) GetPostBySlug(db *sql.DB) error {
-	return db.QueryRow(`select id, title, body, datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') from posts where slug = ?`, p.Slug).Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt)
+	return db.QueryRow(`select id, title, body, datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, ''), COALESCE(meta_description, ''), COALESCE(keywords, '') from posts where slug = ?`, p.Slug).Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt, &p.MetaDescription, &p.Keywords)
 }
 
 func (p *Post) UpdatePost(db *sql.DB) error {
-	_, err := db.Exec(`update posts set title = $1, body = $2, datepost = $3, updated_at = CURRENT_TIMESTAMP where id = $4`, p.Title, p.Body, p.Date, p.ID)
+	// Validate and sanitize SEO fields
+	if err := p.ValidateAndSanitizeSEOFields(); err != nil {
+		return err
+	}
+
+	_, err := db.Exec(`update posts set title = $1, body = $2, datepost = $3, meta_description = $4, keywords = $5, updated_at = CURRENT_TIMESTAMP where id = $6`, p.Title, p.Body, p.Date, p.MetaDescription, p.Keywords, p.ID)
 	return err
 }
 
@@ -52,7 +56,15 @@ func (p *Post) DeletePost(db *sql.DB) error {
 }
 
 func (p *Post) CreatePost(db *sql.DB) error {
-	result, err := db.Exec(`insert into posts (title, body, datepost, created_at, updated_at) values ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date)
+	// Generate default SEO fields if not provided
+	p.GenerateDefaultSEOFields()
+	
+	// Validate and sanitize SEO fields
+	if err := p.ValidateAndSanitizeSEOFields(); err != nil {
+		return err
+	}
+
+	result, err := db.Exec(`insert into posts (title, body, datepost, meta_description, keywords, created_at, updated_at) values ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date, p.MetaDescription, p.Keywords)
 	if err != nil {
 		return err
 	}
@@ -68,7 +80,7 @@ func (p *Post) CreatePost(db *sql.DB) error {
 }
 
 func GetPosts(db *sql.DB, count, start int) ([]Post, error) {
-	rows, err := db.Query(`select id, title, substr(body,1,950), datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, '') from posts order by id desc limit ? offset ?;`, count, start)
+	rows, err := db.Query(`select id, title, substr(body,1,950), datepost, COALESCE(slug, ''), COALESCE(created_at, ''), COALESCE(updated_at, ''), COALESCE(meta_description, ''), COALESCE(keywords, '') from posts order by id desc limit ? offset ?;`, count, start)
 
 	if err != nil {
 		return nil, err
@@ -79,7 +91,7 @@ func GetPosts(db *sql.DB, count, start int) ([]Post, error) {
 
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Title, &p.Body, &p.Date, &p.Slug, &p.CreatedAt, &p.UpdatedAt, &p.MetaDescription, &p.Keywords); err != nil {
 			return nil, err
 		}
 		posts = append(posts, p)
@@ -94,6 +106,79 @@ func CountPosts(db *sql.DB) int {
 		log.Println(err)
 	}
 	return c
+}
+
+// ValidateAndSanitizeSEOFields validates and sanitizes SEO fields for the post
+func (p *Post) ValidateAndSanitizeSEOFields() error {
+	// Sanitize meta description
+	p.MetaDescription = strings.TrimSpace(p.MetaDescription)
+	if p.MetaDescription != "" {
+		// HTML escape to prevent XSS
+		p.MetaDescription = html.EscapeString(p.MetaDescription)
+		// Limit meta description length (recommended 150-160 characters)
+		if len(p.MetaDescription) > 160 {
+			p.MetaDescription = p.MetaDescription[:157] + "..."
+		}
+	}
+
+	// Sanitize keywords
+	p.Keywords = strings.TrimSpace(p.Keywords)
+	if p.Keywords != "" {
+		// HTML escape to prevent XSS
+		p.Keywords = html.EscapeString(p.Keywords)
+		// Clean up keywords: remove extra spaces, normalize commas
+		keywords := strings.Split(p.Keywords, ",")
+		var cleanKeywords []string
+		for _, keyword := range keywords {
+			keyword = strings.TrimSpace(keyword)
+			if keyword != "" && len(keyword) <= 50 { // Limit individual keyword length
+				cleanKeywords = append(cleanKeywords, keyword)
+			}
+		}
+		// Limit to 10 keywords maximum
+		if len(cleanKeywords) > 10 {
+			cleanKeywords = cleanKeywords[:10]
+		}
+		p.Keywords = strings.Join(cleanKeywords, ", ")
+	}
+
+	return nil
+}
+
+// GenerateDefaultSEOFields generates default SEO fields based on post content
+func (p *Post) GenerateDefaultSEOFields() {
+	// Generate meta description from body if not provided
+	if p.MetaDescription == "" && p.Body != "" {
+		// Remove HTML tags and get first 150 characters
+		bodyText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(p.Body, "")
+		bodyText = strings.TrimSpace(bodyText)
+		if len(bodyText) > 150 {
+			p.MetaDescription = bodyText[:147] + "..."
+		} else {
+			p.MetaDescription = bodyText
+		}
+	}
+
+	// Generate basic keywords from title if not provided
+	if p.Keywords == "" && p.Title != "" {
+		// Extract meaningful words from title (longer than 3 characters)
+		words := strings.Fields(strings.ToLower(p.Title))
+		var keywords []string
+		for _, word := range words {
+			// Remove punctuation and check length
+			word = regexp.MustCompile(`[^\w]`).ReplaceAllString(word, "")
+			if len(word) > 3 {
+				keywords = append(keywords, word)
+			}
+		}
+		if len(keywords) > 0 {
+			// Limit to 5 keywords from title
+			if len(keywords) > 5 {
+				keywords = keywords[:5]
+			}
+			p.Keywords = strings.Join(keywords, ", ")
+		}
+	}
 }
 
 // GetPostBySlug retrieves a post by its slug
@@ -225,7 +310,9 @@ func MigrateDatabase(db *sql.DB) {
 	datepost string not null,
 	slug text unique,
 	created_at datetime default current_timestamp,
-	updated_at datetime default current_timestamp);
+	updated_at datetime default current_timestamp,
+	meta_description text,
+	keywords text);
 
 	create table if not exists comments (
 	postid integer not null,
@@ -316,6 +403,26 @@ func MigrateExistingDatabase(db *sql.DB) {
 	_, err = db.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_posts_slug ON posts(slug)")
 	if err != nil {
 		log.Println("Warning: Could not create unique slug index:", err)
+	}
+
+	// Check if meta_description column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('posts') WHERE name='meta_description'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add meta_description column
+		_, err = db.Exec("ALTER TABLE posts ADD COLUMN meta_description TEXT")
+		if err != nil {
+			log.Println("Warning: Could not add meta_description column:", err)
+		}
+	}
+
+	// Check if keywords column exists
+	err = db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('posts') WHERE name='keywords'").Scan(&columnExists)
+	if err == nil && columnExists == 0 {
+		// Add keywords column
+		_, err = db.Exec("ALTER TABLE posts ADD COLUMN keywords TEXT")
+		if err != nil {
+			log.Println("Warning: Could not add keywords column:", err)
+		}
 	}
 
 	// Generate slugs for existing posts that don't have them
@@ -423,57 +530,7 @@ func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 	return true
 }
 
-// Course holds information about courses which is located under data/courses.yml
-type Info struct {
-	Title       string `yaml:"title"`
-	Link        string `yaml:"link"`
-	Description string `yaml:"description,omitempty"`
-}
 
-type Infos struct {
-	List []Info `yaml:"infos,flow"`
-}
-
-func ConverYamlToStruct(path string) (i Infos, err error) {
-	// Sanitize path to prevent directory traversal attacks
-	cleanPath := filepath.Clean(path)
-
-	// Check for directory traversal attempts
-	if strings.Contains(cleanPath, "..") {
-		return i, errors.New("invalid file path: directory traversal not allowed")
-	}
-
-	// Additional validation: only allow .yml and .yaml files
-	ext := filepath.Ext(cleanPath)
-	if ext != ".yml" && ext != ".yaml" {
-		return i, errors.New("invalid file type: only YAML files are allowed")
-	}
-
-	// For production use, ensure the path is within expected directories
-	// Allow data/ directory and temp files for testing
-	absPath, err := filepath.Abs(cleanPath)
-	if err != nil {
-		return i, errors.New("invalid file path: cannot resolve absolute path")
-	}
-
-	// Check if it's a temp file (for testing) or in data directory
-	isTempFile := strings.Contains(absPath, os.TempDir())
-	isDataFile := strings.Contains(absPath, "data/") || strings.HasSuffix(absPath, ".yml") || strings.HasSuffix(absPath, ".yaml")
-
-	if !isTempFile && !isDataFile {
-		return i, errors.New("invalid file path: access denied")
-	}
-
-	b, err := os.ReadFile(cleanPath)
-	if err != nil {
-		return
-	}
-	err = yaml.Unmarshal(b, &i)
-	if err != nil {
-		return
-	}
-	return
-}
 
 // migrationSlugService is a simple implementation for migration purposes
 type migrationSlugService struct {

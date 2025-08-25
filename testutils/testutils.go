@@ -157,29 +157,12 @@ type HTTPTestHelper struct {
 
 // NewHTTPTestHelper creates a new HTTP test helper
 func NewHTTPTestHelper(t *testing.T, testDB *TestDatabase) *HTTPTestHelper {
-	// Create data directory and files if they don't exist
+	// Create data directory if it doesn't exist
 	if err := os.MkdirAll("data", 0755); err != nil {
 		t.Fatalf("Failed to create data directory: %v", err)
 	}
 
-	// Create minimal test data files
-	coursesContent := `infos:
-  - title: "Test Course"
-    link: "https://example.com/course"
-    description: "Test course description"`
-
-	linksContent := `infos:
-  - title: "Test Link"
-    link: "https://example.com/link"
-    description: "Test link description"`
-
-	if err := os.WriteFile("data/courses.yml", []byte(coursesContent), 0600); err != nil {
-		t.Fatalf("Failed to create courses.yml: %v", err)
-	}
-
-	if err := os.WriteFile("data/links.yml", []byte(linksContent), 0600); err != nil {
-		t.Fatalf("Failed to create links.yml: %v", err)
-	}
+	// Note: courses.yml and links.yml files are no longer needed as these sections have been removed
 
 	// Set environment variables for testing
 	os.Setenv("DBURI", testDB.Config.DBPath)
@@ -412,3 +395,34 @@ func CreateTempFile(t *testing.T, content string) string {
 func RemoveTempFile(path string) error {
 	return os.Remove(path)
 }
+
+// SetupTestApp creates a test app instance for unit testing handlers
+func SetupTestApp(t *testing.T) *app.App {
+	// Create test database
+	testDB := NewTestDatabase(t)
+	
+	// Create data directory if it doesn't exist
+	if err := os.MkdirAll("data", 0755); err != nil {
+		t.Fatalf("Failed to create data directory: %v", err)
+	}
+
+	// Note: courses.yml and links.yml files are no longer needed as these sections have been removed
+
+	// Set environment variables for testing
+	os.Setenv("DBURI", testDB.Config.DBPath)
+	os.Setenv("TEMPLATES", GetTemplatesPath())
+	os.Setenv("ADMIN_PASSWORD", testDB.Config.AdminPass)
+	os.Setenv("PRODUCTION", "false")
+	os.Setenv("DOMAIN", "http://localhost:8080")
+
+	// Create and initialize app
+	testApp := app.NewApp()
+	testApp.Initialize()
+
+	// Override the database connection to use our test database
+	testApp.DB = testDB.DB
+
+	return &testApp
+}
+
+

@@ -32,24 +32,7 @@ func createTestApp(t *testing.T) (*App, func()) {
 		t.Fatalf("Failed to create data directory: %v", err)
 	}
 
-	// Create minimal test data files
-	coursesContent := `infos:
-  - title: "Test Course"
-    link: "https://example.com/course"
-    description: "Test course description"`
-
-	linksContent := `infos:
-  - title: "Test Link"
-    link: "https://example.com/link"
-    description: "Test link description"`
-
-	if err := os.WriteFile("data/courses.yml", []byte(coursesContent), 0600); err != nil {
-		t.Fatalf("Failed to create courses.yml: %v", err)
-	}
-
-	if err := os.WriteFile("data/links.yml", []byte(linksContent), 0600); err != nil {
-		t.Fatalf("Failed to create links.yml: %v", err)
-	}
+	// Note: courses.yml and links.yml files are no longer needed as these sections have been removed
 
 	// Set environment variables for testing
 	originalDBURI := os.Getenv("DBURI")
@@ -803,99 +786,7 @@ func TestAboutHandler(t *testing.T) {
 	}
 }
 
-// Test cases for links handler
-func TestLinksHandler(t *testing.T) {
-	app, cleanup := createTestApp(t)
-	defer cleanup()
 
-	tests := []struct {
-		name            string
-		method          string
-		expectedStatus  int
-		checkContent    bool
-		expectedContent string
-	}{
-		{
-			name:            "GET request returns OK",
-			method:          http.MethodGet,
-			expectedStatus:  http.StatusOK,
-			checkContent:    true,
-			expectedContent: "Test Link",
-		},
-		{
-			name:           "HEAD request returns OK",
-			method:         http.MethodHead,
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "POST request returns method not allowed",
-			method:         http.MethodPost,
-			expectedStatus: http.StatusMethodNotAllowed,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req, rr := makeRequest(tt.method, "/links", "", nil, nil)
-			app.links(rr, req)
-
-			if rr.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rr.Code)
-			}
-
-			if tt.checkContent && !strings.Contains(rr.Body.String(), tt.expectedContent) {
-				t.Errorf("Expected content to contain %s", tt.expectedContent)
-			}
-		})
-	}
-}
-
-// Test cases for courses handler
-func TestCoursesHandler(t *testing.T) {
-	app, cleanup := createTestApp(t)
-	defer cleanup()
-
-	tests := []struct {
-		name            string
-		method          string
-		expectedStatus  int
-		checkContent    bool
-		expectedContent string
-	}{
-		{
-			name:            "GET request returns OK",
-			method:          http.MethodGet,
-			expectedStatus:  http.StatusOK,
-			checkContent:    true,
-			expectedContent: "Test Course",
-		},
-		{
-			name:           "HEAD request returns OK",
-			method:         http.MethodHead,
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "POST request returns method not allowed",
-			method:         http.MethodPost,
-			expectedStatus: http.StatusMethodNotAllowed,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req, rr := makeRequest(tt.method, "/courses", "", nil, nil)
-			app.courses(rr, req)
-
-			if rr.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, rr.Code)
-			}
-
-			if tt.checkContent && !strings.Contains(rr.Body.String(), tt.expectedContent) {
-				t.Errorf("Expected content to contain %s", tt.expectedContent)
-			}
-		})
-	}
-}
 
 // Test cases for createComment handler
 func TestCreateCommentHandler(t *testing.T) {

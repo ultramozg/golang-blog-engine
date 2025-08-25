@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -49,10 +50,9 @@ type App struct {
 	Config      *Config
 	stop        chan os.Signal
 	OAuth       *oauth2.Config
-	Courses     model.Infos
-	Links       model.Infos
 	SlugService services.SlugService
 	FileService services.FileService
+	SEOService  services.SEOService
 }
 
 // NewApp return App struct
@@ -85,15 +85,7 @@ func (a *App) Initialize() {
 		}
 	}
 
-	//Convert Yaml data to struct
-	a.Courses, err = model.ConverYamlToStruct("data/courses.yml")
-	if err != nil {
-		log.Println(err)
-	}
-	a.Links, err = model.ConverYamlToStruct("data/links.yml")
-	if err != nil {
-		log.Println(err)
-	}
+
 
 	// Create template with custom functions
 	funcMap := template.FuncMap{
@@ -103,6 +95,12 @@ func (a *App) Initialize() {
 	a.Sessions = session.NewSessionDB()
 	a.SlugService = services.NewSlugService(a.DB)
 	a.FileService = services.NewFileService(a.DB, "uploads", 10*1024*1024) // 10MB max file size
+	// Use domain from config or default to localhost for development
+	domain := a.Config.Domain
+	if domain == "" {
+		domain = "http://localhost" + a.Config.Server.Http
+	}
+	a.SEOService = services.NewSEOService(a.DB, domain)
 
 	// Ensure upload directories exist
 	if err := a.FileService.EnsureUploadDirectories(); err != nil {
@@ -210,8 +208,6 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/create", a.createPost)
 	mux.HandleFunc("/delete", a.deletePost)
 	mux.HandleFunc("/about", a.about)
-	mux.HandleFunc("/links", a.links)
-	mux.HandleFunc("/courses", a.courses)
 	mux.HandleFunc("/auth-callback", a.oauth)
 	mux.HandleFunc("/create-comment", a.createComment)
 	mux.HandleFunc("/delete-comment", a.deleteComment)
@@ -219,6 +215,8 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/files/", a.serveFile)
 	mux.HandleFunc("/api/files", a.listFiles)
 	mux.HandleFunc("/api/files/alt-text", a.updateFileAltText)
+	mux.HandleFunc("/sitemap.xml", a.serveSitemap)
+	mux.HandleFunc("/robots.txt", a.serveRobotsTxt)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -255,20 +253,32 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		// Set canonical URL header
+		canonicalURL := a.SEOService.GetCanonicalURL(&p)
+		w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"canonical\"", canonicalURL))
 
 		comms, err := model.GetComments(a.DB, id)
 		if err != nil {
 			log.Println("Grab comment error: ", err.Error())
 		}
 
+		// Generate SEO data
+		metaTags := a.SEOService.GenerateMetaTags(&p)
+		structuredData := a.SEOService.GenerateStructuredData(&p)
+		openGraphTags := a.SEOService.GenerateOpenGraphTags(&p)
+
 		data := struct {
-			Post        model.Post
-			Comms       []model.Comment
-			LogAsAdmin  bool
-			LogAsUser   bool
-			AuthURL     string
-			ClientID    string
-			RedirectURL string
+			Post           model.Post
+			Comms          []model.Comment
+			LogAsAdmin     bool
+			LogAsUser      bool
+			AuthURL        string
+			ClientID       string
+			RedirectURL    string
+			MetaTags       map[string]string
+			StructuredData string
+			OpenGraphTags  map[string]string
+			CanonicalURL   string
 		}{
 			p,
 			comms,
@@ -277,6 +287,10 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 			a.Config.OAuth.GithubAuthorizeURL,
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
+			metaTags,
+			structuredData,
+			openGraphTags,
+			canonicalURL,
 		}
 		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
 		if err != nil {
@@ -313,19 +327,32 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		// Set canonical URL header
+		canonicalURL := a.SEOService.GetCanonicalURL(&p)
+		w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"canonical\"", canonicalURL))
+
 		comms, err := model.GetComments(a.DB, p.ID)
 		if err != nil {
 			log.Println("Grab comment error: ", err.Error())
 		}
 
+		// Generate SEO data
+		metaTags := a.SEOService.GenerateMetaTags(&p)
+		structuredData := a.SEOService.GenerateStructuredData(&p)
+		openGraphTags := a.SEOService.GenerateOpenGraphTags(&p)
+
 		data := struct {
-			Post        model.Post
-			Comms       []model.Comment
-			LogAsAdmin  bool
-			LogAsUser   bool
-			AuthURL     string
-			ClientID    string
-			RedirectURL string
+			Post           model.Post
+			Comms          []model.Comment
+			LogAsAdmin     bool
+			LogAsUser      bool
+			AuthURL        string
+			ClientID       string
+			RedirectURL    string
+			MetaTags       map[string]string
+			StructuredData string
+			OpenGraphTags  map[string]string
+			CanonicalURL   string
 		}{
 			p,
 			comms,
@@ -334,6 +361,10 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 			a.Config.OAuth.GithubAuthorizeURL,
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
+			metaTags,
+			structuredData,
+			openGraphTags,
+			canonicalURL,
 		}
 		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
 		if err != nil {
@@ -632,49 +663,7 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) links(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		data := struct {
-			LogAsAdmin bool
-			Links      []model.Info
-		}{
-			a.Sessions.IsAdmin(r),
-			a.Links.List,
-		}
-		if err := a.Temp.ExecuteTemplate(w, "links.gohtml", data); err != nil {
-			log.Println("Template execution error:", err)
-		}
-	case http.MethodHead:
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-}
 
-func (a *App) courses(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		data := struct {
-			LogAsAdmin bool
-			Courses    []model.Info
-		}{
-			a.Sessions.IsAdmin(r),
-			a.Courses.List,
-		}
-		if err := a.Temp.ExecuteTemplate(w, "courses.gohtml", data); err != nil {
-			log.Println("Template execution error:", err)
-		}
-	case http.MethodHead:
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-}
 
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -1205,6 +1194,89 @@ func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
+}
+
+func (a *App) serveSitemap(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Get all posts with slugs for sitemap
+		posts, err := a.getAllPostsForSitemap()
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate sitemap XML
+		sitemapXML, err := a.SEOService.GenerateSitemap(posts)
+		if err != nil {
+			http.Error(w, "Failed to generate sitemap", http.StatusInternalServerError)
+			return
+		}
+
+		// Set appropriate headers
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+
+		// Write sitemap
+		w.Write(sitemapXML)
+
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) serveRobotsTxt(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Generate robots.txt content
+		robotsTxt := a.SEOService.GenerateRobotsTxt()
+
+		// Set appropriate headers
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=86400") // Cache for 24 hours
+
+		// Write robots.txt
+		w.Write([]byte(robotsTxt))
+
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+// getAllPostsForSitemap retrieves all posts with slugs for sitemap generation
+func (a *App) getAllPostsForSitemap() ([]*model.Post, error) {
+	rows, err := a.DB.Query(`
+		SELECT id, title, body, datepost, slug, created_at, updated_at 
+		FROM posts 
+		WHERE slug IS NOT NULL AND slug != '' 
+		ORDER BY id DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*model.Post
+	for rows.Next() {
+		post := &model.Post{}
+		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, &post.CreatedAt, &post.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	return posts, nil
 }
 
 func (app *App) securityMiddleware(h http.Handler) http.Handler {
