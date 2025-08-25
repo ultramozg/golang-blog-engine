@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -104,7 +105,7 @@ func LogMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-// PostRedirectMiddleware handles redirects from old ID-based URLs to new slug-based URLs
+// PostRedirectMiddleware handles redirects from old ID-based URLs to new slug-based URLs with SEO compliance
 func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,9 +119,21 @@ func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 						var slug string
 						err = db.QueryRow("SELECT slug FROM posts WHERE id = ?", id).Scan(&slug)
 						if err == nil && slug != "" {
-							// Redirect to slug-based URL with 301 (permanent redirect)
-							http.Redirect(w, r, "/p/"+slug, http.StatusMovedPermanently)
-							return
+							// Sanitize and validate the slug for security
+							sanitizedSlug := sanitizeSlug(slug)
+							if sanitizedSlug != "" {
+								canonicalURL := "/p/" + sanitizedSlug
+
+								// Set canonical URL header for SEO
+								w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"canonical\"", canonicalURL))
+
+								// Add cache control headers for SEO
+								w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year cache for redirects
+
+								// Redirect to slug-based URL with 301 (permanent redirect)
+								http.Redirect(w, r, canonicalURL, http.StatusMovedPermanently)
+								return
+							}
 						}
 					}
 				}
@@ -130,4 +143,27 @@ func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 			h.ServeHTTP(w, r)
 		})
 	}
+}
+
+// sanitizeSlug validates and sanitizes a slug to prevent security issues
+func sanitizeSlug(slug string) string {
+	// Remove any potentially dangerous characters
+	// Allow only alphanumeric characters, hyphens, and underscores
+	validSlugRegex := regexp.MustCompile(`^[a-zA-Z0-9\-_]+$`)
+
+	if !validSlugRegex.MatchString(slug) {
+		return ""
+	}
+
+	// Additional validation: slug should not be empty and not too long
+	if len(slug) == 0 || len(slug) > 200 {
+		return ""
+	}
+
+	// Prevent directory traversal attempts
+	if strings.Contains(slug, "..") || strings.Contains(slug, "/") || strings.Contains(slug, "\\") {
+		return ""
+	}
+
+	return slug
 }

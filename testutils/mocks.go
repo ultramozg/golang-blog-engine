@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -160,7 +161,9 @@ func (m *MockHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(response.StatusCode)
 
 	// Write body
-	w.Write([]byte(response.Body))
+	if _, err := w.Write([]byte(response.Body)); err != nil {
+		log.Printf("Failed to write mock response body: %v", err)
+	}
 }
 
 // DatabaseMock provides utilities for mocking database operations

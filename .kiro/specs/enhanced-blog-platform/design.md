@@ -2,7 +2,7 @@
 
 ## Overview
 
-This design enhances the existing Go blog platform with comprehensive testing, CI/CD automation, security updates, SEO-friendly URLs, and media management capabilities. The solution maintains the current SQLite-based architecture while adding new features through modular components.
+This design enhances the existing Go blog platform with comprehensive testing, CI/CD automation, security updates, SEO-friendly URLs with canonical URL support, comprehensive SEO optimization, and media management capabilities. The solution also removes the courses and links sections to focus solely on blog content. The solution maintains the current SQLite-based architecture while adding new features through modular components.
 
 ## Architecture
 
@@ -26,10 +26,14 @@ graph TB
     C --> G[File Storage Service]
     C --> H[Image Processing Service]
     C --> I[URL Slug Service]
+    C --> Q[SEO Service]
     
     G --> J[File System Storage]
     H --> K[Image Optimization]
     I --> L[Slug Generation & Redirects]
+    Q --> R[Meta Tags & Structured Data]
+    Q --> S[Sitemap Generation]
+    Q --> T[Canonical URLs]
     
     M[CI/CD Pipeline] --> N[Test Runner]
     M --> O[Security Scanner]
@@ -155,6 +159,37 @@ type FileInfo struct {
 - Image optimization without quality loss
 - Automatic insertion of image references into post content during upload
 
+### 6. SEO Optimization System
+
+**SEO Service Interface**
+```go
+type SEOService interface {
+    GenerateMetaTags(post *Post) map[string]string
+    GenerateStructuredData(post *Post) string
+    GenerateOpenGraphTags(post *Post) map[string]string
+    GenerateSitemap(posts []*Post) ([]byte, error)
+    GenerateRobotsTxt() string
+    GetCanonicalURL(post *Post) string
+}
+```
+
+**SEO Components**
+- Meta tag generation (title, description, keywords)
+- JSON-LD structured data for blog posts
+- Open Graph tags for social media sharing
+- Sitemap.xml generation with canonical URLs
+- Robots.txt configuration
+- Canonical URL management to prevent duplicate content
+
+### 7. Content Removal System
+
+**Courses and Links Removal**
+- Remove courses and links handlers from routing
+- Remove courses and links templates
+- Remove courses and links data files
+- Update navigation to exclude removed sections
+- Return 404 for legacy courses/links URLs
+
 ## Data Models
 
 ### Enhanced Post Model
@@ -167,6 +202,21 @@ type Post struct {
     Date        string    `json:"date"`
     CreatedAt   time.Time `json:"created_at"`  // New field
     UpdatedAt   time.Time `json:"updated_at"`  // New field
+    // SEO fields
+    MetaDescription string `json:"meta_description,omitempty"`
+    Keywords        string `json:"keywords,omitempty"`
+}
+```
+
+### SEO Metadata Model
+```go
+type SEOData struct {
+    Title           string            `json:"title"`
+    Description     string            `json:"description"`
+    Keywords        []string          `json:"keywords"`
+    CanonicalURL    string            `json:"canonical_url"`
+    OpenGraphTags   map[string]string `json:"og_tags"`
+    StructuredData  string            `json:"structured_data"`
 }
 ```
 
@@ -212,6 +262,8 @@ type File struct {
 ALTER TABLE posts ADD COLUMN slug TEXT UNIQUE;
 ALTER TABLE posts ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE posts ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE posts ADD COLUMN meta_description TEXT;
+ALTER TABLE posts ADD COLUMN keywords TEXT;
 
 -- Create files table
 CREATE TABLE files (
@@ -308,6 +360,12 @@ type APIError struct {
 - Rate limiting for slug generation
 - Redirect validation to prevent open redirects
 
+### SEO Security
+- Canonical URL validation to prevent manipulation
+- Meta tag sanitization to prevent XSS
+- Structured data validation
+- Sitemap access control and rate limiting
+
 ## Performance Considerations
 
 ### Image Processing and Optimization
@@ -328,3 +386,9 @@ type APIError struct {
 - In-memory caching for frequently accessed slugs
 - File metadata caching
 - Template caching optimization
+
+### SEO Performance
+- Sitemap caching with automatic regeneration on post updates
+- Meta tag caching for frequently accessed posts
+- Structured data caching
+- Canonical URL resolution caching

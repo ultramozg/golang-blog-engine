@@ -1,0 +1,76 @@
+{{define "seo_header"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1.0">
+	
+	<!-- SEO Meta Tags -->
+	{{if .MetaTags}}
+		{{if .MetaTags.title}}<title>{{.MetaTags.title}}</title>{{else}}<title>My Posts</title>{{end}}
+		{{if .MetaTags.description}}<meta name="description" content="{{.MetaTags.description}}">{{end}}
+		{{if .MetaTags.keywords}}<meta name="keywords" content="{{.MetaTags.keywords}}">{{end}}
+		{{if .MetaTags.author}}<meta name="author" content="{{.MetaTags.author}}">{{end}}
+		{{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
+		
+		<!-- Article Meta Tags -->
+		{{if index .MetaTags "article:published_time"}}<meta property="article:published_time" content="{{index .MetaTags "article:published_time"}}">{{end}}
+		{{if index .MetaTags "article:modified_time"}}<meta property="article:modified_time" content="{{index .MetaTags "article:modified_time"}}">{{end}}
+	{{else}}
+		<title>My Posts</title>
+	{{end}}
+	
+	<!-- Open Graph Tags -->
+	{{if .OpenGraphTags}}
+		{{range $key, $value := .OpenGraphTags}}
+		<meta property="{{$key}}" content="{{$value}}">
+		{{end}}
+	{{end}}
+	
+	<!-- Structured Data -->
+	{{if .StructuredData}}
+	<script type="application/ld+json">
+{{.StructuredData}}
+	</script>
+	{{end}}
+	
+	<!-- Stylesheets -->
+	<link rel="stylesheet" href="/public/css/normalize.css" />
+	<link rel="stylesheet" href="/public/css/skeleton.css" />
+	<link rel="stylesheet" href="/public/css/custom.css" />
+	<link rel="stylesheet" href="/public/css/github-prettify-theme.css" />
+	<link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+</head>
+<body>
+		<div class="navbar-spacer"></div>
+		<div class="container">
+		<nav class="navbar">
+			<div class="container">
+				<ul class="navbar-list">
+					<li class="navbar-item">
+						<a class="navbar-link" href="/about">About</a>
+					</li>
+					<li class="navbar-item">
+						<a class="navbar-link" href="/">Blog</a>
+					</li>
+					{{if .LogAsAdmin}}
+					<div class="u-pull-right">
+					<li class="navbar-item">
+						<a class="navbar-link" href="/create">Publish Post</a>
+					</li>
+					<li class="navbar-item">
+						<a class="navbar-link" href="/logout">Logout</a>
+					</li>
+					</div>
+					{{else}}
+					<div class="u-pull-right">
+					<li class="navbar-item">
+						<a class="navbar-link" href="/login">Login</a>
+					</li>
+					</div>
+					{{end}}
+				</ul>
+			</div>
+		</div>
+		</nav>
+{{end}}

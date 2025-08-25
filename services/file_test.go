@@ -32,7 +32,7 @@ func setupFileTestDB(t *testing.T) *sql.DB {
 
 func setupTestFileService(t *testing.T) (FileService, string, func()) {
 	db := setupFileTestDB(t)
-	
+
 	// Create temporary directory for test uploads
 	tempDir, err := os.MkdirTemp("", "file_service_test_*")
 	if err != nil {
@@ -81,7 +81,7 @@ func createTestMultipartFile(t *testing.T, filename, content, mimeType string) (
 	}
 
 	fileHeader := files[0]
-	
+
 	// Override the content type if specified
 	if mimeType != "" {
 		if fileHeader.Header == nil {
@@ -393,7 +393,7 @@ func TestFileService_GetFilePath(t *testing.T) {
 func createTestImageFile(t *testing.T, filename string, width, height int) (multipart.File, *multipart.FileHeader) {
 	// Create a simple image
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	
+
 	// Fill with a simple pattern
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
@@ -437,7 +437,7 @@ func createTestImageFile(t *testing.T, filename string, width, height int) (mult
 	}
 
 	fileHeader := files[0]
-	
+
 	// Set PNG content type
 	if fileHeader.Header == nil {
 		fileHeader.Header = make(textproto.MIMEHeader)
@@ -637,7 +637,7 @@ func TestFileService_EnsureUploadDirectories_WithImageStructure(t *testing.T) {
 	// Check if all required directories were created
 	now := time.Now()
 	yearMonth := fmt.Sprintf("%d/%02d", now.Year(), now.Month())
-	
+
 	expectedDirs := []string{
 		filepath.Join(tempDir, "files"),
 		filepath.Join(tempDir, "files", yearMonth, "documents"),

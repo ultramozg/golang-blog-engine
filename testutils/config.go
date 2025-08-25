@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -26,7 +27,7 @@ func (te *TestEnvironment) SetEnv(key, value string) {
 	} else {
 		te.originalEnv[key] = ""
 	}
-	os.Setenv(key, value)
+	_ = os.Setenv(key, value)
 }
 
 // SetTestEnv sets up common test environment variables
@@ -58,13 +59,15 @@ func (te *TestEnvironment) Cleanup() {
 		if original == "" {
 			os.Unsetenv(key)
 		} else {
-			os.Setenv(key, original)
+			_ = os.Setenv(key, original)
 		}
 	}
 
 	// Remove temporary directories
 	for _, dir := range te.tempDirs {
-		os.RemoveAll(dir)
+		if err := os.RemoveAll(dir); err != nil {
+			log.Printf("Failed to remove temp directory %s: %v", dir, err)
+		}
 	}
 }
 
@@ -85,7 +88,9 @@ func GetTestDataPath() string {
 	}
 
 	// If no test data directory found, create one
-	os.MkdirAll("testdata", 0755)
+	if err := os.MkdirAll("testdata", 0750); err != nil {
+		log.Printf("Failed to create testdata directory: %v", err)
+	}
 	return "testdata"
 }
 
@@ -131,7 +136,7 @@ func (tfm *TestFileManager) CreateFile(relativePath, content string) (string, er
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(fullPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return "", err
 	}
 
@@ -147,7 +152,7 @@ func (tfm *TestFileManager) CreateFile(relativePath, content string) (string, er
 // CreateDir creates a test directory
 func (tfm *TestFileManager) CreateDir(relativePath string) (string, error) {
 	fullPath := filepath.Join(tfm.baseDir, relativePath)
-	if err := os.MkdirAll(fullPath, 0755); err != nil {
+	if err := os.MkdirAll(fullPath, 0750); err != nil {
 		return "", err
 	}
 
@@ -159,12 +164,16 @@ func (tfm *TestFileManager) CreateDir(relativePath string) (string, error) {
 func (tfm *TestFileManager) Cleanup() {
 	// Remove files first
 	for _, file := range tfm.files {
-		os.Remove(file)
+		if err := os.Remove(file); err != nil {
+			log.Printf("Failed to remove temp file %s: %v", file, err)
+		}
 	}
 
 	// Remove directories (in reverse order)
 	for i := len(tfm.dirs) - 1; i >= 0; i-- {
-		os.Remove(tfm.dirs[i])
+		if err := os.Remove(tfm.dirs[i]); err != nil {
+			log.Printf("Failed to remove temp directory %s: %v", tfm.dirs[i], err)
+		}
 	}
 }
 

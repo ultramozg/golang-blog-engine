@@ -5,6 +5,8 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"html"
 	"html/template"
 	"log"
 	"net/http"
@@ -49,10 +51,9 @@ type App struct {
 	Config      *Config
 	stop        chan os.Signal
 	OAuth       *oauth2.Config
-	Courses     model.Infos
-	Links       model.Infos
 	SlugService services.SlugService
 	FileService services.FileService
+	SEOService  services.SEOService
 }
 
 // NewApp return App struct
@@ -85,16 +86,6 @@ func (a *App) Initialize() {
 		}
 	}
 
-	//Convert Yaml data to struct
-	a.Courses, err = model.ConverYamlToStruct("data/courses.yml")
-	if err != nil {
-		log.Println(err)
-	}
-	a.Links, err = model.ConverYamlToStruct("data/links.yml")
-	if err != nil {
-		log.Println(err)
-	}
-
 	// Create template with custom functions
 	funcMap := template.FuncMap{
 		"processFileReferences": a.processFileReferences,
@@ -103,6 +94,12 @@ func (a *App) Initialize() {
 	a.Sessions = session.NewSessionDB()
 	a.SlugService = services.NewSlugService(a.DB)
 	a.FileService = services.NewFileService(a.DB, "uploads", 10*1024*1024) // 10MB max file size
+	// Use domain from config or default to localhost for development
+	domain := a.Config.Domain
+	if domain == "" {
+		domain = "http://localhost" + a.Config.Server.Http
+	}
+	a.SEOService = services.NewSEOService(a.DB, domain)
 
 	// Ensure upload directories exist
 	if err := a.FileService.EnsureUploadDirectories(); err != nil {
@@ -145,6 +142,7 @@ func (a *App) Run() {
 		Addr:         a.Config.Server.Addr + a.Config.Server.Https,
 		TLSConfig: &tls.Config{
 			GetCertificate: cert.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
 		},
 		Handler: a.Router,
 	}
@@ -193,7 +191,9 @@ func (a *App) Run() {
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Println("Unable to shutdown http server")
 	}
-	a.DB.Close()
+	if err := a.DB.Close(); err != nil {
+		log.Printf("Error closing database: %v", err)
+	}
 	os.Exit(0)
 }
 
@@ -210,8 +210,6 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/create", a.createPost)
 	mux.HandleFunc("/delete", a.deletePost)
 	mux.HandleFunc("/about", a.about)
-	mux.HandleFunc("/links", a.links)
-	mux.HandleFunc("/courses", a.courses)
 	mux.HandleFunc("/auth-callback", a.oauth)
 	mux.HandleFunc("/create-comment", a.createComment)
 	mux.HandleFunc("/delete-comment", a.deleteComment)
@@ -219,6 +217,8 @@ func (a *App) initializeRoutes() {
 	mux.HandleFunc("/files/", a.serveFile)
 	mux.HandleFunc("/api/files", a.listFiles)
 	mux.HandleFunc("/api/files/alt-text", a.updateFileAltText)
+	mux.HandleFunc("/sitemap.xml", a.serveSitemap)
+	mux.HandleFunc("/robots.txt", a.serveRobotsTxt)
 
 	//Register Fileserver
 	fs := http.FileServer(http.Dir("public/"))
@@ -255,20 +255,32 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		// Set canonical URL header
+		canonicalURL := a.SEOService.GetCanonicalURL(&p)
+		w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"canonical\"", canonicalURL))
 
 		comms, err := model.GetComments(a.DB, id)
 		if err != nil {
 			log.Println("Grab comment error: ", err.Error())
 		}
 
+		// Generate SEO data
+		metaTags := a.SEOService.GenerateMetaTags(&p)
+		structuredData := a.SEOService.GenerateStructuredData(&p)
+		openGraphTags := a.SEOService.GenerateOpenGraphTags(&p)
+
 		data := struct {
-			Post        model.Post
-			Comms       []model.Comment
-			LogAsAdmin  bool
-			LogAsUser   bool
-			AuthURL     string
-			ClientID    string
-			RedirectURL string
+			Post           model.Post
+			Comms          []model.Comment
+			LogAsAdmin     bool
+			LogAsUser      bool
+			AuthURL        string
+			ClientID       string
+			RedirectURL    string
+			MetaTags       map[string]string
+			StructuredData string
+			OpenGraphTags  map[string]string
+			CanonicalURL   string
 		}{
 			p,
 			comms,
@@ -277,6 +289,10 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 			a.Config.OAuth.GithubAuthorizeURL,
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
+			metaTags,
+			structuredData,
+			openGraphTags,
+			canonicalURL,
 		}
 		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
 		if err != nil {
@@ -313,19 +329,32 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
+		// Set canonical URL header
+		canonicalURL := a.SEOService.GetCanonicalURL(&p)
+		w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"canonical\"", canonicalURL))
+
 		comms, err := model.GetComments(a.DB, p.ID)
 		if err != nil {
 			log.Println("Grab comment error: ", err.Error())
 		}
 
+		// Generate SEO data
+		metaTags := a.SEOService.GenerateMetaTags(&p)
+		structuredData := a.SEOService.GenerateStructuredData(&p)
+		openGraphTags := a.SEOService.GenerateOpenGraphTags(&p)
+
 		data := struct {
-			Post        model.Post
-			Comms       []model.Comment
-			LogAsAdmin  bool
-			LogAsUser   bool
-			AuthURL     string
-			ClientID    string
-			RedirectURL string
+			Post           model.Post
+			Comms          []model.Comment
+			LogAsAdmin     bool
+			LogAsUser      bool
+			AuthURL        string
+			ClientID       string
+			RedirectURL    string
+			MetaTags       map[string]string
+			StructuredData string
+			OpenGraphTags  map[string]string
+			CanonicalURL   string
 		}{
 			p,
 			comms,
@@ -334,6 +363,10 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 			a.Config.OAuth.GithubAuthorizeURL,
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
+			metaTags,
+			structuredData,
+			openGraphTags,
+			canonicalURL,
 		}
 		err = a.Temp.ExecuteTemplate(w, "post.gohtml", data)
 		if err != nil {
@@ -632,50 +665,6 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) links(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		data := struct {
-			LogAsAdmin bool
-			Links      []model.Info
-		}{
-			a.Sessions.IsAdmin(r),
-			a.Links.List,
-		}
-		if err := a.Temp.ExecuteTemplate(w, "links.gohtml", data); err != nil {
-			log.Println("Template execution error:", err)
-		}
-	case http.MethodHead:
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-}
-
-func (a *App) courses(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		data := struct {
-			LogAsAdmin bool
-			Courses    []model.Info
-		}{
-			a.Sessions.IsAdmin(r),
-			a.Courses.List,
-		}
-		if err := a.Temp.ExecuteTemplate(w, "courses.gohtml", data); err != nil {
-			log.Println("Template execution error:", err)
-		}
-	case http.MethodHead:
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
-}
-
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -887,16 +876,16 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		// Return JSON response with file information
 		w.Header().Set("Content-Type", "application/json")
 		response := struct {
-			Success       bool    `json:"success"`
-			UUID          string  `json:"uuid"`
-			OriginalName  string  `json:"original_name"`
-			Size          int64   `json:"size"`
-			MimeType      string  `json:"mime_type"`
-			DownloadURL   string  `json:"download_url"`
-			IsImage       bool    `json:"is_image"`
-			Width         *int    `json:"width,omitempty"`
-			Height        *int    `json:"height,omitempty"`
-			ThumbnailURL  *string `json:"thumbnail_url,omitempty"`
+			Success      bool    `json:"success"`
+			UUID         string  `json:"uuid"`
+			OriginalName string  `json:"original_name"`
+			Size         int64   `json:"size"`
+			MimeType     string  `json:"mime_type"`
+			DownloadURL  string  `json:"download_url"`
+			IsImage      bool    `json:"is_image"`
+			Width        *int    `json:"width,omitempty"`
+			Height       *int    `json:"height,omitempty"`
+			ThumbnailURL *string `json:"thumbnail_url,omitempty"`
 		}{
 			Success:      true,
 			UUID:         fileRecord.UUID,
@@ -981,7 +970,7 @@ func (a *App) serveFile(w http.ResponseWriter, r *http.Request) {
 
 		// Set appropriate headers
 		w.Header().Set("Content-Type", mimeType)
-		
+
 		// For images, set inline disposition; for others, set attachment
 		if fileRecord.IsImage && !isThumbnail {
 			w.Header().Set("Content-Disposition", `inline; filename="`+filename+`"`)
@@ -1036,7 +1025,7 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 
 		// Build JSON response
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		// Create response structure
 		type FileResponse struct {
 			UUID          string `json:"uuid"`
@@ -1047,7 +1036,7 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 			CreatedAt     string `json:"created_at"`
 			DownloadURL   string `json:"download_url"`
 		}
-		
+
 		fileResponses := make([]FileResponse, len(files))
 		for i, file := range files {
 			fileResponses[i] = FileResponse{
@@ -1060,7 +1049,7 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 				DownloadURL:   "/files/" + file.UUID,
 			}
 		}
-		
+
 		response := struct {
 			Files []FileResponse `json:"files"`
 		}{
@@ -1082,12 +1071,12 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 func (a *App) processFileReferences(content string) template.HTML {
 	// Regular expression to match [file:filename] patterns
 	fileRefRegex := regexp.MustCompile(`\[file:([^\]]+)\]`)
-	
+
 	// Replace file references with appropriate HTML based on file type
 	processedContent := fileRefRegex.ReplaceAllStringFunc(content, func(match string) string {
 		// Extract filename from the match
 		filename := fileRefRegex.FindStringSubmatch(match)[1]
-		
+
 		// Query database to find file by original name with image metadata
 		rows, err := a.DB.Query("SELECT uuid, original_name, is_image, thumbnail_path, alt_text, width, height FROM files WHERE original_name = ? ORDER BY created_at DESC LIMIT 1", filename)
 		if err != nil {
@@ -1095,59 +1084,60 @@ func (a *App) processFileReferences(content string) template.HTML {
 			return match // Return original if error
 		}
 		defer rows.Close()
-		
+
 		if rows.Next() {
 			var uuid, originalName string
 			var isImage bool
 			var thumbnailPath, altText *string
 			var width, height *int
-			
+
 			if err := rows.Scan(&uuid, &originalName, &isImage, &thumbnailPath, &altText, &width, &height); err != nil {
 				log.Printf("Error scanning file: %v", err)
 				return match
 			}
-			
+
 			// If it's an image, render as responsive image
 			if isImage {
 				alt := originalName
 				if altText != nil && *altText != "" {
 					alt = *altText
 				}
-				
+
 				// Create responsive image HTML with thumbnail fallback
 				imageHTML := `<div class="blog-image-container">`
-				
+
 				// Use thumbnail if available, otherwise use original
 				imageSrc := "/files/" + uuid
 				if thumbnailPath != nil && *thumbnailPath != "" {
 					// Create thumbnail serving endpoint
 					imageSrc = "/files/" + uuid + "/thumbnail"
 				}
-				
+
 				imageHTML += `<img src="` + imageSrc + `" alt="` + alt + `" class="blog-image" loading="lazy"`
-				
+
 				// Add dimensions if available
 				if width != nil && height != nil {
 					imageHTML += ` data-width="` + strconv.Itoa(*width) + `" data-height="` + strconv.Itoa(*height) + `"`
 				}
-				
+
 				imageHTML += ` onclick="openImageModal('` + "/files/" + uuid + `', '` + alt + `')">`
 				imageHTML += `</div>`
-				
+
 				return imageHTML
 			} else {
 				// Return HTML download link for non-images
 				return `<a href="/files/` + uuid + `" target="_blank">📎 ` + originalName + `</a>`
 			}
 		}
-		
+
 		// If file not found, return original text
 		return match
 	})
-	
-	// Convert newlines to HTML breaks and return as HTML
+
+	// Escape HTML content first, then convert newlines to HTML breaks
+	processedContent = html.EscapeString(processedContent)
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
-	return template.HTML(processedContent)
+	return template.HTML(processedContent) // #nosec G203 - Content is properly escaped above
 }
 
 func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
@@ -1199,12 +1189,104 @@ func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
 			Message: "Alt text updated successfully",
 		}
 
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
+}
+
+func (a *App) serveSitemap(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Get all posts with slugs for sitemap
+		posts, err := a.getAllPostsForSitemap()
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate sitemap XML
+		sitemapXML, err := a.SEOService.GenerateSitemap(posts)
+		if err != nil {
+			http.Error(w, "Failed to generate sitemap", http.StatusInternalServerError)
+			return
+		}
+
+		// Set appropriate headers
+		w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+
+		// Write sitemap
+		if _, err := w.Write(sitemapXML); err != nil {
+			http.Error(w, "Failed to write sitemap", http.StatusInternalServerError)
+			return
+		}
+
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+func (a *App) serveRobotsTxt(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Generate robots.txt content
+		robotsTxt := a.SEOService.GenerateRobotsTxt()
+
+		// Set appropriate headers
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=86400") // Cache for 24 hours
+
+		// Write robots.txt
+		if _, err := w.Write([]byte(robotsTxt)); err != nil {
+			http.Error(w, "Failed to write robots.txt", http.StatusInternalServerError)
+			return
+		}
+
+	case http.MethodHead:
+		w.WriteHeader(http.StatusOK)
+		return
+
+	default:
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+}
+
+// getAllPostsForSitemap retrieves all posts with slugs for sitemap generation
+func (a *App) getAllPostsForSitemap() ([]*model.Post, error) {
+	rows, err := a.DB.Query(`
+		SELECT id, title, body, datepost, slug, created_at, updated_at 
+		FROM posts 
+		WHERE slug IS NOT NULL AND slug != '' 
+		ORDER BY id DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*model.Post
+	for rows.Next() {
+		post := &model.Post{}
+		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, &post.CreatedAt, &post.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	return posts, nil
 }
 
 func (app *App) securityMiddleware(h http.Handler) http.Handler {

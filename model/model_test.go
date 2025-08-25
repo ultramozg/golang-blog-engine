@@ -2,8 +2,10 @@ package model
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -93,21 +95,6 @@ func createTestUser(db *sql.DB, name, password string, userType int) error {
 	_, err = db.Exec(`INSERT INTO users (name, type, pass) VALUES (?, ?, ?)`,
 		name, userType, string(hashedPassword))
 	return err
-}
-
-// createTempFile creates a temporary file with given content
-func createTempFile(t *testing.T, content string) string {
-	tmpFile, err := os.CreateTemp("", "test_*.yml")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer tmpFile.Close()
-
-	if _, err := tmpFile.WriteString(content); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
-
-	return tmpFile.Name()
 }
 
 func TestPost_GetPost(t *testing.T) {
@@ -1066,72 +1053,895 @@ func TestMigrateDatabase(t *testing.T) {
 	}
 }
 
-func TestConverYamlToStruct(t *testing.T) {
-	// Create temporary YAML file
-	yamlContent := `infos:
-  - title: "Test Title 1"
-    link: "https://example.com/1"
-    description: "Test description 1"
-  - title: "Test Title 2"
-    link: "https://example.com/2"
-    description: "Test description 2"`
-
-	tmpFile := createTempFile(t, yamlContent)
-	defer func() {
-		if err := os.Remove(tmpFile); err != nil {
-			t.Logf("Warning: failed to remove temp file: %v", err)
-		}
-	}()
-
+func TestPost_ValidateAndSanitizeSEOFields(t *testing.T) {
 	tests := []struct {
-		name        string
-		filePath    string
-		expectError bool
-		expectedLen int
+		name         string
+		post         Post
+		expectedMeta string
+		expectedKeys string
 	}{
 		{
-			name:        "Valid YAML file",
-			filePath:    tmpFile,
-			expectError: false,
-			expectedLen: 2,
+			name: "Valid SEO fields",
+			post: Post{
+				MetaDescription: "This is a valid meta description",
+				Keywords:        "keyword1, keyword2, keyword3",
+			},
+			expectedMeta: "This is a valid meta description",
+			expectedKeys: "keyword1, keyword2, keyword3",
 		},
 		{
-			name:        "Non-existing file",
-			filePath:    "nonexistent.yml",
-			expectError: true,
-			expectedLen: 0,
+			name: "Long meta description gets truncated",
+			post: Post{
+				MetaDescription: "This is a very long meta description that exceeds the recommended 160 character limit and should be truncated to fit within the SEO guidelines for search engines",
+			},
+			expectedMeta: "This is a very long meta description that exceeds the recommended 160 character limit and should be truncated to fit within the SEO guidelines for search eng...",
+			expectedKeys: "",
+		},
+		{
+			name: "HTML in meta description gets escaped",
+			post: Post{
+				MetaDescription: "This has <script>alert('xss')</script> HTML tags",
+				Keywords:        "test, <script>alert('xss')</script>",
+			},
+			expectedMeta: "This has &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt; HTML tags",
+			expectedKeys: "test, &lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;",
+		},
+		{
+			name: "Too many keywords get limited",
+			post: Post{
+				Keywords: "k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12, k13, k14, k15",
+			},
+			expectedMeta: "",
+			expectedKeys: "k1, k2, k3, k4, k5, k6, k7, k8, k9, k10",
+		},
+		{
+			name: "Keywords with extra spaces get cleaned",
+			post: Post{
+				Keywords: "  keyword1  ,   keyword2   ,keyword3,   keyword4  ",
+			},
+			expectedMeta: "",
+			expectedKeys: "keyword1, keyword2, keyword3, keyword4",
+		},
+		{
+			name: "Long individual keywords get filtered out",
+			post: Post{
+				Keywords: "short, verylongkeywordthatexceedsfiftycharacterslimitandshouldbefilteredout, another",
+			},
+			expectedMeta: "",
+			expectedKeys: "short, another",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ConverYamlToStruct(tt.filePath)
+			err := tt.post.ValidateAndSanitizeSEOFields()
+			if err != nil {
+				t.Errorf("ValidateAndSanitizeSEOFields() error = %v", err)
+				return
+			}
 
-			if tt.expectError {
-				if err == nil {
-					t.Errorf("Expected error but got none")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if len(result.List) != tt.expectedLen {
-					t.Errorf("Expected %d items, got %d", tt.expectedLen, len(result.List))
-				}
+			if tt.post.MetaDescription != tt.expectedMeta {
+				t.Errorf("MetaDescription = %v, want %v", tt.post.MetaDescription, tt.expectedMeta)
+			}
 
-				// Verify content for valid file
-				if tt.expectedLen > 0 {
-					if result.List[0].Title != "Test Title 1" {
-						t.Errorf("Expected first title 'Test Title 1', got '%s'", result.List[0].Title)
-					}
-					if result.List[0].Link != "https://example.com/1" {
-						t.Errorf("Expected first link 'https://example.com/1', got '%s'", result.List[0].Link)
-					}
-					if result.List[0].Description != "Test description 1" {
-						t.Errorf("Expected first description 'Test description 1', got '%s'", result.List[0].Description)
-					}
-				}
+			if tt.post.Keywords != tt.expectedKeys {
+				t.Errorf("Keywords = %v, want %v", tt.post.Keywords, tt.expectedKeys)
 			}
 		})
 	}
+}
+
+func TestPost_GenerateDefaultSEOFields(t *testing.T) {
+	tests := []struct {
+		name         string
+		post         Post
+		expectedMeta string
+		expectedKeys string
+	}{
+		{
+			name: "Generate meta description from body",
+			post: Post{
+				Title: "Test Post",
+				Body:  "This is a test post body that should be used to generate a meta description when none is provided.",
+			},
+			expectedMeta: "This is a test post body that should be used to generate a meta description when none is provided.",
+			expectedKeys: "test, post",
+		},
+		{
+			name: "Generate meta description from long body",
+			post: Post{
+				Title: "Test Post",
+				Body:  "This is a very long test post body that exceeds the 150 character limit and should be truncated when generating the meta description automatically from the post content.",
+			},
+			expectedMeta: "This is a very long test post body that exceeds the 150 character limit and should be truncated when generating the meta description automatically ...",
+			expectedKeys: "test, post",
+		},
+		{
+			name: "Generate meta description from HTML body",
+			post: Post{
+				Title: "Test Post",
+				Body:  "<p>This is a <strong>test</strong> post with <em>HTML</em> tags that should be stripped.</p>",
+			},
+			expectedMeta: "This is a test post with HTML tags that should be stripped.",
+			expectedKeys: "test, post",
+		},
+		{
+			name: "Generate keywords from title",
+			post: Post{
+				Title: "Advanced JavaScript Programming Techniques",
+				Body:  "Some body content",
+			},
+			expectedMeta: "Some body content",
+			expectedKeys: "advanced, javascript, programming, techniques",
+		},
+		{
+			name: "Filter short words from title keywords",
+			post: Post{
+				Title: "How to Use Go for Web Development",
+				Body:  "Some body content",
+			},
+			expectedMeta: "Some body content",
+			expectedKeys: "development",
+		},
+		{
+			name: "Don't override existing SEO fields",
+			post: Post{
+				Title:           "Test Post",
+				Body:            "This is a test post body",
+				MetaDescription: "Existing meta description",
+				Keywords:        "existing, keywords",
+			},
+			expectedMeta: "Existing meta description",
+			expectedKeys: "existing, keywords",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.post.GenerateDefaultSEOFields()
+
+			if tt.post.MetaDescription != tt.expectedMeta {
+				t.Errorf("MetaDescription = %v, want %v", tt.post.MetaDescription, tt.expectedMeta)
+			}
+
+			if tt.post.Keywords != tt.expectedKeys {
+				t.Errorf("Keywords = %v, want %v", tt.post.Keywords, tt.expectedKeys)
+			}
+		})
+	}
+}
+
+func TestPost_CreatePostWithSEO(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	tests := []struct {
+		name string
+		post Post
+	}{
+		{
+			name: "Create post with SEO fields",
+			post: Post{
+				Title:           "Test Post with SEO",
+				Body:            "This is a test post body",
+				Date:            "Mon Jan 1 12:00:00 2024",
+				MetaDescription: "Custom meta description",
+				Keywords:        "test, seo, post",
+			},
+		},
+		{
+			name: "Create post without SEO fields (auto-generated)",
+			post: Post{
+				Title: "Another Test Post for SEO Generation",
+				Body:  "This is another test post body that should generate default SEO fields automatically when none are provided.",
+				Date:  "Mon Jan 2 12:00:00 2024",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.post.CreatePost(db)
+			if err != nil {
+				t.Errorf("CreatePost() error = %v", err)
+				return
+			}
+
+			// Verify the post was created with SEO fields
+			var retrievedPost Post
+			retrievedPost.ID = tt.post.ID
+			err = retrievedPost.GetPost(db)
+			if err != nil {
+				t.Errorf("GetPost() error = %v", err)
+				return
+			}
+
+			// Check that SEO fields are present (either provided or auto-generated)
+			if retrievedPost.MetaDescription == "" {
+				t.Error("MetaDescription should not be empty after creation")
+			}
+
+			if retrievedPost.Keywords == "" {
+				t.Error("Keywords should not be empty after creation")
+			}
+
+			// Verify other fields
+			if retrievedPost.Title != tt.post.Title {
+				t.Errorf("Title = %v, want %v", retrievedPost.Title, tt.post.Title)
+			}
+		})
+	}
+}
+
+func TestPost_UpdatePostWithSEO(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create a test post first
+	post := Post{
+		Title: "Original Title",
+		Body:  "Original body",
+		Date:  "Mon Jan 1 12:00:00 2024",
+	}
+	err := post.CreatePost(db)
+	if err != nil {
+		t.Fatalf("Failed to create test post: %v", err)
+	}
+
+	// Update the post with SEO fields
+	post.Title = "Updated Title"
+	post.MetaDescription = "Updated meta description"
+	post.Keywords = "updated, keywords, test"
+
+	err = post.UpdatePost(db)
+	if err != nil {
+		t.Errorf("UpdatePost() error = %v", err)
+		return
+	}
+
+	// Verify the update
+	var retrievedPost Post
+	retrievedPost.ID = post.ID
+	err = retrievedPost.GetPost(db)
+	if err != nil {
+		t.Errorf("GetPost() error = %v", err)
+		return
+	}
+
+	if retrievedPost.MetaDescription != "Updated meta description" {
+		t.Errorf("MetaDescription = %v, want %v", retrievedPost.MetaDescription, "Updated meta description")
+	}
+
+	if retrievedPost.Keywords != "updated, keywords, test" {
+		t.Errorf("Keywords = %v, want %v", retrievedPost.Keywords, "updated, keywords, test")
+	}
+}
+
+func TestPostSEOFields(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Insert a test post with SEO fields
+	_, err := db.Exec(`INSERT INTO posts (title, body, datepost, slug, meta_description, keywords, created_at, updated_at) 
+		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		"SEO Test Post", "Test body with SEO fields", "Mon Jan 2 15:04:05 2006", "seo-test-post",
+		"This is a meta description for SEO", "seo, test, blog, post")
+	if err != nil {
+		t.Fatalf("Failed to insert test post with SEO fields: %v", err)
+	}
+
+	// Test getting post with SEO fields
+	post := Post{Slug: "seo-test-post"}
+	err = post.GetPostBySlug(db)
+	if err != nil {
+		t.Errorf("Failed to get post by slug: %v", err)
+	}
+
+	if post.Title != "SEO Test Post" {
+		t.Errorf("Expected title 'SEO Test Post', got '%s'", post.Title)
+	}
+
+	if post.MetaDescription != "This is a meta description for SEO" {
+		t.Errorf("Expected meta description 'This is a meta description for SEO', got '%s'", post.MetaDescription)
+	}
+
+	if post.Keywords != "seo, test, blog, post" {
+		t.Errorf("Expected keywords 'seo, test, blog, post', got '%s'", post.Keywords)
+	}
+
+	// Test that created_at and updated_at are populated
+	if post.CreatedAt == "" {
+		t.Error("Expected CreatedAt to be populated")
+	}
+
+	if post.UpdatedAt == "" {
+		t.Error("Expected UpdatedAt to be populated")
+	}
+}
+
+func TestGetPostsForSitemap(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Insert test posts - some with slugs, some without
+	testPosts := []struct {
+		title, body, slug string
+	}{
+		{"Post with Slug 1", "Body 1", "post-with-slug-1"},
+		{"Post with Slug 2", "Body 2", "post-with-slug-2"},
+		{"Post without Slug", "Body 3", ""}, // This should be excluded from sitemap
+	}
+
+	for _, post := range testPosts {
+		var query string
+		var args []interface{}
+
+		if post.slug != "" {
+			query = `INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+			args = []interface{}{post.title, post.body, "Mon Jan 2 15:04:05 2006", post.slug}
+		} else {
+			query = `INSERT INTO posts (title, body, datepost, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+			args = []interface{}{post.title, post.body, "Mon Jan 2 15:04:05 2006"}
+		}
+
+		_, err := db.Exec(query, args...)
+		if err != nil {
+			t.Fatalf("Failed to insert test post: %v", err)
+		}
+	}
+
+	// Query posts suitable for sitemap (only those with slugs)
+	rows, err := db.Query(`
+		SELECT id, title, body, datepost, slug, created_at, updated_at 
+		FROM posts 
+		WHERE slug IS NOT NULL AND slug != '' 
+		ORDER BY id DESC
+	`)
+	if err != nil {
+		t.Fatalf("Failed to query posts for sitemap: %v", err)
+	}
+	defer rows.Close()
+
+	var posts []Post
+	for rows.Next() {
+		var post Post
+		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, &post.CreatedAt, &post.UpdatedAt)
+		if err != nil {
+			t.Fatalf("Failed to scan post: %v", err)
+		}
+		posts = append(posts, post)
+	}
+
+	// Should only return posts with slugs
+	if len(posts) != 2 {
+		t.Errorf("Expected 2 posts with slugs, got %d", len(posts))
+	}
+
+	// Check that all returned posts have slugs
+	for _, post := range posts {
+		if post.Slug == "" {
+			t.Error("Expected all posts to have slugs")
+		}
+	}
+
+	// Check specific posts
+	slugs := make(map[string]bool)
+	for _, post := range posts {
+		slugs[post.Slug] = true
+	}
+
+	if !slugs["post-with-slug-1"] {
+		t.Error("Expected 'post-with-slug-1' to be in results")
+	}
+
+	if !slugs["post-with-slug-2"] {
+		t.Error("Expected 'post-with-slug-2' to be in results")
+	}
+}
+
+func TestPostTimestamps(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create a post
+	post := Post{
+		Title: "Timestamp Test Post",
+		Body:  "Testing timestamp functionality",
+		Date:  "Mon Jan 2 15:04:05 2006",
+		Slug:  "timestamp-test-post",
+	}
+
+	// Insert post
+	result, err := db.Exec(`INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+		VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		post.Title, post.Body, post.Date, post.Slug)
+	if err != nil {
+		t.Fatalf("Failed to insert post: %v", err)
+	}
+
+	// Get the ID
+	id, err := result.LastInsertId()
+	if err != nil {
+		t.Fatalf("Failed to get post ID: %v", err)
+	}
+	post.ID = int(id)
+
+	// Retrieve the post
+	retrievedPost := Post{ID: post.ID}
+	err = retrievedPost.GetPost(db)
+	if err != nil {
+		t.Fatalf("Failed to retrieve post: %v", err)
+	}
+
+	// Check that timestamps are populated
+	if retrievedPost.CreatedAt == "" {
+		t.Error("Expected CreatedAt to be populated")
+	}
+
+	if retrievedPost.UpdatedAt == "" {
+		t.Error("Expected UpdatedAt to be populated")
+	}
+
+	// Update the post
+	retrievedPost.Title = "Updated Timestamp Test Post"
+	_, err = db.Exec(`UPDATE posts SET title = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+		retrievedPost.Title, retrievedPost.ID)
+	if err != nil {
+		t.Fatalf("Failed to update post: %v", err)
+	}
+
+	// Retrieve again
+	updatedPost := Post{ID: post.ID}
+	err = updatedPost.GetPost(db)
+	if err != nil {
+		t.Fatalf("Failed to retrieve updated post: %v", err)
+	}
+
+	// Check that updated_at changed but created_at remained the same
+	if updatedPost.CreatedAt != retrievedPost.CreatedAt {
+		t.Error("CreatedAt should not change on update")
+	}
+
+	// Note: In a real test, we might want to add a small delay to ensure updated_at changes
+	// For now, we just check that both timestamps exist
+	if updatedPost.UpdatedAt == "" {
+		t.Error("Expected UpdatedAt to be populated after update")
+	}
+}
+
+// TestPostModelSEOFields tests Post model with SEO-related fields
+func TestPostModelSEOFields(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	t.Run("GetPostBySlugWithSEOFields", func(t *testing.T) {
+		// Insert post with SEO fields
+		_, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at, meta_description, keywords) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?)
+		`, "SEO Test Post", "Content for SEO testing", "Mon Jan 4 12:00:00 2024", "seo-test-post", "This is a meta description", "seo, test, keywords")
+		if err != nil {
+			t.Fatalf("Failed to insert SEO test post: %v", err)
+		}
+
+		post := Post{Slug: "seo-test-post"}
+		err = post.GetPostBySlug(db)
+		if err != nil {
+			t.Errorf("Failed to get SEO post by slug: %v", err)
+		}
+
+		if post.Title != "SEO Test Post" {
+			t.Errorf("Expected title 'SEO Test Post', got '%s'", post.Title)
+		}
+	})
+
+	t.Run("PostSlugUniqueness", func(t *testing.T) {
+		// Try to insert post with duplicate slug
+		_, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, "Duplicate Slug Post", "Content with duplicate slug", "Mon Jan 5 12:00:00 2024", "test-post-1")
+
+		// Should fail due to unique constraint
+		if err == nil {
+			t.Error("Expected error when inserting post with duplicate slug")
+		}
+	})
+
+	t.Run("PostWithSpecialCharactersInSlug", func(t *testing.T) {
+		// Insert post with special characters in slug
+		_, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, "Special Characters Post", "Content with special chars", "Mon Jan 6 12:00:00 2024", "post-with-special-chars-symbols")
+		if err != nil {
+			t.Fatalf("Failed to insert post with special chars in slug: %v", err)
+		}
+
+		post := Post{Slug: "post-with-special-chars-symbols"}
+		err = post.GetPostBySlug(db)
+		if err != nil {
+			t.Errorf("Failed to get post with special chars slug: %v", err)
+		}
+
+		if post.Title != "Special Characters Post" {
+			t.Errorf("Expected title 'Special Characters Post', got '%s'", post.Title)
+		}
+	})
+}
+
+// TestPostModelTimestamps tests Post model timestamp handling
+func TestPostModelTimestamps(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	t.Run("PostCreationTimestamps", func(t *testing.T) {
+		// Insert post with explicit timestamps
+		createdAt := "Mon Jan 1 12:00:00 2024"
+		updatedAt := "Mon Jan 2 12:00:00 2024"
+
+		result, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, ?, ?)
+		`, "Timestamp Test Post", "Content for timestamp testing", "Mon Jan 1 12:00:00 2024", "timestamp-test-post", createdAt, updatedAt)
+		if err != nil {
+			t.Fatalf("Failed to insert timestamp test post: %v", err)
+		}
+
+		postID, err := result.LastInsertId()
+		if err != nil {
+			t.Fatalf("Failed to get post ID: %v", err)
+		}
+
+		post := Post{ID: int(postID)}
+		err = post.GetPost(db)
+		if err != nil {
+			t.Errorf("Failed to get post: %v", err)
+		}
+
+		if post.CreatedAt != createdAt {
+			t.Errorf("Expected created_at '%s', got '%s'", createdAt, post.CreatedAt)
+		}
+
+		if post.UpdatedAt != updatedAt {
+			t.Errorf("Expected updated_at '%s', got '%s'", updatedAt, post.UpdatedAt)
+		}
+	})
+
+	t.Run("PostUpdateTimestamp", func(t *testing.T) {
+		// Insert initial post
+		result, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, "Update Test Post", "Initial content", "Mon Jan 1 12:00:00 2024", "update-test-post")
+		if err != nil {
+			t.Fatalf("Failed to insert update test post: %v", err)
+		}
+
+		postID, err := result.LastInsertId()
+		if err != nil {
+			t.Fatalf("Failed to get post ID: %v", err)
+		}
+
+		// Update the post
+		newUpdatedAt := "Mon Jan 3 12:00:00 2024"
+		_, err = db.Exec(`
+			UPDATE posts SET title = ?, body = ?, updated_at = ? WHERE id = ?
+		`, "Updated Test Post", "Updated content", newUpdatedAt, postID)
+		if err != nil {
+			t.Fatalf("Failed to update post: %v", err)
+		}
+
+		post := Post{ID: int(postID)}
+		err = post.GetPost(db)
+		if err != nil {
+			t.Errorf("Failed to get updated post: %v", err)
+		}
+
+		if post.Title != "Updated Test Post" {
+			t.Errorf("Expected updated title 'Updated Test Post', got '%s'", post.Title)
+		}
+
+		if post.UpdatedAt != newUpdatedAt {
+			t.Errorf("Expected updated_at '%s', got '%s'", newUpdatedAt, post.UpdatedAt)
+		}
+	})
+}
+
+// TestPostModelErrorHandling tests Post model error handling
+func TestPostModelErrorHandling(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	t.Run("GetPostInvalidID", func(t *testing.T) {
+		post := Post{ID: 99999}
+		err := post.GetPost(db)
+		if err == nil {
+			t.Error("Expected error for invalid post ID")
+		}
+	})
+
+	t.Run("GetPostZeroID", func(t *testing.T) {
+		post := Post{ID: 0}
+		err := post.GetPost(db)
+		if err == nil {
+			t.Error("Expected error for zero post ID")
+		}
+	})
+
+	t.Run("GetPostBySlugInvalid", func(t *testing.T) {
+		post := Post{Slug: "invalid-slug-that-does-not-exist"}
+		err := post.GetPostBySlug(db)
+		if err == nil {
+			t.Error("Expected error for invalid slug")
+		}
+	})
+
+	t.Run("CreatePostWithoutRequiredFields", func(t *testing.T) {
+		// Try to insert post without required fields
+		_, err := db.Exec(`INSERT INTO posts (title) VALUES (?)`, "Incomplete Post")
+		if err == nil {
+			t.Error("Expected error when inserting post without required fields")
+		}
+	})
+
+	t.Run("UpdateNonExistentPost", func(t *testing.T) {
+		result, err := db.Exec(`UPDATE posts SET title = ? WHERE id = ?`, "Updated Title", 99999)
+		if err != nil {
+			t.Errorf("Unexpected error updating non-existent post: %v", err)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			t.Errorf("Failed to get rows affected: %v", err)
+		}
+
+		if rowsAffected != 0 {
+			t.Errorf("Expected 0 rows affected for non-existent post, got %d", rowsAffected)
+		}
+	})
+
+	t.Run("DeleteNonExistentPost", func(t *testing.T) {
+		post := Post{ID: 99999}
+		err := post.DeletePost(db)
+		// Should not error, but should affect 0 rows
+		if err != nil {
+			t.Errorf("Unexpected error deleting non-existent post: %v", err)
+		}
+	})
+}
+
+// TestPostModelPerformance tests Post model performance aspects
+func TestPostModelPerformance(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data first
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	// Create many posts for performance testing
+	numPosts := 1000
+	for i := 0; i < numPosts; i++ {
+		_, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, fmt.Sprintf("Performance Test Post %d", i), fmt.Sprintf("Content for post %d", i), "Mon Jan 1 12:00:00 2024", fmt.Sprintf("performance-test-post-%d", i))
+		if err != nil {
+			t.Fatalf("Failed to insert performance test post %d: %v", i, err)
+		}
+	}
+
+	t.Run("GetPostBySlugPerformance", func(t *testing.T) {
+		start := time.Now()
+
+		// Test getting posts by slug
+		for i := 0; i < 100; i++ {
+			slug := fmt.Sprintf("performance-test-post-%d", i)
+			post := Post{Slug: slug}
+			err := post.GetPostBySlug(db)
+			if err != nil {
+				t.Errorf("Failed to get post by slug %s: %v", slug, err)
+			}
+		}
+
+		duration := time.Since(start)
+
+		// Should complete within reasonable time
+		if duration > 1*time.Second {
+			t.Errorf("Getting 100 posts by slug took too long: %v", duration)
+		}
+
+		t.Logf("Retrieved 100 posts by slug in %v", duration)
+	})
+
+	t.Run("GetPostsPerformance", func(t *testing.T) {
+		start := time.Now()
+
+		// Test getting posts with pagination
+		posts, err := GetPosts(db, 50, 0)
+		if err != nil {
+			t.Errorf("Failed to get posts: %v", err)
+		}
+
+		duration := time.Since(start)
+
+		if len(posts) != 50 {
+			t.Errorf("Expected 50 posts, got %d", len(posts))
+		}
+
+		// Should complete within reasonable time
+		if duration > 500*time.Millisecond {
+			t.Errorf("Getting 50 posts took too long: %v", duration)
+		}
+
+		t.Logf("Retrieved 50 posts in %v", duration)
+	})
+
+	t.Run("CountPostsPerformance", func(t *testing.T) {
+		start := time.Now()
+
+		count := CountPosts(db)
+
+		duration := time.Since(start)
+
+		expectedCount := numPosts + 3 // +3 from seedTestData
+		if count != expectedCount {
+			t.Errorf("Expected %d posts, got %d", expectedCount, count)
+		}
+
+		// Should complete very quickly
+		if duration > 100*time.Millisecond {
+			t.Errorf("Counting posts took too long: %v", duration)
+		}
+
+		t.Logf("Counted %d posts in %v", count, duration)
+	})
+}
+
+// TestPostModelSEOIntegration tests SEO-related functionality in the model
+func TestPostModelSEOIntegration(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	t.Run("PostsForSitemapGeneration", func(t *testing.T) {
+		// Insert posts with and without slugs
+		testPosts := []struct {
+			title, body, slug string
+			hasSlug           bool
+		}{
+			{"Post with Slug 1", "Content 1", "post-with-slug-1", true},
+			{"Post with Slug 2", "Content 2", "post-with-slug-2", true},
+			{"Post without Slug", "Content 3", "", false},
+		}
+
+		for _, post := range testPosts {
+			if post.hasSlug {
+				_, err := db.Exec(`
+					INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+					VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+				`, post.title, post.body, "Mon Jan 1 12:00:00 2024", post.slug)
+				if err != nil {
+					t.Fatalf("Failed to insert post with slug: %v", err)
+				}
+			} else {
+				_, err := db.Exec(`
+					INSERT INTO posts (title, body, datepost, created_at, updated_at) 
+					VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+				`, post.title, post.body, "Mon Jan 1 12:00:00 2024")
+				if err != nil {
+					t.Fatalf("Failed to insert post without slug: %v", err)
+				}
+			}
+		}
+
+		// Query posts for sitemap (only those with slugs)
+		rows, err := db.Query(`
+			SELECT id, title, body, datepost, slug, created_at, updated_at 
+			FROM posts 
+			WHERE slug IS NOT NULL AND slug != '' 
+			ORDER BY id DESC
+		`)
+		if err != nil {
+			t.Fatalf("Failed to query posts for sitemap: %v", err)
+		}
+		defer rows.Close()
+
+		var posts []Post
+		for rows.Next() {
+			var post Post
+			err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, &post.CreatedAt, &post.UpdatedAt)
+			if err != nil {
+				t.Fatalf("Failed to scan post: %v", err)
+			}
+			posts = append(posts, post)
+		}
+
+		// Should only return posts with slugs
+		if len(posts) != 2 {
+			t.Errorf("Expected 2 posts with slugs, got %d", len(posts))
+		}
+
+		for _, post := range posts {
+			if post.Slug == "" {
+				t.Error("Expected all posts to have slugs")
+			}
+		}
+	})
+
+	t.Run("PostsWithTimestampsForSEO", func(t *testing.T) {
+		// Insert post with specific timestamps
+		createdAt := "Mon Jan 1 12:00:00 2024"
+		updatedAt := "Mon Jan 2 12:00:00 2024"
+
+		_, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, ?, ?)
+		`, "SEO Timestamp Post", "Content with timestamps", "Mon Jan 1 12:00:00 2024", "seo-timestamp-post", createdAt, updatedAt)
+		if err != nil {
+			t.Fatalf("Failed to insert SEO timestamp post: %v", err)
+		}
+
+		post := Post{Slug: "seo-timestamp-post"}
+		err = post.GetPostBySlug(db)
+		if err != nil {
+			t.Errorf("Failed to get post by slug: %v", err)
+		}
+
+		// Verify timestamps are available for SEO processing
+		if post.CreatedAt == "" {
+			t.Error("Expected created_at to be available for SEO")
+		}
+
+		if post.UpdatedAt == "" {
+			t.Error("Expected updated_at to be available for SEO")
+		}
+
+		if post.CreatedAt != createdAt {
+			t.Errorf("Expected created_at '%s', got '%s'", createdAt, post.CreatedAt)
+		}
+
+		if post.UpdatedAt != updatedAt {
+			t.Errorf("Expected updated_at '%s', got '%s'", updatedAt, post.UpdatedAt)
+		}
+	})
+
+	t.Run("PostContentForSEOProcessing", func(t *testing.T) {
+		// Insert post with content that needs SEO processing
+		complexContent := `<p>This is a <strong>complex</strong> post with <em>HTML</em> tags.</p>
+			<p>It also contains [file:document.pdf] references and <a href="https://example.com">links</a>.</p>
+			<img src="/image.jpg" alt="Test image">`
+
+		_, err := db.Exec(`
+			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		`, "Complex Content Post", complexContent, "Mon Jan 1 12:00:00 2024", "complex-content-post")
+		if err != nil {
+			t.Fatalf("Failed to insert complex content post: %v", err)
+		}
+
+		post := Post{Slug: "complex-content-post"}
+		err = post.GetPostBySlug(db)
+		if err != nil {
+			t.Errorf("Failed to get post by slug: %v", err)
+		}
+
+		// Verify content is available for SEO processing
+		if post.Body == "" {
+			t.Error("Expected post body to be available for SEO processing")
+		}
+
+		if !strings.Contains(post.Body, "<strong>") {
+			t.Error("Expected HTML tags to be preserved in post body")
+		}
+
+		if !strings.Contains(post.Body, "[file:document.pdf]") {
+			t.Error("Expected file references to be preserved in post body")
+		}
+	})
 }
