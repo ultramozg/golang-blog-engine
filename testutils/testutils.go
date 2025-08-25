@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -68,7 +69,9 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 // Close cleans up the test database and temporary files
 func (td *TestDatabase) Close() error {
 	if td.DB != nil {
-		td.DB.Close()
+		if err := td.DB.Close(); err != nil {
+			log.Printf("Error closing test database: %v", err)
+		}
 	}
 	return os.RemoveAll(td.Config.TempDir)
 }
@@ -158,17 +161,17 @@ type HTTPTestHelper struct {
 // NewHTTPTestHelper creates a new HTTP test helper
 func NewHTTPTestHelper(t *testing.T, testDB *TestDatabase) *HTTPTestHelper {
 	// Create data directory if it doesn't exist
-	if err := os.MkdirAll("data", 0755); err != nil {
+	if err := os.MkdirAll("data", 0750); err != nil {
 		t.Fatalf("Failed to create data directory: %v", err)
 	}
 
 	// Note: courses.yml and links.yml files are no longer needed as these sections have been removed
 
 	// Set environment variables for testing
-	os.Setenv("DBURI", testDB.Config.DBPath)
-	os.Setenv("TEMPLATES", GetTemplatesPath())
-	os.Setenv("ADMIN_PASSWORD", testDB.Config.AdminPass)
-	os.Setenv("PRODUCTION", "false")
+	_ = os.Setenv("DBURI", testDB.Config.DBPath)
+	_ = os.Setenv("TEMPLATES", GetTemplatesPath())
+	_ = os.Setenv("ADMIN_PASSWORD", testDB.Config.AdminPass)
+	_ = os.Setenv("PRODUCTION", "false")
 
 	// Create and initialize app
 	testApp := app.NewApp()
@@ -295,7 +298,9 @@ func (tr *TestRunner) Close() {
 		tr.HTTP.Close()
 	}
 	if tr.DB != nil {
-		tr.DB.Close()
+		if err := tr.DB.Close(); err != nil {
+			log.Printf("Error closing test database: %v", err)
+		}
 	}
 }
 
@@ -402,18 +407,18 @@ func SetupTestApp(t *testing.T) *app.App {
 	testDB := NewTestDatabase(t)
 	
 	// Create data directory if it doesn't exist
-	if err := os.MkdirAll("data", 0755); err != nil {
+	if err := os.MkdirAll("data", 0750); err != nil {
 		t.Fatalf("Failed to create data directory: %v", err)
 	}
 
 	// Note: courses.yml and links.yml files are no longer needed as these sections have been removed
 
 	// Set environment variables for testing
-	os.Setenv("DBURI", testDB.Config.DBPath)
-	os.Setenv("TEMPLATES", GetTemplatesPath())
-	os.Setenv("ADMIN_PASSWORD", testDB.Config.AdminPass)
-	os.Setenv("PRODUCTION", "false")
-	os.Setenv("DOMAIN", "http://localhost:8080")
+	_ = os.Setenv("DBURI", testDB.Config.DBPath)
+	_ = os.Setenv("TEMPLATES", GetTemplatesPath())
+	_ = os.Setenv("ADMIN_PASSWORD", testDB.Config.AdminPass)
+	_ = os.Setenv("PRODUCTION", "false")
+	_ = os.Setenv("DOMAIN", "http://localhost:8080")
 
 	// Create and initialize app
 	testApp := app.NewApp()

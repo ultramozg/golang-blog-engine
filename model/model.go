@@ -459,7 +459,9 @@ func GenerateSlugsForExistingPosts(db *sql.DB) {
 		}
 		posts = append(posts, p)
 	}
-	rows.Close()
+	if err := rows.Close(); err != nil {
+		log.Printf("Error closing rows: %v", err)
+	}
 
 	// Now update each post
 	for _, post := range posts {

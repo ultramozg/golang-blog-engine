@@ -2,11 +2,13 @@ package services
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -16,6 +18,37 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/ultramozg/golang-blog-engine/model"
 )
+
+// validatePath ensures the path is safe and within the expected directory
+func validatePath(basePath, targetPath string) error {
+	// Clean and resolve the paths
+	cleanBase := filepath.Clean(basePath)
+	cleanTarget := filepath.Clean(targetPath)
+	
+	// Get absolute paths
+	absBase, err := filepath.Abs(cleanBase)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute base path: %w", err)
+	}
+	
+	absTarget, err := filepath.Abs(cleanTarget)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute target path: %w", err)
+	}
+	
+	// Check if target is within base directory
+	relPath, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return fmt.Errorf("failed to get relative path: %w", err)
+	}
+	
+	// Ensure the relative path doesn't contain ".." (directory traversal)
+	if strings.Contains(relPath, "..") {
+		return errors.New("path traversal detected")
+	}
+	
+	return nil
+}
 
 // FileService interface defines the contract for file operations
 type FileService interface {
@@ -49,13 +82,13 @@ func NewFileService(db *sql.DB, uploadDir string, maxFileSize int64) FileService
 // EnsureUploadDirectories creates the necessary directory structure for file uploads
 func (fs *FileServiceImpl) EnsureUploadDirectories() error {
 	// Create base upload directory
-	if err := os.MkdirAll(fs.uploadDir, 0755); err != nil {
+	if err := os.MkdirAll(fs.uploadDir, 0750); err != nil {
 		return fmt.Errorf("failed to create upload directory: %w", err)
 	}
 
 	// Create files subdirectory
 	filesDir := filepath.Join(fs.uploadDir, "files")
-	if err := os.MkdirAll(filesDir, 0755); err != nil {
+	if err := os.MkdirAll(filesDir, 0750); err != nil {
 		return fmt.Errorf("failed to create files directory: %w", err)
 	}
 
@@ -65,19 +98,19 @@ func (fs *FileServiceImpl) EnsureUploadDirectories() error {
 	
 	// Create documents subdirectory
 	documentsDir := filepath.Join(filesDir, yearMonth, "documents")
-	if err := os.MkdirAll(documentsDir, 0755); err != nil {
+	if err := os.MkdirAll(documentsDir, 0750); err != nil {
 		return fmt.Errorf("failed to create documents directory: %w", err)
 	}
 
 	// Create images subdirectory
 	imagesDir := filepath.Join(filesDir, yearMonth, "images")
-	if err := os.MkdirAll(imagesDir, 0755); err != nil {
+	if err := os.MkdirAll(imagesDir, 0750); err != nil {
 		return fmt.Errorf("failed to create images directory: %w", err)
 	}
 
 	// Create thumbnails subdirectory
 	thumbnailsDir := filepath.Join(filesDir, yearMonth, "thumbnails")
-	if err := os.MkdirAll(thumbnailsDir, 0755); err != nil {
+	if err := os.MkdirAll(thumbnailsDir, 0750); err != nil {
 		return fmt.Errorf("failed to create thumbnails directory: %w", err)
 	}
 
@@ -120,7 +153,7 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	targetDir := filepath.Join(fs.uploadDir, "files", yearMonth, subDir)
 	
 	// Ensure directory exists
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
+	if err := os.MkdirAll(targetDir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -128,8 +161,13 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	filePath := filepath.Join(targetDir, storedName)
 	relativePath := filepath.Join("files", yearMonth, subDir, storedName)
 
+	// Validate file path to prevent directory traversal
+	if err := validatePath(fs.uploadDir, filePath); err != nil {
+		return nil, fmt.Errorf("invalid file path: %w", err)
+	}
+	
 	// Create the file
-	dst, err := os.Create(filePath)
+	dst, err := os.Create(filePath) // #nosec G304 - Path is validated above
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
@@ -139,7 +177,9 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	_, err = io.Copy(dst, file)
 	if err != nil {
 		// Clean up the file if copy failed
-		os.Remove(filePath)
+		if removeErr := os.Remove(filePath); removeErr != nil {
+			log.Printf("Failed to remove file after copy error: %v", removeErr)
+		}
 		return nil, fmt.Errorf("failed to copy file content: %w", err)
 	}
 
@@ -159,16 +199,22 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	if isImage {
 		if err := fs.ProcessImage(fileRecord); err != nil {
 			// Clean up the file if image processing failed
-			os.Remove(filePath)
+			if removeErr := os.Remove(filePath); removeErr != nil {
+				log.Printf("Failed to remove file after image processing error: %v", removeErr)
+			}
 			return nil, fmt.Errorf("failed to process image: %w", err)
 		}
 	}
 
 	if err := fileRecord.CreateFile(fs.db); err != nil {
 		// Clean up the file and thumbnail if database insert failed
-		os.Remove(filePath)
+		if removeErr := os.Remove(filePath); removeErr != nil {
+			log.Printf("Failed to remove file after database error: %v", removeErr)
+		}
 		if fileRecord.ThumbnailPath != nil {
-			os.Remove(filepath.Join(fs.uploadDir, *fileRecord.ThumbnailPath))
+			if removeErr := os.Remove(filepath.Join(fs.uploadDir, *fileRecord.ThumbnailPath)); removeErr != nil {
+				log.Printf("Failed to remove thumbnail after database error: %v", removeErr)
+			}
 		}
 		return nil, fmt.Errorf("failed to save file record: %w", err)
 	}
@@ -305,8 +351,13 @@ func (fs *FileServiceImpl) ProcessImage(fileRecord *model.File) error {
 	// Get full file path
 	fullPath := filepath.Join(fs.uploadDir, fileRecord.Path)
 	
+	// Validate file path to prevent directory traversal
+	if err := validatePath(fs.uploadDir, fullPath); err != nil {
+		return fmt.Errorf("invalid file path: %w", err)
+	}
+	
 	// Open the image file
-	file, err := os.Open(fullPath)
+	file, err := os.Open(fullPath) // #nosec G304 - Path is validated above
 	if err != nil {
 		return fmt.Errorf("failed to open image file: %w", err)
 	}
@@ -345,8 +396,13 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 	// Get full file path
 	fullPath := filepath.Join(fs.uploadDir, fileRecord.Path)
 	
+	// Validate file path to prevent directory traversal
+	if err := validatePath(fs.uploadDir, fullPath); err != nil {
+		return fmt.Errorf("invalid file path: %w", err)
+	}
+	
 	// Open the original image
-	file, err := os.Open(fullPath)
+	file, err := os.Open(fullPath) // #nosec G304 - Path is validated above
 	if err != nil {
 		return fmt.Errorf("failed to open image file: %w", err)
 	}
@@ -402,12 +458,17 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 
 	// Ensure thumbnails directory exists
 	thumbnailDir := filepath.Dir(thumbnailFullPath)
-	if err := os.MkdirAll(thumbnailDir, 0755); err != nil {
+	if err := os.MkdirAll(thumbnailDir, 0750); err != nil {
 		return fmt.Errorf("failed to create thumbnail directory: %w", err)
 	}
 
+	// Validate thumbnail path to prevent directory traversal
+	if err := validatePath(fs.uploadDir, thumbnailFullPath); err != nil {
+		return fmt.Errorf("invalid thumbnail path: %w", err)
+	}
+	
 	// Create thumbnail file
-	thumbnailFile, err := os.Create(thumbnailFullPath)
+	thumbnailFile, err := os.Create(thumbnailFullPath) // #nosec G304 - Path is validated above
 	if err != nil {
 		return fmt.Errorf("failed to create thumbnail file: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"html"
 	"html/template"
 	"log"
 	"net/http"
@@ -143,6 +144,7 @@ func (a *App) Run() {
 		Addr:         a.Config.Server.Addr + a.Config.Server.Https,
 		TLSConfig: &tls.Config{
 			GetCertificate: cert.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
 		},
 		Handler: a.Router,
 	}
@@ -191,7 +193,9 @@ func (a *App) Run() {
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Println("Unable to shutdown http server")
 	}
-	a.DB.Close()
+	if err := a.DB.Close(); err != nil {
+		log.Printf("Error closing database: %v", err)
+	}
 	os.Exit(0)
 }
 
@@ -1134,9 +1138,10 @@ func (a *App) processFileReferences(content string) template.HTML {
 		return match
 	})
 	
-	// Convert newlines to HTML breaks and return as HTML
+	// Escape HTML content first, then convert newlines to HTML breaks
+	processedContent = html.EscapeString(processedContent)
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
-	return template.HTML(processedContent)
+	return template.HTML(processedContent) // #nosec G203 - Content is properly escaped above
 }
 
 func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
@@ -1188,7 +1193,10 @@ func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
 			Message: "Alt text updated successfully",
 		}
 
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 
 	default:
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -1218,7 +1226,10 @@ func (a *App) serveSitemap(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=3600") // Cache for 1 hour
 
 		// Write sitemap
-		w.Write(sitemapXML)
+		if _, err := w.Write(sitemapXML); err != nil {
+			http.Error(w, "Failed to write sitemap", http.StatusInternalServerError)
+			return
+		}
 
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
@@ -1241,7 +1252,10 @@ func (a *App) serveRobotsTxt(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=86400") // Cache for 24 hours
 
 		// Write robots.txt
-		w.Write([]byte(robotsTxt))
+		if _, err := w.Write([]byte(robotsTxt)); err != nil {
+			http.Error(w, "Failed to write robots.txt", http.StatusInternalServerError)
+			return
+		}
 
 	case http.MethodHead:
 		w.WriteHeader(http.StatusOK)
