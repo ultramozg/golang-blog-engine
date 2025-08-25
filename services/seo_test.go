@@ -33,7 +33,7 @@ func TestGenerateMetaTags(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	post := &model.Post{
 		ID:        1,
 		Title:     "Test Blog Post",
@@ -80,7 +80,7 @@ func TestGenerateStructuredData(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	post := &model.Post{
 		ID:        1,
 		Title:     "Test Blog Post",
@@ -91,7 +91,7 @@ func TestGenerateStructuredData(t *testing.T) {
 	}
 
 	structuredDataJSON := service.GenerateStructuredData(post)
-	
+
 	if structuredDataJSON == "" {
 		t.Error("Expected structured data to be generated")
 	}
@@ -129,7 +129,7 @@ func TestGenerateOpenGraphTags(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	post := &model.Post{
 		ID:        1,
 		Title:     "Test Blog Post",
@@ -176,7 +176,7 @@ func TestGenerateSitemap(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	posts := []*model.Post{
 		{
 			ID:        1,
@@ -238,7 +238,7 @@ func TestGenerateRobotsTxt(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	robotsTxt := service.GenerateRobotsTxt()
 
 	// Test basic structure
@@ -272,7 +272,7 @@ func TestGetCanonicalURL(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	// Test with slug
 	post := &model.Post{
 		ID:   1,
@@ -306,7 +306,7 @@ func TestExtractDescription(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com").(*seoService)
-	
+
 	// Test HTML removal
 	content := "<p>This is a <strong>test</strong> content with <a href='#'>links</a>.</p>"
 	description := service.extractDescription(content)
@@ -348,17 +348,17 @@ func TestExtractKeywords(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com").(*seoService)
-	
+
 	title := "Go Programming Tutorial"
 	content := "This is a comprehensive Go programming tutorial that covers programming basics and advanced Go concepts."
-	
+
 	keywords := service.extractKeywords(title, content)
-	
+
 	// Should contain words from title (higher weight) and content
 	if !strings.Contains(keywords, "programming") {
 		t.Error("Expected 'programming' to be in keywords")
 	}
-	
+
 	// Keywords should be comma-separated
 	if !strings.Contains(keywords, ",") {
 		t.Error("Expected keywords to be comma-separated")
@@ -373,7 +373,7 @@ func TestGenerateMetaTagsWithSpecialCharacters(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	post := &model.Post{
 		ID:        1,
 		Title:     "Test & Blog <Post>",
@@ -433,7 +433,7 @@ func TestGenerateStructuredDataWithImages(t *testing.T) {
 	}
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	post := &model.Post{
 		ID:        1,
 		Title:     "Post with Image",
@@ -444,7 +444,7 @@ func TestGenerateStructuredDataWithImages(t *testing.T) {
 	}
 
 	structuredDataJSON := service.GenerateStructuredData(post)
-	
+
 	if structuredDataJSON == "" {
 		t.Error("Expected structured data to be generated")
 	}
@@ -506,7 +506,7 @@ func TestGenerateOpenGraphTagsWithImages(t *testing.T) {
 	}
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	post := &model.Post{
 		ID:        1,
 		Title:     "Post with OG Image",
@@ -556,7 +556,7 @@ func TestGenerateSitemapWithEmptyPosts(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	// Test with empty posts array
 	posts := []*model.Post{}
 
@@ -586,7 +586,7 @@ func TestGenerateSitemapSkipsPostsWithoutSlugs(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	posts := []*model.Post{
 		{
 			ID:        1,
@@ -628,7 +628,7 @@ func TestGetCanonicalURLWithSpecialCharacters(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	// Test with normal slug (no special characters should be present after slug sanitization)
 	post := &model.Post{
 		ID:   1,
@@ -650,7 +650,7 @@ func TestExtractImagesFromHTML(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com").(*seoService)
-	
+
 	// Test content with HTML img tags
 	content := `<p>This is a post with images:</p>
 		<img src="https://external.com/image1.jpg" alt="External image">
@@ -683,17 +683,17 @@ func TestExtractDescriptionLengthLimit(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com").(*seoService)
-	
+
 	// Create content longer than 160 characters
 	longContent := strings.Repeat("This is a very long sentence that will exceed the meta description limit. ", 5)
-	
+
 	description := service.extractDescription(longContent)
-	
+
 	// Should be limited to 160 characters
 	if len(description) > 160 {
 		t.Errorf("Expected description to be limited to 160 characters, got %d", len(description))
 	}
-	
+
 	// Should end with "..."
 	if !strings.HasSuffix(description, "...") {
 		t.Error("Expected long description to end with '...'")
@@ -708,13 +708,13 @@ func TestGenerateRobotsTxtContent(t *testing.T) {
 	defer db.Close()
 
 	service := NewSEOService(db, "https://example.com")
-	
+
 	robotsTxt := service.GenerateRobotsTxt()
 
 	// Test all required disallow paths
 	requiredDisallows := []string{
 		"Disallow: /login",
-		"Disallow: /logout", 
+		"Disallow: /logout",
 		"Disallow: /create",
 		"Disallow: /update",
 		"Disallow: /delete",
@@ -835,7 +835,7 @@ func TestSEOServiceComprehensive(t *testing.T) {
 		}
 
 		structuredDataJSON := service.GenerateStructuredData(post)
-		
+
 		var structuredData map[string]interface{}
 		err = json.Unmarshal([]byte(structuredDataJSON), &structuredData)
 		if err != nil {
@@ -897,7 +897,7 @@ func TestSEOServiceComprehensive(t *testing.T) {
 
 	t.Run("OpenGraphTagsWithLongContent", func(t *testing.T) {
 		longContent := strings.Repeat("This is a very long content that should be truncated for Open Graph description. ", 20)
-		
+
 		post := &model.Post{
 			ID:    1,
 			Title: "Post with Long Content",
@@ -925,12 +925,12 @@ func TestSEOServiceComprehensive(t *testing.T) {
 		}
 
 		canonicalURL := service.GetCanonicalURL(post)
-		
+
 		// Should contain the slug (URL encoding is handled by the implementation)
 		if !strings.Contains(canonicalURL, "post-with-special-chars") {
 			t.Error("Expected canonical URL to contain the slug")
 		}
-		
+
 		// Should be a valid URL format
 		if !strings.HasPrefix(canonicalURL, "https://example.com/p/") {
 			t.Error("Expected canonical URL to have correct format")
@@ -978,7 +978,7 @@ func TestSEOServiceComprehensive(t *testing.T) {
 
 	t.Run("KeywordExtractionFromComplexContent", func(t *testing.T) {
 		seoSvc := service.(*seoService)
-		
+
 		title := "Advanced Go Programming Tutorial"
 		content := `<p>This comprehensive <strong>Go programming</strong> tutorial covers advanced concepts.</p>
 			<p>Learn about goroutines, channels, and concurrent programming in Go.</p>
@@ -1004,7 +1004,7 @@ func TestSEOServiceComprehensive(t *testing.T) {
 
 	t.Run("RobotsTxtWithCustomBaseURL", func(t *testing.T) {
 		customService := NewSEOService(db, "https://custom-domain.com")
-		
+
 		robotsTxt := customService.GenerateRobotsTxt()
 
 		// Should contain custom domain in sitemap reference
@@ -1115,7 +1115,7 @@ func TestSEOServiceErrorHandling(t *testing.T) {
 		}
 
 		sitemapString := string(sitemapXML)
-		
+
 		// Should still contain homepage
 		if !strings.Contains(sitemapString, "<loc>https://example.com/</loc>") {
 			t.Error("Should include homepage even with no posts")
@@ -1179,12 +1179,12 @@ func TestSEOServicePerformance(t *testing.T) {
 		}
 
 		start := time.Now()
-		
+
 		// Test all SEO operations
 		metaTags := service.GenerateMetaTags(post)
 		structuredData := service.GenerateStructuredData(post)
 		ogTags := service.GenerateOpenGraphTags(post)
-		
+
 		duration := time.Since(start)
 
 		// Should complete within reasonable time

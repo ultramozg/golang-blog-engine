@@ -786,8 +786,6 @@ func TestAboutHandler(t *testing.T) {
 	}
 }
 
-
-
 // Test cases for createComment handler
 func TestCreateCommentHandler(t *testing.T) {
 	app, cleanup := createTestApp(t)

@@ -123,13 +123,13 @@ func PostRedirectMiddleware(db *sql.DB) func(http.Handler) http.Handler {
 							sanitizedSlug := sanitizeSlug(slug)
 							if sanitizedSlug != "" {
 								canonicalURL := "/p/" + sanitizedSlug
-								
+
 								// Set canonical URL header for SEO
 								w.Header().Set("Link", fmt.Sprintf("<%s>; rel=\"canonical\"", canonicalURL))
-								
+
 								// Add cache control headers for SEO
 								w.Header().Set("Cache-Control", "public, max-age=31536000") // 1 year cache for redirects
-								
+
 								// Redirect to slug-based URL with 301 (permanent redirect)
 								http.Redirect(w, r, canonicalURL, http.StatusMovedPermanently)
 								return
@@ -150,20 +150,20 @@ func sanitizeSlug(slug string) string {
 	// Remove any potentially dangerous characters
 	// Allow only alphanumeric characters, hyphens, and underscores
 	validSlugRegex := regexp.MustCompile(`^[a-zA-Z0-9\-_]+$`)
-	
+
 	if !validSlugRegex.MatchString(slug) {
 		return ""
 	}
-	
+
 	// Additional validation: slug should not be empty and not too long
 	if len(slug) == 0 || len(slug) > 200 {
 		return ""
 	}
-	
+
 	// Prevent directory traversal attempts
 	if strings.Contains(slug, "..") || strings.Contains(slug, "/") || strings.Contains(slug, "\\") {
 		return ""
 	}
-	
+
 	return slug
 }

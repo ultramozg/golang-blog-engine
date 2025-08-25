@@ -97,21 +97,6 @@ func createTestUser(db *sql.DB, name, password string, userType int) error {
 	return err
 }
 
-// createTempFile creates a temporary file with given content
-func createTempFile(t *testing.T, content string) string {
-	tmpFile, err := os.CreateTemp("", "test_*.yml")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer tmpFile.Close()
-
-	if _, err := tmpFile.WriteString(content); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
-
-	return tmpFile.Name()
-}
-
 func TestPost_GetPost(t *testing.T) {
 	db, cleanup := createTestDB(t)
 	defer cleanup()
@@ -1070,8 +1055,8 @@ func TestMigrateDatabase(t *testing.T) {
 
 func TestPost_ValidateAndSanitizeSEOFields(t *testing.T) {
 	tests := []struct {
-		name        string
-		post        Post
+		name         string
+		post         Post
 		expectedMeta string
 		expectedKeys string
 	}{
@@ -1332,8 +1317,6 @@ func TestPost_UpdatePostWithSEO(t *testing.T) {
 	}
 }
 
-
-
 func TestPostSEOFields(t *testing.T) {
 	db, cleanup := createTestDB(t)
 	defer cleanup()
@@ -1341,7 +1324,7 @@ func TestPostSEOFields(t *testing.T) {
 	// Insert a test post with SEO fields
 	_, err := db.Exec(`INSERT INTO posts (title, body, datepost, slug, meta_description, keywords, created_at, updated_at) 
 		VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-		"SEO Test Post", "Test body with SEO fields", "Mon Jan 2 15:04:05 2006", "seo-test-post", 
+		"SEO Test Post", "Test body with SEO fields", "Mon Jan 2 15:04:05 2006", "seo-test-post",
 		"This is a meta description for SEO", "seo, test, blog, post")
 	if err != nil {
 		t.Fatalf("Failed to insert test post with SEO fields: %v", err)
@@ -1392,7 +1375,7 @@ func TestGetPostsForSitemap(t *testing.T) {
 	for _, post := range testPosts {
 		var query string
 		var args []interface{}
-		
+
 		if post.slug != "" {
 			query = `INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = []interface{}{post.title, post.body, "Mon Jan 2 15:04:05 2006", post.slug}
@@ -1400,7 +1383,7 @@ func TestGetPostsForSitemap(t *testing.T) {
 			query = `INSERT INTO posts (title, body, datepost, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = []interface{}{post.title, post.body, "Mon Jan 2 15:04:05 2006"}
 		}
-		
+
 		_, err := db.Exec(query, args...)
 		if err != nil {
 			t.Fatalf("Failed to insert test post: %v", err)
@@ -1562,7 +1545,7 @@ func TestPostModelSEOFields(t *testing.T) {
 			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
 			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 		`, "Duplicate Slug Post", "Content with duplicate slug", "Mon Jan 5 12:00:00 2024", "test-post-1")
-		
+
 		// Should fail due to unique constraint
 		if err == nil {
 			t.Error("Expected error when inserting post with duplicate slug")
@@ -1600,7 +1583,7 @@ func TestPostModelTimestamps(t *testing.T) {
 		// Insert post with explicit timestamps
 		createdAt := "Mon Jan 1 12:00:00 2024"
 		updatedAt := "Mon Jan 2 12:00:00 2024"
-		
+
 		result, err := db.Exec(`
 			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
 			VALUES (?, ?, ?, ?, ?, ?)
@@ -1756,7 +1739,7 @@ func TestPostModelPerformance(t *testing.T) {
 
 	t.Run("GetPostBySlugPerformance", func(t *testing.T) {
 		start := time.Now()
-		
+
 		// Test getting posts by slug
 		for i := 0; i < 100; i++ {
 			slug := fmt.Sprintf("performance-test-post-%d", i)
@@ -1766,57 +1749,57 @@ func TestPostModelPerformance(t *testing.T) {
 				t.Errorf("Failed to get post by slug %s: %v", slug, err)
 			}
 		}
-		
+
 		duration := time.Since(start)
-		
+
 		// Should complete within reasonable time
 		if duration > 1*time.Second {
 			t.Errorf("Getting 100 posts by slug took too long: %v", duration)
 		}
-		
+
 		t.Logf("Retrieved 100 posts by slug in %v", duration)
 	})
 
 	t.Run("GetPostsPerformance", func(t *testing.T) {
 		start := time.Now()
-		
+
 		// Test getting posts with pagination
 		posts, err := GetPosts(db, 50, 0)
 		if err != nil {
 			t.Errorf("Failed to get posts: %v", err)
 		}
-		
+
 		duration := time.Since(start)
-		
+
 		if len(posts) != 50 {
 			t.Errorf("Expected 50 posts, got %d", len(posts))
 		}
-		
+
 		// Should complete within reasonable time
 		if duration > 500*time.Millisecond {
 			t.Errorf("Getting 50 posts took too long: %v", duration)
 		}
-		
+
 		t.Logf("Retrieved 50 posts in %v", duration)
 	})
 
 	t.Run("CountPostsPerformance", func(t *testing.T) {
 		start := time.Now()
-		
+
 		count := CountPosts(db)
-		
+
 		duration := time.Since(start)
-		
+
 		expectedCount := numPosts + 3 // +3 from seedTestData
 		if count != expectedCount {
 			t.Errorf("Expected %d posts, got %d", expectedCount, count)
 		}
-		
+
 		// Should complete very quickly
 		if duration > 100*time.Millisecond {
 			t.Errorf("Counting posts took too long: %v", duration)
 		}
-		
+
 		t.Logf("Counted %d posts in %v", count, duration)
 	})
 }
@@ -1895,7 +1878,7 @@ func TestPostModelSEOIntegration(t *testing.T) {
 		// Insert post with specific timestamps
 		createdAt := "Mon Jan 1 12:00:00 2024"
 		updatedAt := "Mon Jan 2 12:00:00 2024"
-		
+
 		_, err := db.Exec(`
 			INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
 			VALUES (?, ?, ?, ?, ?, ?)

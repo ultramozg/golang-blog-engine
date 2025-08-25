@@ -69,7 +69,7 @@ func TestServeSitemap(t *testing.T) {
 
 	// Check XML content
 	body := rr.Body.String()
-	
+
 	// Should contain XML declaration
 	if !strings.Contains(body, `<?xml version="1.0" encoding="UTF-8"?>`) {
 		t.Error("Expected XML declaration in sitemap")
@@ -177,7 +177,7 @@ func TestServeRobotsTxt(t *testing.T) {
 
 	// Check robots.txt content
 	body := rr.Body.String()
-	
+
 	// Should contain User-agent directive
 	if !strings.Contains(body, "User-agent: *") {
 		t.Error("Expected User-agent directive in robots.txt")
@@ -265,7 +265,7 @@ func TestGetAllPostsForSitemap(t *testing.T) {
 	for _, data := range testData {
 		var query string
 		var args []interface{}
-		
+
 		if data.slug != "" {
 			query = `INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = []interface{}{data.title, data.body, "Mon Jan 2 15:04:05 2006", data.slug}
@@ -273,7 +273,7 @@ func TestGetAllPostsForSitemap(t *testing.T) {
 			query = `INSERT INTO posts (title, body, datepost, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 			args = []interface{}{data.title, data.body, "Mon Jan 2 15:04:05 2006"}
 		}
-		
+
 		_, err := app.DB.Exec(query, args...)
 		if err != nil {
 			t.Fatalf("Failed to insert test post: %v", err)
@@ -395,7 +395,7 @@ func TestPostHandlerSEOIntegration(t *testing.T) {
 
 	// Check response body contains SEO elements
 	body := rr.Body.String()
-	
+
 	// Should contain title
 	if !strings.Contains(body, "<title>SEO Test Post</title>") {
 		t.Error("Expected title tag in response")
@@ -473,7 +473,7 @@ func TestPostHandlerIDBasedSEOIntegration(t *testing.T) {
 
 	// Check response body contains SEO elements
 	body := rr.Body.String()
-	
+
 	// Should contain title
 	if !strings.Contains(body, "<title>ID-based SEO Test</title>") {
 		t.Error("Expected title tag in response")
@@ -1108,8 +1108,8 @@ func TestCoursesAndLinksCompleteRemoval(t *testing.T) {
 
 	// Test comprehensive list of courses and links URLs
 	testURLs := []struct {
-		url          string
-		description  string
+		url         string
+		description string
 	}{
 		{"/courses", "courses root"},
 		{"/courses/", "courses root with slash"},

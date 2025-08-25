@@ -86,8 +86,6 @@ func (a *App) Initialize() {
 		}
 	}
 
-
-
 	// Create template with custom functions
 	funcMap := template.FuncMap{
 		"processFileReferences": a.processFileReferences,
@@ -667,8 +665,6 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
-
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -880,16 +876,16 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		// Return JSON response with file information
 		w.Header().Set("Content-Type", "application/json")
 		response := struct {
-			Success       bool    `json:"success"`
-			UUID          string  `json:"uuid"`
-			OriginalName  string  `json:"original_name"`
-			Size          int64   `json:"size"`
-			MimeType      string  `json:"mime_type"`
-			DownloadURL   string  `json:"download_url"`
-			IsImage       bool    `json:"is_image"`
-			Width         *int    `json:"width,omitempty"`
-			Height        *int    `json:"height,omitempty"`
-			ThumbnailURL  *string `json:"thumbnail_url,omitempty"`
+			Success      bool    `json:"success"`
+			UUID         string  `json:"uuid"`
+			OriginalName string  `json:"original_name"`
+			Size         int64   `json:"size"`
+			MimeType     string  `json:"mime_type"`
+			DownloadURL  string  `json:"download_url"`
+			IsImage      bool    `json:"is_image"`
+			Width        *int    `json:"width,omitempty"`
+			Height       *int    `json:"height,omitempty"`
+			ThumbnailURL *string `json:"thumbnail_url,omitempty"`
 		}{
 			Success:      true,
 			UUID:         fileRecord.UUID,
@@ -974,7 +970,7 @@ func (a *App) serveFile(w http.ResponseWriter, r *http.Request) {
 
 		// Set appropriate headers
 		w.Header().Set("Content-Type", mimeType)
-		
+
 		// For images, set inline disposition; for others, set attachment
 		if fileRecord.IsImage && !isThumbnail {
 			w.Header().Set("Content-Disposition", `inline; filename="`+filename+`"`)
@@ -1029,7 +1025,7 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 
 		// Build JSON response
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		// Create response structure
 		type FileResponse struct {
 			UUID          string `json:"uuid"`
@@ -1040,7 +1036,7 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 			CreatedAt     string `json:"created_at"`
 			DownloadURL   string `json:"download_url"`
 		}
-		
+
 		fileResponses := make([]FileResponse, len(files))
 		for i, file := range files {
 			fileResponses[i] = FileResponse{
@@ -1053,7 +1049,7 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 				DownloadURL:   "/files/" + file.UUID,
 			}
 		}
-		
+
 		response := struct {
 			Files []FileResponse `json:"files"`
 		}{
@@ -1075,12 +1071,12 @@ func (a *App) listFiles(w http.ResponseWriter, r *http.Request) {
 func (a *App) processFileReferences(content string) template.HTML {
 	// Regular expression to match [file:filename] patterns
 	fileRefRegex := regexp.MustCompile(`\[file:([^\]]+)\]`)
-	
+
 	// Replace file references with appropriate HTML based on file type
 	processedContent := fileRefRegex.ReplaceAllStringFunc(content, func(match string) string {
 		// Extract filename from the match
 		filename := fileRefRegex.FindStringSubmatch(match)[1]
-		
+
 		// Query database to find file by original name with image metadata
 		rows, err := a.DB.Query("SELECT uuid, original_name, is_image, thumbnail_path, alt_text, width, height FROM files WHERE original_name = ? ORDER BY created_at DESC LIMIT 1", filename)
 		if err != nil {
@@ -1088,56 +1084,56 @@ func (a *App) processFileReferences(content string) template.HTML {
 			return match // Return original if error
 		}
 		defer rows.Close()
-		
+
 		if rows.Next() {
 			var uuid, originalName string
 			var isImage bool
 			var thumbnailPath, altText *string
 			var width, height *int
-			
+
 			if err := rows.Scan(&uuid, &originalName, &isImage, &thumbnailPath, &altText, &width, &height); err != nil {
 				log.Printf("Error scanning file: %v", err)
 				return match
 			}
-			
+
 			// If it's an image, render as responsive image
 			if isImage {
 				alt := originalName
 				if altText != nil && *altText != "" {
 					alt = *altText
 				}
-				
+
 				// Create responsive image HTML with thumbnail fallback
 				imageHTML := `<div class="blog-image-container">`
-				
+
 				// Use thumbnail if available, otherwise use original
 				imageSrc := "/files/" + uuid
 				if thumbnailPath != nil && *thumbnailPath != "" {
 					// Create thumbnail serving endpoint
 					imageSrc = "/files/" + uuid + "/thumbnail"
 				}
-				
+
 				imageHTML += `<img src="` + imageSrc + `" alt="` + alt + `" class="blog-image" loading="lazy"`
-				
+
 				// Add dimensions if available
 				if width != nil && height != nil {
 					imageHTML += ` data-width="` + strconv.Itoa(*width) + `" data-height="` + strconv.Itoa(*height) + `"`
 				}
-				
+
 				imageHTML += ` onclick="openImageModal('` + "/files/" + uuid + `', '` + alt + `')">`
 				imageHTML += `</div>`
-				
+
 				return imageHTML
 			} else {
 				// Return HTML download link for non-images
 				return `<a href="/files/` + uuid + `" target="_blank">📎 ` + originalName + `</a>`
 			}
 		}
-		
+
 		// If file not found, return original text
 		return match
 	})
-	
+
 	// Escape HTML content first, then convert newlines to HTML breaks
 	processedContent = html.EscapeString(processedContent)
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")

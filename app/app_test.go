@@ -434,7 +434,7 @@ func TestPostRedirectMiddleware_SlugValidation(t *testing.T) {
 
 	// Create a unique dangerous slug to avoid conflicts
 	dangerousSlug := "../dangerous-slug-" + strconv.FormatInt(time.Now().UnixNano(), 10)
-	
+
 	// Create a test post with a potentially dangerous slug
 	_, err := a.DB.Exec("INSERT INTO posts (title, body, slug, datepost, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
 		"Test Post", "Test content", dangerousSlug, "Mon Jan 2 15:04:05 2006", "Mon Jan 2 15:04:05 2006", "Mon Jan 2 15:04:05 2006")
@@ -461,7 +461,7 @@ func TestPostRedirectMiddleware_SlugValidation(t *testing.T) {
 	if status := rr.Code; status == http.StatusMovedPermanently {
 		t.Error("Should not redirect with invalid slug")
 	}
-	
+
 	// Clean up
 	_, err = a.DB.Exec("DELETE FROM posts WHERE id = ?", postID)
 	if err != nil {
@@ -521,7 +521,7 @@ func TestCanonicalURLValidation(t *testing.T) {
 		"invalid/slug",
 		"invalid\\slug",
 		"invalid..slug",
-		"", // empty slug
+		"",                       // empty slug
 		strings.Repeat("a", 201), // too long
 	}
 

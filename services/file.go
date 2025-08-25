@@ -24,29 +24,29 @@ func validatePath(basePath, targetPath string) error {
 	// Clean and resolve the paths
 	cleanBase := filepath.Clean(basePath)
 	cleanTarget := filepath.Clean(targetPath)
-	
+
 	// Get absolute paths
 	absBase, err := filepath.Abs(cleanBase)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute base path: %w", err)
 	}
-	
+
 	absTarget, err := filepath.Abs(cleanTarget)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute target path: %w", err)
 	}
-	
+
 	// Check if target is within base directory
 	relPath, err := filepath.Rel(absBase, absTarget)
 	if err != nil {
 		return fmt.Errorf("failed to get relative path: %w", err)
 	}
-	
+
 	// Ensure the relative path doesn't contain ".." (directory traversal)
 	if strings.Contains(relPath, "..") {
 		return errors.New("path traversal detected")
 	}
-	
+
 	return nil
 }
 
@@ -95,7 +95,7 @@ func (fs *FileServiceImpl) EnsureUploadDirectories() error {
 	// Create year/month subdirectories for current date
 	now := time.Now()
 	yearMonth := fmt.Sprintf("%d/%02d", now.Year(), now.Month())
-	
+
 	// Create documents subdirectory
 	documentsDir := filepath.Join(filesDir, yearMonth, "documents")
 	if err := os.MkdirAll(documentsDir, 0750); err != nil {
@@ -131,17 +131,17 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 
 	// Generate UUID for secure file naming
 	fileUUID := uuid.NewV4().String()
-	
+
 	// Generate secure stored filename
 	storedName := fs.generateSecureFilename(fileUUID, header.Filename)
-	
+
 	// Determine if this is an image file
 	isImage := fs.IsImageFile(header.Header.Get("Content-Type"))
-	
+
 	// Create year/month directory structure
 	now := time.Now()
 	yearMonth := fmt.Sprintf("%d/%02d", now.Year(), now.Month())
-	
+
 	// Choose subdirectory based on file type
 	var subDir string
 	if isImage {
@@ -149,9 +149,9 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	} else {
 		subDir = "documents"
 	}
-	
+
 	targetDir := filepath.Join(fs.uploadDir, "files", yearMonth, subDir)
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(targetDir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
@@ -165,7 +165,7 @@ func (fs *FileServiceImpl) UploadFile(file multipart.File, header *multipart.Fil
 	if err := validatePath(fs.uploadDir, filePath); err != nil {
 		return nil, fmt.Errorf("invalid file path: %w", err)
 	}
-	
+
 	// Create the file
 	dst, err := os.Create(filePath) // #nosec G304 - Path is validated above
 	if err != nil {
@@ -291,33 +291,33 @@ func (fs *FileServiceImpl) generateSecureFilename(fileUUID, originalName string)
 func (fs *FileServiceImpl) isAllowedFileType(mimeType string) bool {
 	allowedTypes := map[string]bool{
 		// Document types
-		"application/pdf":                          true,
-		"application/msword":                       true,
+		"application/pdf":    true,
+		"application/msword": true,
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
-		"application/vnd.ms-excel":                 true,
-		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":       true,
-		"application/vnd.ms-powerpoint":            true,
+		"application/vnd.ms-excel": true,
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         true,
+		"application/vnd.ms-powerpoint":                                             true,
 		"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
-		"text/plain":                               true,
-		"text/csv":                                 true,
-		"application/zip":                          true,
-		"application/x-zip-compressed":             true,
-		"application/json":                         true,
-		"application/xml":                          true,
-		"text/xml":                                 true,
-		"application/rtf":                          true,
-		"application/x-tar":                        true,
-		"application/gzip":                         true,
-		"application/x-rar-compressed":             true,
-		"application/x-7z-compressed":              true,
+		"text/plain":                   true,
+		"text/csv":                     true,
+		"application/zip":              true,
+		"application/x-zip-compressed": true,
+		"application/json":             true,
+		"application/xml":              true,
+		"text/xml":                     true,
+		"application/rtf":              true,
+		"application/x-tar":            true,
+		"application/gzip":             true,
+		"application/x-rar-compressed": true,
+		"application/x-7z-compressed":  true,
 		// Image types
-		"image/jpeg":                               true,
-		"image/jpg":                                true,
-		"image/png":                                true,
-		"image/gif":                                true,
-		"image/webp":                               true,
-		"image/bmp":                                true,
-		"image/tiff":                               true,
+		"image/jpeg": true,
+		"image/jpg":  true,
+		"image/png":  true,
+		"image/gif":  true,
+		"image/webp": true,
+		"image/bmp":  true,
+		"image/tiff": true,
 	}
 
 	// If no content type is provided, we'll allow it but it will be treated as binary
@@ -350,12 +350,12 @@ func (fs *FileServiceImpl) ProcessImage(fileRecord *model.File) error {
 
 	// Get full file path
 	fullPath := filepath.Join(fs.uploadDir, fileRecord.Path)
-	
+
 	// Validate file path to prevent directory traversal
 	if err := validatePath(fs.uploadDir, fullPath); err != nil {
 		return fmt.Errorf("invalid file path: %w", err)
 	}
-	
+
 	// Open the image file
 	file, err := os.Open(fullPath) // #nosec G304 - Path is validated above
 	if err != nil {
@@ -395,12 +395,12 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 
 	// Get full file path
 	fullPath := filepath.Join(fs.uploadDir, fileRecord.Path)
-	
+
 	// Validate file path to prevent directory traversal
 	if err := validatePath(fs.uploadDir, fullPath); err != nil {
 		return fmt.Errorf("invalid file path: %w", err)
 	}
-	
+
 	// Open the original image
 	file, err := os.Open(fullPath) // #nosec G304 - Path is validated above
 	if err != nil {
@@ -418,10 +418,10 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 	bounds := img.Bounds()
 	width := bounds.Dx()
 	height := bounds.Dy()
-	
+
 	thumbnailSize := 300
 	var newWidth, newHeight int
-	
+
 	if width > height {
 		newWidth = thumbnailSize
 		newHeight = (height * thumbnailSize) / width
@@ -432,7 +432,7 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 
 	// Create thumbnail using simple nearest neighbor scaling
 	thumbnail := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
-	
+
 	// Simple scaling algorithm
 	for y := 0; y < newHeight; y++ {
 		for x := 0; x < newWidth; x++ {
@@ -445,13 +445,13 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 	// Generate thumbnail filename and path
 	ext := filepath.Ext(fileRecord.StoredName)
 	thumbnailName := strings.TrimSuffix(fileRecord.StoredName, ext) + "_thumb" + ext
-	
+
 	// Extract year/month from original path
 	pathParts := strings.Split(fileRecord.Path, string(filepath.Separator))
 	if len(pathParts) < 4 { // files/YYYY/MM/subdir/filename
 		return fmt.Errorf("invalid file path structure")
 	}
-	
+
 	yearMonth := filepath.Join(pathParts[1], pathParts[2]) // YYYY/MM
 	thumbnailRelativePath := filepath.Join("files", yearMonth, "thumbnails", thumbnailName)
 	thumbnailFullPath := filepath.Join(fs.uploadDir, thumbnailRelativePath)
@@ -466,7 +466,7 @@ func (fs *FileServiceImpl) GenerateThumbnail(fileRecord *model.File) error {
 	if err := validatePath(fs.uploadDir, thumbnailFullPath); err != nil {
 		return fmt.Errorf("invalid thumbnail path: %w", err)
 	}
-	
+
 	// Create thumbnail file
 	thumbnailFile, err := os.Create(thumbnailFullPath) // #nosec G304 - Path is validated above
 	if err != nil {

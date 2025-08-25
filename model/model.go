@@ -58,7 +58,7 @@ func (p *Post) DeletePost(db *sql.DB) error {
 func (p *Post) CreatePost(db *sql.DB) error {
 	// Generate default SEO fields if not provided
 	p.GenerateDefaultSEOFields()
-	
+
 	// Validate and sanitize SEO fields
 	if err := p.ValidateAndSanitizeSEOFields(); err != nil {
 		return err
@@ -193,15 +193,15 @@ func GetPostBySlug(db *sql.DB, slug string) (*Post, error) {
 
 // File is struct which holds model representation of one file
 type File struct {
-	ID            int     `json:"id"`
-	UUID          string  `json:"uuid"`
-	OriginalName  string  `json:"original_name"`
-	StoredName    string  `json:"stored_name"`
-	Path          string  `json:"path"`
-	Size          int64   `json:"size"`
-	MimeType      string  `json:"mime_type"`
-	DownloadCount int     `json:"download_count"`
-	CreatedAt     string  `json:"created_at"`
+	ID            int    `json:"id"`
+	UUID          string `json:"uuid"`
+	OriginalName  string `json:"original_name"`
+	StoredName    string `json:"stored_name"`
+	Path          string `json:"path"`
+	Size          int64  `json:"size"`
+	MimeType      string `json:"mime_type"`
+	DownloadCount int    `json:"download_count"`
+	CreatedAt     string `json:"created_at"`
 	// Image-specific fields (NULL for non-images)
 	IsImage       bool    `json:"is_image"`
 	Width         *int    `json:"width,omitempty"`
@@ -531,8 +531,6 @@ func (u *User) CheckCredentials(db *sql.DB, pswd string) bool {
 	}
 	return true
 }
-
-
 
 // migrationSlugService is a simple implementation for migration purposes
 type migrationSlugService struct {

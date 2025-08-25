@@ -405,7 +405,7 @@ func RemoveTempFile(path string) error {
 func SetupTestApp(t *testing.T) *app.App {
 	// Create test database
 	testDB := NewTestDatabase(t)
-	
+
 	// Create data directory if it doesn't exist
 	if err := os.MkdirAll("data", 0750); err != nil {
 		t.Fatalf("Failed to create data directory: %v", err)
@@ -429,5 +429,3 @@ func SetupTestApp(t *testing.T) *app.App {
 
 	return &testApp
 }
-
-

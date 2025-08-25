@@ -118,7 +118,7 @@ func testSitemapGeneration(t *testing.T, runner *testutils.TestRunner) {
 	// Test that changefreq and priority are included
 	testutils.AssertContains(t, sitemapContent, "<changefreq>weekly</changefreq>")
 	testutils.AssertContains(t, sitemapContent, "<priority>0.8</priority>")
-	
+
 	// Note: lastmod may not be present if dates aren't in the expected format
 
 	// Test HEAD request
