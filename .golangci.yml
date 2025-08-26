@@ -1,96 +1,82 @@
-# golangci-lint configuration
-# See https://golangci-lint.run/usage/configuration/ for more options
-
-# This file contains only configs which differ from defaults.
-# All possible options can be found here https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
-
+version: "2"
 run:
-  timeout: 5m
   tests: true
-  # Skip auto-generated files
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
-
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  dupl:
-    threshold: 100
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
-  goimports:
-    local-prefixes: github.com/ultramozg/golang-blog-engine
-  unparam:
-    check-exported: false
-  whitespace:
-    multi-if: false
-    multi-func: false
-
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Default linters
-    - errcheck
-    - gosimple
-    - govet
-    - ineffassign
-    - staticcheck
-    - typecheck
-    - unused
-    
-    # Additional useful linters
     - bodyclose
-    - gofmt
-    - goimports
+    - dupl
+    - errcheck
     - goconst
     - gocyclo
-    - dupl
-    - misspell
+    - govet
+    - ineffassign
     - lll
+    - misspell
+    - staticcheck
     - unconvert
     - unparam
+    - unused
     - whitespace
-
+  settings:
+    dupl:
+      threshold: 100
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocyclo:
+      min-complexity: 15
+    lll:
+      line-length: 140
+    misspell:
+      locale: US
+    unparam:
+      check-exported: false
+    whitespace:
+      multi-if: false
+      multi-func: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - dupl
+          - errcheck
+          - gocyclo
+          - gosec
+        path: _test\.go
+      - linters:
+          - errcheck
+          - gosec
+          - unparam
+        path: testutils/
+      - linters:
+          - unparam
+        path: _test\.go
+        text: unused-parameter
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - errcheck
-        - dupl
-        - gocyclo
-        - gosec
-    
-    # Exclude some linters from running on test utilities
-    - path: testutils/
-      linters:
-        - errcheck
-        - gosec
-        - unparam
-    
-    # Exclude unused parameters in test files
-    - path: _test\.go
-      text: "unused-parameter"
-      linters:
-        - unparam
-  
-  # Show only new issues: if there are unstaged changes or untracked files,
-  # only those changes are analyzed, else only changes in HEAD~ are analyzed.
-  # It's a super-useful option for integration of golangci-lint into existing
-  # large codebase. It's not practical to fix all existing issues at the moment
-  # of integration: much better don't allow issues in new code.
-  # Default is false.
-  new: false
-  
-  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
   max-issues-per-linter: 0
-  
-  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
   max-same-issues: 0
+  new: false
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/ultramozg/golang-blog-engine
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
