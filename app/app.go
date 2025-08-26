@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"html"
 	"html/template"
 	"log"
 	"net/http"
@@ -1134,10 +1133,9 @@ func (a *App) processFileReferences(content string) template.HTML {
 		return match
 	})
 
-	// Escape HTML content first, then convert newlines to HTML breaks
-	processedContent = html.EscapeString(processedContent)
+	// Convert newlines to HTML breaks (no HTML escaping to allow rich formatting)
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
-	return template.HTML(processedContent) // #nosec G203 - Content is properly escaped above
+	return template.HTML(processedContent) // #nosec G203 - Content allows HTML for rich formatting
 }
 
 func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
