@@ -88,6 +88,7 @@ func (a *App) Initialize() {
 	// Create template with custom functions
 	funcMap := template.FuncMap{
 		"processFileReferences": a.processFileReferences,
+		"truncateHTML":          a.truncateHTML,
 	}
 	a.Temp = template.Must(template.New("").Funcs(funcMap).ParseGlob(a.Config.Templates))
 	a.Sessions = session.NewSessionDB()
@@ -1136,6 +1137,93 @@ func (a *App) processFileReferences(content string) template.HTML {
 	// Convert newlines to HTML breaks (no HTML escaping to allow rich formatting)
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
 	return template.HTML(processedContent) // #nosec G203 - Content allows HTML for rich formatting
+}
+
+// truncateHTML safely truncates HTML content while preserving structure
+func (a *App) truncateHTML(content string, maxLength int) template.HTML {
+	// First process file references
+	processedContent := string(a.processFileReferences(content))
+	
+	// If content is shorter than max length, return as is
+	if len(processedContent) <= maxLength {
+		return template.HTML(processedContent)
+	}
+	
+	// Track open HTML tags to ensure proper closing
+	var openTags []string
+	var result strings.Builder
+	var currentPos int
+	var inTag bool
+	var tagName strings.Builder
+	var isClosingTag bool
+	
+	for _, char := range processedContent {
+		if currentPos >= maxLength {
+			break
+		}
+		
+		result.WriteRune(char)
+		currentPos++
+		
+		if char == '<' {
+			inTag = true
+			isClosingTag = false
+			tagName.Reset()
+		} else if char == '>' && inTag {
+			inTag = false
+			tag := tagName.String()
+			
+			// Skip self-closing tags and certain tags that don't need closing
+			selfClosingTags := map[string]bool{
+				"br": true, "img": true, "hr": true, "input": true,
+				"meta": true, "link": true, "area": true, "base": true,
+				"col": true, "embed": true, "source": true, "track": true, "wbr": true,
+			}
+			
+			if isClosingTag {
+				// Remove the last occurrence of this tag from openTags
+				for j := len(openTags) - 1; j >= 0; j-- {
+					if openTags[j] == tag {
+						openTags = append(openTags[:j], openTags[j+1:]...)
+						break
+					}
+				}
+			} else if !selfClosingTags[tag] && tag != "" {
+				// Add opening tag to stack
+				openTags = append(openTags, tag)
+			}
+		} else if inTag {
+			if char == '/' && tagName.Len() == 0 {
+				isClosingTag = true
+			} else if char != ' ' && char != '/' {
+				tagName.WriteRune(char)
+			} else if char == ' ' {
+				// Stop collecting tag name when we hit a space (attributes)
+				inTag = false
+				tag := tagName.String()
+				selfClosingTags := map[string]bool{
+					"br": true, "img": true, "hr": true, "input": true,
+					"meta": true, "link": true, "area": true, "base": true,
+					"col": true, "embed": true, "source": true, "track": true, "wbr": true,
+				}
+				if !selfClosingTags[tag] && tag != "" {
+					openTags = append(openTags, tag)
+				}
+			}
+		}
+	}
+	
+	// Add ellipsis if content was truncated
+	if currentPos >= maxLength {
+		result.WriteString("...")
+	}
+	
+	// Close any remaining open tags in reverse order
+	for i := len(openTags) - 1; i >= 0; i-- {
+		result.WriteString("</" + openTags[i] + ">")
+	}
+	
+	return template.HTML(result.String()) // #nosec G203 - Content allows HTML for rich formatting
 }
 
 func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {

@@ -10,7 +10,10 @@
 		(<a href="/update?slug={{.Slug}}">Update</a>|<a href="/delete?slug={{.Slug}}">Delete</a>)
 		{{end}}
 	</h4>
-	<p>{{processFileReferences .Body}}</p>
+	<div class="article-preview">
+		{{truncateHTML .Body 300}}
+	</div>
+	<p><a href="/p/{{.Slug}}">Read more →</a></p>
 	<div class="u-pull-right"><h6>{{.Date}}</h6></div>
 </div>
 {{end}}

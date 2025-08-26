@@ -283,6 +283,36 @@ textarea {
   color: #ccc;
 }
 
+/* Article Content Styles */
+.docs-section p {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.6;
+}
+
+.docs-section .article-preview {
+  max-height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.docs-section .article-preview::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30px;
+  background: linear-gradient(transparent, white);
+  pointer-events: none;
+}
+
+/* Ensure images in article previews don't break layout */
+.docs-section .blog-image {
+  max-height: 150px;
+  width: auto;
+}
+
 /* Responsive adjustments */
 @media (max-width: 550px) {
   .blog-image-container {
@@ -298,5 +328,9 @@ textarea {
     top: 10px;
     right: 20px;
     font-size: 30px;
+  }
+  
+  .docs-section .article-preview {
+    max-height: 150px;
   }
 }
