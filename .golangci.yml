@@ -1,6 +1,16 @@
+# golangci-lint configuration
+# See https://golangci-lint.run/usage/configuration/ for more options
+
+# This file contains only configs which differ from defaults.
+# All possible options can be found here https://github.com/golangci/golangci-lint/blob/master/.golangci.reference.yml
+
 run:
   timeout: 5m
   tests: true
+  # Skip auto-generated files
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
 
 linters-settings:
   gocyclo:
@@ -16,44 +26,71 @@ linters-settings:
     line-length: 140
   goimports:
     local-prefixes: github.com/ultramozg/golang-blog-engine
+  unparam:
+    check-exported: false
+  whitespace:
+    multi-if: false
+    multi-func: false
 
 linters:
+  disable-all: true
   enable:
-    - bodyclose
+    # Default linters
     - errcheck
-    - gofmt
     - gosimple
     - govet
     - ineffassign
     - staticcheck
     - typecheck
     - unused
+    
+    # Additional useful linters
+    - bodyclose
+    - gofmt
+    - goimports
+    - goconst
+    - gocyclo
+    - dupl
+    - misspell
+    - lll
+    - unconvert
+    - unparam
+    - whitespace
 
 issues:
+  # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
+    # Exclude some linters from running on tests files
     - path: _test\.go
       linters:
         - errcheck
+        - dupl
+        - gocyclo
         - gosec
+    
+    # Exclude some linters from running on test utilities
     - path: testutils/
       linters:
         - errcheck
         - gosec
-    - text: "G306:" # File permissions
+        - unparam
+    
+    # Exclude unused parameters in test files
+    - path: _test\.go
+      text: "unused-parameter"
       linters:
-        - gosec
-    - text: "G402:" # TLS MinVersion
-      linters:
-        - gosec
-    - text: "unused-parameter"
-      linters:
-        - revive
-    - text: "receiver-naming"
-      linters:
-        - revive
-    - text: "exported:"
-      linters:
-        - revive
-    - text: "blank-imports"
-      linters:
-        - revive
+        - unparam
+  
+  # Show only new issues: if there are unstaged changes or untracked files,
+  # only those changes are analyzed, else only changes in HEAD~ are analyzed.
+  # It's a super-useful option for integration of golangci-lint into existing
+  # large codebase. It's not practical to fix all existing issues at the moment
+  # of integration: much better don't allow issues in new code.
+  # Default is false.
+  new: false
+  
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 0
+  
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
