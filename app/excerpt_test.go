@@ -34,8 +34,8 @@ func TestExtractExcerpt(t *testing.T) {
 		},
 		{
 			name:     "Long text that should be truncated",
-			input:    "This is a very long text that should be truncated when it exceeds the 300 character limit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-			expected: "This is a very long text that should be truncated when it exceeds the 300 character limit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip...",
+			input:    "This is a very long text that should be truncated when it exceeds the 500 character limit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+			expected: "This is a very long text that should be truncated when it exceeds the 500 character limit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui offic...",
 		},
 		{
 			name:     "Empty content",
@@ -67,15 +67,15 @@ func TestExtractExcerpt(t *testing.T) {
 func TestExtractExcerptLength(t *testing.T) {
 	app := &App{}
 
-	// Test that the function respects the 300 character limit
+	// Test that the function respects the 500 character limit
 	longText := "a"
-	for i := 0; i < 400; i++ {
+	for i := 0; i < 600; i++ {
 		longText += "a"
 	}
 
 	result := app.extractExcerpt(longText)
-	if len(result) > 300 {
-		t.Errorf("extractExcerpt() returned text longer than 300 characters: %d", len(result))
+	if len(result) > 500 {
+		t.Errorf("extractExcerpt() returned text longer than 500 characters: %d", len(result))
 	}
 
 	if result[len(result)-3:] != "..." {

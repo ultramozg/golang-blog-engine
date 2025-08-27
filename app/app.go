@@ -1134,8 +1134,6 @@ func (a *App) processFileReferences(content string) template.HTML {
 		return match
 	})
 
-	// Convert newlines to HTML breaks (no HTML escaping to allow rich formatting)
-	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
 	return template.HTML(processedContent) // #nosec G203 - Content allows HTML for rich formatting
 }
 
