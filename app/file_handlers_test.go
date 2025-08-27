@@ -48,6 +48,7 @@ func setupTestApp(t *testing.T) (*App, func()) {
 	// Initialize templates
 	funcMap := template.FuncMap{
 		"processFileReferences": app.processFileReferences,
+		"extractExcerpt":        app.extractExcerpt,
 	}
 	app.Temp = template.Must(template.New("").Funcs(funcMap).ParseGlob("../templates/*.gohtml"))
 

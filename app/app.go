@@ -88,6 +88,7 @@ func (a *App) Initialize() {
 	// Create template with custom functions
 	funcMap := template.FuncMap{
 		"processFileReferences": a.processFileReferences,
+		"extractExcerpt":        a.extractExcerpt,
 	}
 	a.Temp = template.Must(template.New("").Funcs(funcMap).ParseGlob(a.Config.Templates))
 	a.Sessions = session.NewSessionDB()
@@ -1136,6 +1137,33 @@ func (a *App) processFileReferences(content string) template.HTML {
 	// Convert newlines to HTML breaks (no HTML escaping to allow rich formatting)
 	processedContent = strings.ReplaceAll(processedContent, "\n", "<br>")
 	return template.HTML(processedContent) // #nosec G203 - Content allows HTML for rich formatting
+}
+
+// extractExcerpt creates a safe plain text excerpt for list views
+func (a *App) extractExcerpt(content string) string {
+	// Remove HTML tags
+	htmlTagRegex := regexp.MustCompile(`<[^>]*>`)
+	plainText := htmlTagRegex.ReplaceAllString(content, "")
+
+	// Remove file references
+	fileRefRegex := regexp.MustCompile(`\[file:[^\]]+\]`)
+	plainText = fileRefRegex.ReplaceAllString(plainText, "")
+
+	// Clean up whitespace and newlines
+	spaceRegex := regexp.MustCompile(`\s+`)
+	plainText = spaceRegex.ReplaceAllString(plainText, " ")
+	plainText = strings.TrimSpace(plainText)
+
+	// Limit to 500 characters for excerpt (longer than meta description)
+	if len(plainText) > 500 {
+		plainText = plainText[:497] + "..."
+	}
+
+	if plainText == "" {
+		return "No content available"
+	}
+
+	return plainText
 }
 
 func (a *App) updateFileAltText(w http.ResponseWriter, r *http.Request) {
