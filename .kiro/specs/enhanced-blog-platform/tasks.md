@@ -211,3 +211,10 @@
   - Verify CI/CD pipeline works correctly with all changes
   - Test Google Search Console compatibility and canonical URL resolution
   - _Requirements: 1.4, 2.4_
+- [ ] 17. Debug and fix SEO implementation issues
+  - Investigate and fix meta description generation for blog posts
+  - Fix robots.txt validation issues and ensure proper format
+  - Fix sitemap.xml URL generation and ensure proper domain configuration
+  - Test SEO endpoints (/sitemap.xml, /robots.txt) and verify they work correctly
+  - Ensure meta descriptions are properly displayed in post templates
+  - _Requirements: 7.1, 7.3, 7.6, 7.7_

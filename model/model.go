@@ -147,34 +147,87 @@ func (p *Post) ValidateAndSanitizeSEOFields() error {
 
 // GenerateDefaultSEOFields generates default SEO fields based on post content
 func (p *Post) GenerateDefaultSEOFields() {
-	// Generate meta description from body if not provided
-	if p.MetaDescription == "" && p.Body != "" {
-		// Remove HTML tags and get first 150 characters
+	// Generate meta description from body if not provided or if it's too short
+	if (p.MetaDescription == "" || len(strings.TrimSpace(p.MetaDescription)) < 30) && p.Body != "" {
+		// Remove HTML tags and file references
 		bodyText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(p.Body, "")
+		bodyText = regexp.MustCompile(`\[file:[^\]]+\]`).ReplaceAllString(bodyText, "")
+		
+		// Clean up whitespace
+		bodyText = regexp.MustCompile(`\s+`).ReplaceAllString(bodyText, " ")
 		bodyText = strings.TrimSpace(bodyText)
-		if len(bodyText) > 150 {
-			p.MetaDescription = bodyText[:147] + "..."
-		} else {
-			p.MetaDescription = bodyText
+		
+		if len(bodyText) > 30 {
+			// Generate a meaningful description (120-155 characters is optimal for SEO)
+			if len(bodyText) > 150 {
+				// Find the last space before 147 characters to leave room for "..."
+				truncated := bodyText[:147]
+				lastSpace := strings.LastIndex(truncated, " ")
+				if lastSpace > 100 {
+					p.MetaDescription = bodyText[:lastSpace] + "..."
+				} else {
+					p.MetaDescription = truncated + "..."
+				}
+			} else {
+				p.MetaDescription = bodyText
+			}
+		} else if p.Title != "" {
+			// If body is too short, create description from title
+			p.MetaDescription = "Read this blog post about " + p.Title + " to learn more about the topic and get insights."
 		}
 	}
 
-	// Generate basic keywords from title if not provided
-	if p.Keywords == "" && p.Title != "" {
-		// Extract meaningful words from title (longer than 3 characters)
-		words := strings.Fields(strings.ToLower(p.Title))
+	// Generate basic keywords from title and body if not provided
+	if p.Keywords == "" {
 		var keywords []string
-		for _, word := range words {
-			// Remove punctuation and check length
-			word = regexp.MustCompile(`[^\w]`).ReplaceAllString(word, "")
-			if len(word) > 3 {
-				keywords = append(keywords, word)
+		
+		// Extract from title (higher priority)
+		if p.Title != "" {
+			titleWords := strings.Fields(strings.ToLower(p.Title))
+			for _, word := range titleWords {
+				// Remove punctuation and check length
+				word = regexp.MustCompile(`[^\w]`).ReplaceAllString(word, "")
+				if len(word) > 3 && len(word) < 20 {
+					keywords = append(keywords, word)
+				}
 			}
 		}
+		
+		// Extract from body content if we need more keywords
+		if len(keywords) < 5 && p.Body != "" {
+			bodyText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(p.Body, "")
+			bodyWords := strings.Fields(strings.ToLower(bodyText))
+			wordCount := make(map[string]int)
+			
+			for _, word := range bodyWords {
+				word = regexp.MustCompile(`[^\w]`).ReplaceAllString(word, "")
+				if len(word) > 4 && len(word) < 20 {
+					wordCount[word]++
+				}
+			}
+			
+			// Add words that appear multiple times
+			for word, count := range wordCount {
+				if count >= 2 && len(keywords) < 8 {
+					// Check if word is not already in keywords
+					found := false
+					for _, existing := range keywords {
+						if existing == word {
+							found = true
+							break
+						}
+					}
+					if !found {
+						keywords = append(keywords, word)
+					}
+				}
+			}
+		}
+		
 		if len(keywords) > 0 {
-			// Limit to 5 keywords from title
-			if len(keywords) > 5 {
-				keywords = keywords[:5]
+			// Limit to 8 keywords maximum
+			if len(keywords) > 8 {
+				keywords = keywords[:8]
 			}
 			p.Keywords = strings.Join(keywords, ", ")
 		}

@@ -44,12 +44,33 @@ func (s *seoService) GenerateMetaTags(post *model.Post) map[string]string {
 	// Title tag
 	tags["title"] = html.EscapeString(post.Title)
 
-	// Meta description - extract from post body if not set
-	description := s.extractDescription(post.Body)
+	// Meta description - use post's meta_description field first, then extract from body
+	var description string
+	if post.MetaDescription != "" && post.MetaDescription != "Read this blog post to learn more about the topic." && len(strings.TrimSpace(post.MetaDescription)) > 10 {
+		description = post.MetaDescription
+	} else {
+		description = s.extractDescription(post.Body)
+	}
+	// Ensure we always have a meaningful description
+	if description == "" || description == "Read this blog post to learn more about the topic." || len(strings.TrimSpace(description)) < 10 {
+		description = s.extractDescription(post.Body)
+		if description == "" || len(strings.TrimSpace(description)) < 10 {
+			if post.Title != "" {
+				description = "Read this blog post about " + post.Title + " to learn more about the topic and get insights."
+			} else {
+				description = "Explore this blog post to discover interesting content and valuable insights."
+			}
+		}
+	}
 	tags["description"] = html.EscapeString(description)
 
-	// Keywords - basic extraction from title and content
-	keywords := s.extractKeywords(post.Title, post.Body)
+	// Keywords - use post's keywords field first, then extract from content
+	var keywords string
+	if post.Keywords != "" {
+		keywords = post.Keywords
+	} else {
+		keywords = s.extractKeywords(post.Title, post.Body)
+	}
 	if keywords != "" {
 		tags["keywords"] = html.EscapeString(keywords)
 	}
@@ -89,7 +110,7 @@ func (s *seoService) GenerateStructuredData(post *model.Post) string {
 			"name":  "Blog",
 			"url":   s.baseURL,
 		},
-		"description": s.extractDescription(post.Body),
+		"description": s.getPostDescription(post),
 	}
 
 	// Add dates if available
@@ -130,7 +151,7 @@ func (s *seoService) GenerateOpenGraphTags(post *model.Post) map[string]string {
 
 	tags["og:type"] = "article"
 	tags["og:title"] = html.EscapeString(post.Title)
-	tags["og:description"] = html.EscapeString(s.extractDescription(post.Body))
+	tags["og:description"] = html.EscapeString(s.getPostDescription(post))
 	tags["og:url"] = s.GetCanonicalURL(post)
 	tags["og:site_name"] = "Blog"
 
@@ -153,7 +174,7 @@ func (s *seoService) GenerateOpenGraphTags(post *model.Post) map[string]string {
 	// Twitter Card tags
 	tags["twitter:card"] = "summary_large_image"
 	tags["twitter:title"] = html.EscapeString(post.Title)
-	tags["twitter:description"] = html.EscapeString(s.extractDescription(post.Body))
+	tags["twitter:description"] = html.EscapeString(s.getPostDescription(post))
 	if len(images) > 0 {
 		tags["twitter:image"] = images[0]
 	}
@@ -172,7 +193,14 @@ func (s *seoService) GenerateSitemap(posts []*model.Post) ([]byte, error) {
 
 	// Add homepage
 	sitemap.WriteString("  <url>\n")
-	sitemap.WriteString(fmt.Sprintf("    <loc>%s/</loc>\n", s.baseURL))
+	homeURL := s.baseURL
+	if homeURL == "" || homeURL == "http://localhost" {
+		homeURL = "http://localhost:8080" // Default for development
+	}
+	if !strings.HasSuffix(homeURL, "/") {
+		homeURL += "/"
+	}
+	sitemap.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", html.EscapeString(homeURL)))
 	sitemap.WriteString("    <changefreq>daily</changefreq>\n")
 	sitemap.WriteString("    <priority>1.0</priority>\n")
 	sitemap.WriteString("  </url>\n")
@@ -186,16 +214,18 @@ func (s *seoService) GenerateSitemap(posts []*model.Post) ([]byte, error) {
 		sitemap.WriteString("  <url>\n")
 		sitemap.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", html.EscapeString(s.GetCanonicalURL(post))))
 
-		// Add lastmod if available
+		// Add lastmod if available - try multiple date formats
+		var lastModDate string
 		if post.UpdatedAt != "" {
-			// Parse and format the date properly for sitemap
-			if parsedTime, err := time.Parse("Mon Jan _2 15:04:05 2006", post.UpdatedAt); err == nil {
-				sitemap.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", parsedTime.Format("2006-01-02")))
-			}
+			lastModDate = s.parseAndFormatDate(post.UpdatedAt)
 		} else if post.CreatedAt != "" {
-			if parsedTime, err := time.Parse("Mon Jan _2 15:04:05 2006", post.CreatedAt); err == nil {
-				sitemap.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", parsedTime.Format("2006-01-02")))
-			}
+			lastModDate = s.parseAndFormatDate(post.CreatedAt)
+		} else if post.Date != "" {
+			lastModDate = s.parseAndFormatDate(post.Date)
+		}
+		
+		if lastModDate != "" {
+			sitemap.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", lastModDate))
 		}
 
 		sitemap.WriteString("    <changefreq>weekly</changefreq>\n")
@@ -212,8 +242,12 @@ func (s *seoService) GenerateSitemap(posts []*model.Post) ([]byte, error) {
 func (s *seoService) GenerateRobotsTxt() string {
 	var robots strings.Builder
 
+	// Standard robots.txt format with proper line endings
 	robots.WriteString("User-agent: *\n")
 	robots.WriteString("Allow: /\n")
+	robots.WriteString("Allow: /p/\n")
+	robots.WriteString("Allow: /about\n")
+	robots.WriteString("Allow: /public/\n")
 	robots.WriteString("Disallow: /login\n")
 	robots.WriteString("Disallow: /logout\n")
 	robots.WriteString("Disallow: /create\n")
@@ -222,19 +256,51 @@ func (s *seoService) GenerateRobotsTxt() string {
 	robots.WriteString("Disallow: /auth-callback\n")
 	robots.WriteString("Disallow: /api/\n")
 	robots.WriteString("Disallow: /upload-file\n")
+	robots.WriteString("Disallow: /files/\n")
 	robots.WriteString("\n")
-	robots.WriteString(fmt.Sprintf("Sitemap: %s/sitemap.xml\n", s.baseURL))
+	
+	// Always include sitemap URL with proper domain configuration
+	sitemapURL := s.baseURL
+	if sitemapURL == "" || sitemapURL == "http://localhost" {
+		sitemapURL = "http://localhost:8080" // Default for development
+	}
+	// Ensure sitemap URL is properly formatted
+	if !strings.HasSuffix(sitemapURL, "/") {
+		sitemapURL += "/"
+	}
+	robots.WriteString(fmt.Sprintf("Sitemap: %ssitemap.xml\n", sitemapURL))
 
 	return robots.String()
 }
 
 // GetCanonicalURL returns the canonical URL for a post (slug-based)
 func (s *seoService) GetCanonicalURL(post *model.Post) string {
+	baseURL := s.baseURL
+	if baseURL == "" || baseURL == "http://localhost" {
+		baseURL = "http://localhost:8080" // Default for development
+	}
+	
 	if post.Slug != "" {
-		return fmt.Sprintf("%s/p/%s", s.baseURL, url.PathEscape(post.Slug))
+		return fmt.Sprintf("%s/p/%s", baseURL, url.PathEscape(post.Slug))
 	}
 	// Fallback to ID-based URL if no slug (shouldn't happen in normal operation)
-	return fmt.Sprintf("%s/post?id=%d", s.baseURL, post.ID)
+	return fmt.Sprintf("%s/post?id=%d", baseURL, post.ID)
+}
+
+// getPostDescription gets the description for a post, preferring the meta_description field
+func (s *seoService) getPostDescription(post *model.Post) string {
+	if post.MetaDescription != "" && post.MetaDescription != "Read this blog post to learn more about the topic." && len(strings.TrimSpace(post.MetaDescription)) > 10 {
+		return post.MetaDescription
+	}
+	description := s.extractDescription(post.Body)
+	if description == "" || description == "Read this blog post to learn more about the topic." || len(strings.TrimSpace(description)) < 10 {
+		if post.Title != "" {
+			return "Read this blog post about " + post.Title + " to learn more about the topic and get insights."
+		} else {
+			return "Explore this blog post to discover interesting content and valuable insights."
+		}
+	}
+	return description
 }
 
 // extractDescription extracts a description from post content
@@ -252,13 +318,21 @@ func (s *seoService) extractDescription(content string) string {
 	plainText = spaceRegex.ReplaceAllString(plainText, " ")
 	plainText = strings.TrimSpace(plainText)
 
-	// Limit to 160 characters for meta description
-	if len(plainText) > 160 {
-		plainText = plainText[:157] + "..."
+	// If content is too short, return empty string for further processing
+	if len(plainText) < 30 {
+		return ""
 	}
 
-	if plainText == "" {
-		return "Blog post"
+	// Limit to 155 characters for meta description (optimal SEO length), but try to break at word boundaries
+	if len(plainText) > 155 {
+		// Find the last space before 152 characters to leave room for "..."
+		truncated := plainText[:152]
+		lastSpace := strings.LastIndex(truncated, " ")
+		if lastSpace > 100 { // Only break at word boundary if it's not too short
+			plainText = plainText[:lastSpace] + "..."
+		} else {
+			plainText = truncated + "..."
+		}
 	}
 
 	return plainText
@@ -335,4 +409,29 @@ func (s *seoService) extractImages(content string) []string {
 	}
 
 	return images
+}
+
+// parseAndFormatDate tries to parse various date formats and return ISO 8601 date for sitemap
+func (s *seoService) parseAndFormatDate(dateStr string) string {
+	if dateStr == "" {
+		return ""
+	}
+
+	// Try different date formats
+	formats := []string{
+		"2006-01-02 15:04:05",           // SQLite datetime format
+		"Mon Jan _2 15:04:05 2006",      // Go default format
+		"2006-01-02T15:04:05Z",          // ISO 8601
+		"2006-01-02T15:04:05-07:00",     // ISO 8601 with timezone
+		"2006-01-02",                    // Date only
+	}
+
+	for _, format := range formats {
+		if parsedTime, err := time.Parse(format, dateStr); err == nil {
+			return parsedTime.Format("2006-01-02")
+		}
+	}
+
+	// If all parsing fails, return empty string
+	return ""
 }

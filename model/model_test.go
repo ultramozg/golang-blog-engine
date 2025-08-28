@@ -1153,7 +1153,7 @@ func TestPost_GenerateDefaultSEOFields(t *testing.T) {
 				Title: "Test Post",
 				Body:  "This is a very long test post body that exceeds the 150 character limit and should be truncated when generating the meta description automatically from the post content.",
 			},
-			expectedMeta: "This is a very long test post body that exceeds the 150 character limit and should be truncated when generating the meta description automatically ...",
+			expectedMeta: "This is a very long test post body that exceeds the 150 character limit and should be truncated when generating the meta description automatically...",
 			expectedKeys: "test, post",
 		},
 		{
@@ -1171,7 +1171,7 @@ func TestPost_GenerateDefaultSEOFields(t *testing.T) {
 				Title: "Advanced JavaScript Programming Techniques",
 				Body:  "Some body content",
 			},
-			expectedMeta: "Some body content",
+			expectedMeta: "Read this blog post about Advanced JavaScript Programming Techniques to learn more about the topic and get insights.",
 			expectedKeys: "advanced, javascript, programming, techniques",
 		},
 		{
@@ -1180,7 +1180,7 @@ func TestPost_GenerateDefaultSEOFields(t *testing.T) {
 				Title: "How to Use Go for Web Development",
 				Body:  "Some body content",
 			},
-			expectedMeta: "Some body content",
+			expectedMeta: "Read this blog post about How to Use Go for Web Development to learn more about the topic and get insights.",
 			expectedKeys: "development",
 		},
 		{
@@ -1188,10 +1188,10 @@ func TestPost_GenerateDefaultSEOFields(t *testing.T) {
 			post: Post{
 				Title:           "Test Post",
 				Body:            "This is a test post body",
-				MetaDescription: "Existing meta description",
+				MetaDescription: "Existing meta description that is long enough to not be overridden by the new logic",
 				Keywords:        "existing, keywords",
 			},
-			expectedMeta: "Existing meta description",
+			expectedMeta: "Existing meta description that is long enough to not be overridden by the new logic",
 			expectedKeys: "existing, keywords",
 		},
 	}
