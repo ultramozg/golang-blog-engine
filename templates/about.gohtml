@@ -1,7 +1,32 @@
 {{template "header" .}}
 <div class="container">
-	<h4>About</h4>
-	<p>My name is ...</p>
-	<div class="docs-section" style="margin:0px;padding:10px"></div>
+  <h4>About</h4>
+  <div style="overflow: hidden;">
+    <img src="/public/assets/avatar.jpg" alt="Dmitri Candu" 
+         style="float: right; margin-left: 20px; margin-bottom: 10px; max-width: 200px; border-radius: 6px;">
+    <p>
+      Hi! My name is Dmitri Candu. I’m a Senior DevOps / Platform Engineer with over 10 years of experience designing, building, and optimizing cloud infrastructure.
+    </p>
+    <p>
+      I recently passed the AWS Solutions Architect – Professional certification and am currently expanding my expertise in multi-region cloud architectures, serverless patterns, and AI-related infrastructure.
+    </p>
+    <p>
+      I am also planning to pass Microsoft Azure certifications AZ-104 and AZ-305, and I am actively working on a showcase project using Pulumi to implement multi-region and serverless architectures.
+    </p>
+    <p>
+      I enjoy writing technical articles and maintaining a personal tech blog, where I share practical insights on cloud engineering, automation, and DevOps best practices. Outside of work, I’m passionate about astronomy, technology, and exploring new places.
+    </p>
+  </div>
+
+	<div style="margin-top: 2rem; font-size: 1.1rem; line-height: 1.6;">
+	<strong style="font-size: 1.9rem;">Useful links:</strong>
+	<ul style="list-style: none; padding-left: 0; display: flex; gap: 2rem; margin-top: 0.5rem; font-size: 1.7rem;">
+		<li><a href="https://www.linkedin.com/in/dmitri-candu-0928a515a/" target="_blank" style="color:#1EAEDB; text-decoration:none;">LinkedIn</a></li>
+		<li><a href="https://github.com/ultramozg" target="_blank" style="color:#1EAEDB; text-decoration:none;">GitHub</a></li>
+		<li><a href="https://exercism.org/profiles/ultramozg" target="_blank" style="color:#1EAEDB; text-decoration:none;">Exercism</a></li>
+	</ul>
+	</div>
+
+  <div class="docs-section" style="margin:0px;padding:10px"></div>
 </div>
-{{template "footer"}}	
+{{template "footer"}}
