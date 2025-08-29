@@ -333,10 +333,10 @@ func TestExtractDescription(t *testing.T) {
 		t.Error("Expected long description to end with '...'")
 	}
 
-	// Test empty content
+	// Test empty content - should return empty string for further processing
 	description = service.extractDescription("")
-	if description != "Blog post" {
-		t.Errorf("Expected default description 'Blog post', got '%s'", description)
+	if description != "" {
+		t.Errorf("Expected empty description for empty content, got '%s'", description)
 	}
 }
 
@@ -803,8 +803,8 @@ func TestSEOServiceComprehensive(t *testing.T) {
 		}
 
 		// Should provide default description
-		if tags["description"] != "Blog post" {
-			t.Errorf("Expected default description 'Blog post', got '%s'", tags["description"])
+		if tags["description"] != "Explore this blog post to discover interesting content and valuable insights." {
+			t.Errorf("Expected default description 'Explore this blog post to discover interesting content and valuable insights.', got '%s'", tags["description"])
 		}
 	})
 

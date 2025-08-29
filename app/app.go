@@ -98,6 +98,18 @@ func (a *App) Initialize() {
 	domain := a.Config.Domain
 	if domain == "" {
 		domain = "http://localhost" + a.Config.Server.Http
+	} else {
+		// Ensure domain has proper protocol
+		if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
+			if a.Config.Production == "true" {
+				domain = "https://" + domain
+			} else {
+				domain = "http://" + domain
+			}
+		} else if strings.HasPrefix(domain, "http://") && a.Config.Production == "true" {
+			// Convert http to https in production
+			domain = strings.Replace(domain, "http://", "https://", 1)
+		}
 	}
 	a.SEOService = services.NewSEOService(a.DB, domain)
 
@@ -278,7 +290,7 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 			ClientID       string
 			RedirectURL    string
 			MetaTags       map[string]string
-			StructuredData string
+			StructuredData template.HTML
 			OpenGraphTags  map[string]string
 			CanonicalURL   string
 		}{
@@ -290,7 +302,7 @@ func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
 			metaTags,
-			structuredData,
+			template.HTML(structuredData),
 			openGraphTags,
 			canonicalURL,
 		}
@@ -352,7 +364,7 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 			ClientID       string
 			RedirectURL    string
 			MetaTags       map[string]string
-			StructuredData string
+			StructuredData template.HTML
 			OpenGraphTags  map[string]string
 			CanonicalURL   string
 		}{
@@ -364,7 +376,7 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 			a.Config.OAuth.ClientID,
 			a.Config.OAuth.RedirectURL,
 			metaTags,
-			structuredData,
+			template.HTML(structuredData),
 			openGraphTags,
 			canonicalURL,
 		}
@@ -452,8 +464,15 @@ func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 		slug := a.SlugService.GenerateSlug(title)
 		p.Slug = a.SlugService.EnsureUniqueSlug(slug, 0) // 0 for new post
 
-		// Create post with slug
-		result, err := a.DB.Exec(`insert into posts (title, body, datepost, slug, created_at, updated_at) values ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date, p.Slug)
+		// Generate SEO fields if not provided
+		p.GenerateDefaultSEOFields()
+		if err := p.ValidateAndSanitizeSEOFields(); err != nil {
+			http.Error(w, "Invalid SEO data: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Create post with slug and SEO fields
+		result, err := a.DB.Exec(`insert into posts (title, body, datepost, slug, meta_description, keywords, created_at, updated_at) values ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`, p.Title, p.Body, p.Date, p.Slug, p.MetaDescription, p.Keywords)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -572,16 +591,23 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 		p.Body = body
 		p.Date = time.Now().Format("Mon Jan _2 15:04:05 2006")
 
+		// Generate SEO fields if not provided
+		p.GenerateDefaultSEOFields()
+		if err := p.ValidateAndSanitizeSEOFields(); err != nil {
+			http.Error(w, "Invalid SEO data: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
 		// If title changed, regenerate slug
 		if currentTitle != title {
 			newSlug := a.SlugService.GenerateSlug(title)
 			p.Slug = a.SlugService.EnsureUniqueSlug(newSlug, p.ID)
 
-			// Update post with new slug
-			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, slug = $4, updated_at = CURRENT_TIMESTAMP where id = $5`, p.Title, p.Body, p.Date, p.Slug, p.ID)
+			// Update post with new slug and SEO fields
+			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, slug = $4, meta_description = $5, keywords = $6, updated_at = CURRENT_TIMESTAMP where id = $7`, p.Title, p.Body, p.Date, p.Slug, p.MetaDescription, p.Keywords, p.ID)
 		} else {
-			// Update post without changing slug
-			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, updated_at = CURRENT_TIMESTAMP where id = $4`, p.Title, p.Body, p.Date, p.ID)
+			// Update post without changing slug but with SEO fields
+			_, err = a.DB.Exec(`update posts set title = $1, body = $2, datepost = $3, meta_description = $4, keywords = $5, updated_at = CURRENT_TIMESTAMP where id = $6`, p.Title, p.Body, p.Date, p.MetaDescription, p.Keywords, p.ID)
 		}
 
 		if err != nil {
@@ -1290,7 +1316,9 @@ func (a *App) serveRobotsTxt(w http.ResponseWriter, r *http.Request) {
 // getAllPostsForSitemap retrieves all posts with slugs for sitemap generation
 func (a *App) getAllPostsForSitemap() ([]*model.Post, error) {
 	rows, err := a.DB.Query(`
-		SELECT id, title, body, datepost, slug, created_at, updated_at 
+		SELECT id, title, body, datepost, slug, 
+		       COALESCE(created_at, ''), COALESCE(updated_at, ''),
+		       COALESCE(meta_description, ''), COALESCE(keywords, '')
 		FROM posts 
 		WHERE slug IS NOT NULL AND slug != '' 
 		ORDER BY id DESC
@@ -1303,7 +1331,8 @@ func (a *App) getAllPostsForSitemap() ([]*model.Post, error) {
 	var posts []*model.Post
 	for rows.Next() {
 		post := &model.Post{}
-		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, &post.CreatedAt, &post.UpdatedAt)
+		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, 
+			&post.CreatedAt, &post.UpdatedAt, &post.MetaDescription, &post.Keywords)
 		if err != nil {
 			return nil, err
 		}
