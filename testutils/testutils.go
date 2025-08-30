@@ -429,3 +429,85 @@ func SetupTestApp(t *testing.T) *app.App {
 
 	return &testApp
 }
+
+// EnhancedTestRunner provides comprehensive testing utilities with enhanced features
+type EnhancedTestRunner struct {
+	DB     *DatabaseTestHelper
+	HTTP   *HTTPTestClient
+	Config *TestConfigManager
+}
+
+// NewEnhancedTestRunner creates a new enhanced test runner
+func NewEnhancedTestRunner(t *testing.T) *EnhancedTestRunner {
+	// Create configuration manager
+	config := NewTestConfigManager()
+	config.LoadFromEnvironment()
+	
+	// Create database helper
+	db := NewDatabaseTestHelper(t)
+	
+	// Update config with database path
+	config.UpdateDatabaseDSN(db.Config.DBPath)
+	config.UpdateUploadPath(db.TempDir + "/uploads")
+	
+	// Set environment variables
+	err := config.SetEnvironmentVariables()
+	if err != nil {
+		t.Fatalf("Failed to set environment variables: %v", err)
+	}
+	
+	// Create app
+	testApp := SetupTestApp(t)
+	
+	// Create HTTP client
+	httpClient := NewHTTPTestClient(t, testApp)
+	
+	return &EnhancedTestRunner{
+		DB:     db,
+		HTTP:   httpClient,
+		Config: config,
+	}
+}
+
+// Close cleans up all enhanced test resources
+func (etr *EnhancedTestRunner) Close() {
+	if etr.HTTP != nil {
+		etr.HTTP.Close()
+	}
+	if etr.DB != nil {
+		etr.DB.Close()
+	}
+	if etr.Config != nil {
+		etr.Config.Cleanup()
+	}
+}
+
+// SetupTest performs comprehensive test setup with enhanced features
+func (etr *EnhancedTestRunner) SetupTest() error {
+	// Clear any existing data
+	if err := etr.DB.ClearAllTables(); err != nil {
+		return err
+	}
+
+	// Create test schema if needed
+	if err := etr.DB.CreateTestSchema(); err != nil {
+		return err
+	}
+
+	// Seed test users
+	if err := etr.DB.SeedTestUsers(); err != nil {
+		return err
+	}
+
+	// Seed test data
+	if err := etr.DB.SeedTestPosts(3); err != nil {
+		return err
+	}
+
+	// Seed test comments
+	if err := etr.DB.SeedTestComments(1, 2); err != nil {
+		return err
+	}
+
+	return nil
+}
