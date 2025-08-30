@@ -152,11 +152,11 @@ func (p *Post) GenerateDefaultSEOFields() {
 		// Remove HTML tags and file references
 		bodyText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(p.Body, "")
 		bodyText = regexp.MustCompile(`\[file:[^\]]+\]`).ReplaceAllString(bodyText, "")
-		
+
 		// Clean up whitespace
 		bodyText = regexp.MustCompile(`\s+`).ReplaceAllString(bodyText, " ")
 		bodyText = strings.TrimSpace(bodyText)
-		
+
 		if len(bodyText) > 30 {
 			// Generate a meaningful description (120-155 characters is optimal for SEO)
 			if len(bodyText) > 150 {
@@ -180,7 +180,7 @@ func (p *Post) GenerateDefaultSEOFields() {
 	// Generate basic keywords from title and body if not provided
 	if p.Keywords == "" {
 		var keywords []string
-		
+
 		// Extract from title (higher priority)
 		if p.Title != "" {
 			titleWords := strings.Fields(strings.ToLower(p.Title))
@@ -192,20 +192,20 @@ func (p *Post) GenerateDefaultSEOFields() {
 				}
 			}
 		}
-		
+
 		// Extract from body content if we need more keywords
 		if len(keywords) < 5 && p.Body != "" {
 			bodyText := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(p.Body, "")
 			bodyWords := strings.Fields(strings.ToLower(bodyText))
 			wordCount := make(map[string]int)
-			
+
 			for _, word := range bodyWords {
 				word = regexp.MustCompile(`[^\w]`).ReplaceAllString(word, "")
 				if len(word) > 4 && len(word) < 20 {
 					wordCount[word]++
 				}
 			}
-			
+
 			// Add words that appear multiple times
 			for word, count := range wordCount {
 				if count >= 2 && len(keywords) < 8 {
@@ -223,7 +223,7 @@ func (p *Post) GenerateDefaultSEOFields() {
 				}
 			}
 		}
-		
+
 		if len(keywords) > 0 {
 			// Limit to 8 keywords maximum
 			if len(keywords) > 8 {

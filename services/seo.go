@@ -223,7 +223,7 @@ func (s *seoService) GenerateSitemap(posts []*model.Post) ([]byte, error) {
 		} else if post.Date != "" {
 			lastModDate = s.parseAndFormatDate(post.Date)
 		}
-		
+
 		if lastModDate != "" {
 			sitemap.WriteString(fmt.Sprintf("    <lastmod>%s</lastmod>\n", lastModDate))
 		}
@@ -258,7 +258,7 @@ func (s *seoService) GenerateRobotsTxt() string {
 	robots.WriteString("Disallow: /upload-file\n")
 	robots.WriteString("Disallow: /files/\n")
 	robots.WriteString("\n")
-	
+
 	// Always include sitemap URL with proper domain configuration
 	sitemapURL := s.baseURL
 	if sitemapURL == "" || sitemapURL == "http://localhost" {
@@ -279,7 +279,7 @@ func (s *seoService) GetCanonicalURL(post *model.Post) string {
 	if baseURL == "" || baseURL == "http://localhost" {
 		baseURL = "http://localhost:8080" // Default for development
 	}
-	
+
 	if post.Slug != "" {
 		return fmt.Sprintf("%s/p/%s", baseURL, url.PathEscape(post.Slug))
 	}
@@ -419,11 +419,11 @@ func (s *seoService) parseAndFormatDate(dateStr string) string {
 
 	// Try different date formats
 	formats := []string{
-		"2006-01-02 15:04:05",           // SQLite datetime format
-		"Mon Jan _2 15:04:05 2006",      // Go default format
-		"2006-01-02T15:04:05Z",          // ISO 8601
-		"2006-01-02T15:04:05-07:00",     // ISO 8601 with timezone
-		"2006-01-02",                    // Date only
+		"2006-01-02 15:04:05",       // SQLite datetime format
+		"Mon Jan _2 15:04:05 2006",  // Go default format
+		"2006-01-02T15:04:05Z",      // ISO 8601
+		"2006-01-02T15:04:05-07:00", // ISO 8601 with timezone
+		"2006-01-02",                // Date only
 	}
 
 	for _, format := range formats {

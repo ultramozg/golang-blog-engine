@@ -98,7 +98,7 @@ func GetTestDataPath() string {
 func GetTemplatesPath() string {
 	// Look for templates in common locations
 	paths := []string{
-		"templates/*.gohtml",
+		DefaultTemplatesPath,
 		"../templates/*.gohtml",
 		"../../templates/*.gohtml",
 	}
@@ -111,7 +111,7 @@ func GetTemplatesPath() string {
 	}
 
 	// Default fallback
-	return "templates/*.gohtml"
+	return DefaultTemplatesPath
 }
 
 // TestFileManager helps manage test files and directories
