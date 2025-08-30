@@ -1216,6 +1216,1271 @@ func TestPost_CreatePostWithSEO(t *testing.T) {
 	defer cleanup()
 
 	tests := []struct {
+		name        string
+		post        Post
+		expectError bool
+	}{
+		{
+			name: "Create post with SEO fields",
+			post: Post{
+				Title:           "SEO Test Post",
+				Body:            "This is a test post with SEO fields",
+				Date:            time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				MetaDescription: "Custom meta description",
+				Keywords:        "seo, test, post",
+			},
+			expectError: false,
+		},
+		{
+			name: "Create post without SEO fields (auto-generated)",
+			post: Post{
+				Title: "Auto SEO Test Post",
+				Body:  "This is a test post that should have SEO fields auto-generated from the content",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.post.CreatePost(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// Verify the post was created with proper SEO fields
+				var metaDesc, keywords string
+				err = db.QueryRow("SELECT meta_description, keywords FROM posts WHERE id = ?",
+					tt.post.ID).Scan(&metaDesc, &keywords)
+				if err != nil {
+					t.Errorf("Error retrieving SEO fields: %v", err)
+				}
+
+				// For posts with explicit SEO fields, verify they were saved
+				if tt.post.MetaDescription != "" {
+					if metaDesc != tt.post.MetaDescription {
+						t.Errorf("Expected meta description %s, got %s", tt.post.MetaDescription, metaDesc)
+					}
+				} else {
+					// For auto-generated SEO, verify something was generated
+					if metaDesc == "" {
+						t.Errorf("Expected auto-generated meta description, got empty string")
+					}
+				}
+			}
+		})
+	}
+}
+
+// Additional comprehensive tests for edge cases and error conditions
+
+func TestPost_GetPost_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	tests := []struct {
+		name        string
+		postID      int
+		expectError bool
+		errorType   error
+	}{
+		{
+			name:        "Get post with ID 0",
+			postID:      0,
+			expectError: true,
+			errorType:   sql.ErrNoRows,
+		},
+		{
+			name:        "Get post with negative ID",
+			postID:      -1,
+			expectError: true,
+			errorType:   sql.ErrNoRows,
+		},
+		{
+			name:        "Get post with very large ID",
+			postID:      999999999,
+			expectError: true,
+			errorType:   sql.ErrNoRows,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			post := Post{ID: tt.postID}
+			err := post.GetPost(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+				if err != tt.errorType {
+					t.Errorf("Expected error type %v, got %v", tt.errorType, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestPost_UpdatePost_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		post        Post
+		expectError bool
+	}{
+		{
+			name: "Update with very long title",
+			post: Post{
+				ID:    1,
+				Title: strings.Repeat("A", 1000),
+				Body:  "Updated body",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false, // SQLite allows long strings
+		},
+		{
+			name: "Update with very long body",
+			post: Post{
+				ID:    1,
+				Title: "Updated title",
+				Body:  strings.Repeat("B", 10000),
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false, // SQLite allows long strings
+		},
+		{
+			name: "Update with special characters",
+			post: Post{
+				ID:    1,
+				Title: "Title with special chars: !@#$%^&*()",
+				Body:  "Body with unicode: 你好世界 🌍",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false,
+		},
+		{
+			name: "Update with malicious SEO content",
+			post: Post{
+				ID:              1,
+				Title:           "Test Post",
+				Body:            "Test body",
+				Date:            time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				MetaDescription: "<script>alert('xss')</script>",
+				Keywords:        "<script>alert('xss')</script>, malicious",
+			},
+			expectError: false, // Should sanitize, not error
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.post.UpdatePost(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// Verify malicious content was sanitized
+				if strings.Contains(tt.post.MetaDescription, "<script>") {
+					var metaDesc string
+					err = db.QueryRow("SELECT meta_description FROM posts WHERE id = ?", tt.post.ID).Scan(&metaDesc)
+					if err != nil {
+						t.Errorf("Error retrieving meta description: %v", err)
+					}
+					if strings.Contains(metaDesc, "<script>") {
+						t.Errorf("Expected script tags to be escaped, but found: %s", metaDesc)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestPost_CreatePost_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	tests := []struct {
+		name        string
+		post        Post
+		expectError bool
+	}{
+		{
+			name: "Create post with very long title",
+			post: Post{
+				Title: strings.Repeat("A", 1000),
+				Body:  "Test body",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false, // SQLite allows long strings
+		},
+		{
+			name: "Create post with unicode characters",
+			post: Post{
+				Title: "Unicode test: 你好世界 🌍 Ñoño",
+				Body:  "Unicode body: العربية русский 日本語",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false,
+		},
+		{
+			name: "Create post with null bytes (should be handled)",
+			post: Post{
+				Title: "Title with\x00null byte",
+				Body:  "Body with\x00null byte",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false, // SQLite handles null bytes
+		},
+		{
+			name: "Create post with only whitespace title",
+			post: Post{
+				Title: "   \t\n   ",
+				Body:  "Test body",
+				Date:  time.Now().Format("Mon Jan _2 15:04:05 2006"),
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.post.CreatePost(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// Verify post was created and has an ID
+				if tt.post.ID <= 0 {
+					t.Errorf("Expected post ID to be set after creation, got %d", tt.post.ID)
+				}
+			}
+		})
+	}
+}
+
+func TestComment_CreateComment_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data (need posts for comments)
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		comment     Comment
+		expectError bool
+	}{
+		{
+			name: "Create comment with very long name",
+			comment: Comment{
+				PostID: 1,
+				Name:   strings.Repeat("A", 1000),
+				Date:   time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				Data:   "Test comment",
+			},
+			expectError: false, // SQLite allows long strings
+		},
+		{
+			name: "Create comment with very long data",
+			comment: Comment{
+				PostID: 1,
+				Name:   "Test User",
+				Date:   time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				Data:   strings.Repeat("B", 10000),
+			},
+			expectError: false, // SQLite allows long strings
+		},
+		{
+			name: "Create comment with unicode characters",
+			comment: Comment{
+				PostID: 1,
+				Name:   "用户 🙂",
+				Date:   time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				Data:   "评论内容 with emoji 🎉",
+			},
+			expectError: false,
+		},
+		{
+			name: "Create comment with HTML content",
+			comment: Comment{
+				PostID: 1,
+				Name:   "HTML User",
+				Date:   time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				Data:   "<script>alert('xss')</script><p>HTML content</p>",
+			},
+			expectError: false, // Model doesn't sanitize, that's handled at handler level
+		},
+		{
+			name: "Create comment with zero PostID",
+			comment: Comment{
+				PostID: 0,
+				Name:   "Test User",
+				Date:   time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				Data:   "Test comment",
+			},
+			expectError: false, // SQLite allows this
+		},
+		{
+			name: "Create comment with negative PostID",
+			comment: Comment{
+				PostID: -1,
+				Name:   "Test User",
+				Date:   time.Now().Format("Mon Jan _2 15:04:05 2006"),
+				Data:   "Test comment",
+			},
+			expectError: false, // SQLite allows this
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.comment.CreateComment(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// Verify the comment was created
+				var count int
+				err = db.QueryRow("SELECT COUNT(*) FROM comments WHERE postid = ? AND name = ? AND comment = ?",
+					tt.comment.PostID, tt.comment.Name, tt.comment.Data).Scan(&count)
+				if err != nil {
+					t.Errorf("Error checking if comment was created: %v", err)
+				}
+				if count != 1 {
+					t.Errorf("Expected 1 comment to be created, found %d", count)
+				}
+			}
+		})
+	}
+}
+
+func TestUser_IsUserExist_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create test users with various names
+	testUsers := []struct {
+		name     string
+		password string
+		userType int
+	}{
+		{"normaluser", "password", ADMIN},
+		{"user with spaces", "password", ADMIN},
+		{"用户", "password", ADMIN}, // Unicode username
+		{"user@email.com", "password", ADMIN},
+		{"", "password", ADMIN}, // Empty username
+	}
+
+	for _, user := range testUsers {
+		if err := createTestUser(db, user.name, user.password, user.userType); err != nil {
+			t.Fatalf("Failed to create test user %s: %v", user.name, err)
+		}
+	}
+
+	tests := []struct {
+		name     string
+		username string
+		expected bool
+	}{
+		{
+			name:     "Normal username",
+			username: "normaluser",
+			expected: true,
+		},
+		{
+			name:     "Username with spaces",
+			username: "user with spaces",
+			expected: true,
+		},
+		{
+			name:     "Unicode username",
+			username: "用户",
+			expected: true,
+		},
+		{
+			name:     "Email-like username",
+			username: "user@email.com",
+			expected: true,
+		},
+		{
+			name:     "Empty username",
+			username: "",
+			expected: true, // Empty username was created
+		},
+		{
+			name:     "Case sensitive check",
+			username: "NORMALUSER",
+			expected: false, // SQLite is case-sensitive by default
+		},
+		{
+			name:     "Username with special chars",
+			username: "user!@#$%",
+			expected: false,
+		},
+		{
+			name:     "Very long username",
+			username: strings.Repeat("A", 1000),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user := User{Name: tt.username}
+			result := user.IsUserExist(db)
+
+			if result != tt.expected {
+				t.Errorf("Expected %v, got %v for username '%s'", tt.expected, result, tt.username)
+			}
+		})
+	}
+}
+
+func TestUser_CheckCredentials_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create test users with various passwords
+	testCases := []struct {
+		username string
+		password string
+		userType int
+	}{
+		{"user1", "simplepass", ADMIN},
+		{"user2", "complex!@#$%^&*()_+", ADMIN},
+		{"user3", "unicode密码🔐", ADMIN},
+		{"user4", strings.Repeat("A", 70), ADMIN}, // Long password (within bcrypt limit)
+		{"user5", "", ADMIN},                       // Empty password (bcrypt will hash it)
+	}
+
+	for _, tc := range testCases {
+		if err := createTestUser(db, tc.username, tc.password, tc.userType); err != nil {
+			t.Fatalf("Failed to create test user %s: %v", tc.username, err)
+		}
+	}
+
+	tests := []struct {
+		name     string
+		username string
+		password string
+		expected bool
+	}{
+		{
+			name:     "Correct simple password",
+			username: "user1",
+			password: "simplepass",
+			expected: true,
+		},
+		{
+			name:     "Correct complex password",
+			username: "user2",
+			password: "complex!@#$%^&*()_+",
+			expected: true,
+		},
+		{
+			name:     "Correct unicode password",
+			username: "user3",
+			password: "unicode密码🔐",
+			expected: true,
+		},
+		{
+			name:     "Correct long password",
+			username: "user4",
+			password: strings.Repeat("A", 70),
+			expected: true,
+		},
+		{
+			name:     "Correct empty password",
+			username: "user5",
+			password: "",
+			expected: true,
+		},
+		{
+			name:     "Wrong password",
+			username: "user1",
+			password: "wrongpass",
+			expected: false,
+		},
+		{
+			name:     "Case sensitive password",
+			username: "user1",
+			password: "SIMPLEPASS",
+			expected: false,
+		},
+		{
+			name:     "Password with extra characters",
+			username: "user1",
+			password: "simplepass123",
+			expected: false,
+		},
+		{
+			name:     "Non-existent user",
+			username: "nonexistent",
+			password: "anypassword",
+			expected: false,
+		},
+		{
+			name:     "Empty username",
+			username: "",
+			password: "anypassword",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			user := User{Name: tt.username}
+			result := user.CheckCredentials(db, tt.password)
+
+			if result != tt.expected {
+				t.Errorf("Expected %v, got %v for user '%s' with password '%s'", tt.expected, result, tt.username, tt.password)
+			}
+		})
+	}
+}
+
+func TestUser_CreateUser_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	tests := []struct {
+		name        string
+		user        User
+		password    string
+		expectError bool
+		setupFunc   func() // Function to run before test (e.g., create conflicting user)
+	}{
+		{
+			name: "Create user with very long password",
+			user: User{
+				Name: "admin",
+				Type: ADMIN,
+			},
+			password:    strings.Repeat("A", 70), // bcrypt limit is 72 bytes
+			expectError: false,
+		},
+		{
+			name: "Create user with unicode password",
+			user: User{
+				Name: "admin",
+				Type: GITHUB,
+			},
+			password:    "密码🔐unicode",
+			expectError: false,
+		},
+		{
+			name: "Create user with empty password",
+			user: User{
+				Name: "admin",
+				Type: ADMIN,
+			},
+			password:    "",
+			expectError: false, // bcrypt can hash empty strings
+		},
+		{
+			name: "Create duplicate user",
+			user: User{
+				Name: "admin",
+				Type: ADMIN,
+			},
+			password:    "password123",
+			expectError: true, // Should fail due to unique constraint
+			setupFunc: func() {
+				// Create a user first
+				hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("existing"), bcrypt.DefaultCost)
+				db.Exec("INSERT INTO users (name, type, pass) VALUES (?, ?, ?)", "admin", ADMIN, string(hashedPassword))
+			},
+		},
+		{
+			name: "Create user with invalid type",
+			user: User{
+				Name: "admin",
+				Type: 999, // Invalid user type
+			},
+			password:    "password123",
+			expectError: false, // SQLite allows any integer
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Clear users table first
+			db.Exec("DELETE FROM users")
+
+			// Run setup function if provided
+			if tt.setupFunc != nil {
+				tt.setupFunc()
+			}
+
+			// Hash the password before passing to CreateUser
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(tt.password), bcrypt.DefaultCost)
+			if err != nil {
+				t.Fatalf("Failed to hash password: %v", err)
+			}
+
+			err = tt.user.CreateUser(db, string(hashedPassword))
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestGetPosts_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		count         int
+		start         int
+		expectedCount int
+		expectError   bool
+	}{
+		{
+			name:          "Negative count",
+			count:         -1,
+			start:         0,
+			expectedCount: 3, // SQLite treats negative limit as no limit
+			expectError:   false,
+		},
+		{
+			name:          "Zero count",
+			count:         0,
+			start:         0,
+			expectedCount: 0,
+			expectError:   false,
+		},
+		{
+			name:          "Negative start",
+			count:         2,
+			start:         -1,
+			expectedCount: 2, // SQLite treats negative offset as 0
+			expectError:   false,
+		},
+		{
+			name:          "Very large count",
+			count:         999999,
+			start:         0,
+			expectedCount: 3, // Only 3 posts available
+			expectError:   false,
+		},
+		{
+			name:          "Very large start",
+			count:         2,
+			start:         999999,
+			expectedCount: 0,
+			expectError:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			posts, err := GetPosts(db, tt.count, tt.start)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if len(posts) != tt.expectedCount {
+					t.Errorf("Expected %d posts, got %d", tt.expectedCount, len(posts))
+				}
+			}
+		})
+	}
+}
+
+func TestGetComments_EdgeCases(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Seed test data
+	if err := seedTestData(db); err != nil {
+		t.Fatalf("Failed to seed test data: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		postID        int
+		expectedCount int
+		expectError   bool
+	}{
+		{
+			name:          "Zero post ID",
+			postID:        0,
+			expectedCount: 0,
+			expectError:   false,
+		},
+		{
+			name:          "Negative post ID",
+			postID:        -1,
+			expectedCount: 0,
+			expectError:   false,
+		},
+		{
+			name:          "Very large post ID",
+			postID:        999999,
+			expectedCount: 0,
+			expectError:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			comments, err := GetComments(db, tt.postID)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if len(comments) != tt.expectedCount {
+					t.Errorf("Expected %d comments, got %d", tt.expectedCount, len(comments))
+				}
+			}
+		})
+	}
+}
+
+// Test File model methods
+
+func TestFile_CreateFile(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	tests := []struct {
+		name        string
+		file        File
+		expectError bool
+	}{
+		{
+			name: "Create valid file",
+			file: File{
+				UUID:         "test-uuid-1",
+				OriginalName: "test.txt",
+				StoredName:   "stored-test.txt",
+				Path:         "/uploads/test.txt",
+				Size:         1024,
+				MimeType:     "text/plain",
+				IsImage:      false,
+			},
+			expectError: false,
+		},
+		{
+			name: "Create valid image file",
+			file: File{
+				UUID:         "test-uuid-2",
+				OriginalName: "image.jpg",
+				StoredName:   "stored-image.jpg",
+				Path:         "/uploads/image.jpg",
+				Size:         2048,
+				MimeType:     "image/jpeg",
+				IsImage:      true,
+				Width:        func() *int { w := 800; return &w }(),
+				Height:       func() *int { h := 600; return &h }(),
+				ThumbnailPath: func() *string { p := "/uploads/thumb.jpg"; return &p }(),
+				AltText:      func() *string { a := "Test image"; return &a }(),
+			},
+			expectError: false,
+		},
+		{
+			name: "Create file with duplicate UUID",
+			file: File{
+				UUID:         "test-uuid-1", // Duplicate UUID
+				OriginalName: "test2.txt",
+				StoredName:   "stored-test2.txt",
+				Path:         "/uploads/test2.txt",
+				Size:         512,
+				MimeType:     "text/plain",
+				IsImage:      false,
+			},
+			expectError: true, // Should fail due to unique constraint
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.file.CreateFile(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// Verify the file was created and has an ID
+				if tt.file.ID <= 0 {
+					t.Errorf("Expected file ID to be set after creation, got %d", tt.file.ID)
+				}
+
+				// Verify file can be retrieved
+				retrievedFile := File{ID: tt.file.ID}
+				err = retrievedFile.GetFile(db)
+				if err != nil {
+					t.Errorf("Error retrieving created file: %v", err)
+				}
+				if retrievedFile.UUID != tt.file.UUID {
+					t.Errorf("Expected UUID %s, got %s", tt.file.UUID, retrievedFile.UUID)
+				}
+			}
+		})
+	}
+}
+
+func TestFile_GetFile(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create a test file
+	testFile := File{
+		UUID:         "test-get-uuid",
+		OriginalName: "test-get.txt",
+		StoredName:   "stored-get.txt",
+		Path:         "/uploads/get.txt",
+		Size:         1024,
+		MimeType:     "text/plain",
+		IsImage:      false,
+	}
+	err := testFile.CreateFile(db)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		fileID      int
+		expectError bool
+	}{
+		{
+			name:        "Get existing file",
+			fileID:      testFile.ID,
+			expectError: false,
+		},
+		{
+			name:        "Get non-existing file",
+			fileID:      999,
+			expectError: true,
+		},
+		{
+			name:        "Get file with zero ID",
+			fileID:      0,
+			expectError: true,
+		},
+		{
+			name:        "Get file with negative ID",
+			fileID:      -1,
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := File{ID: tt.fileID}
+			err := file.GetFile(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if file.UUID != testFile.UUID {
+					t.Errorf("Expected UUID %s, got %s", testFile.UUID, file.UUID)
+				}
+			}
+		})
+	}
+}
+
+func TestFile_GetFileByUUID(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create a test file
+	testFile := File{
+		UUID:         "test-uuid-get",
+		OriginalName: "test-uuid.txt",
+		StoredName:   "stored-uuid.txt",
+		Path:         "/uploads/uuid.txt",
+		Size:         1024,
+		MimeType:     "text/plain",
+		IsImage:      false,
+	}
+	err := testFile.CreateFile(db)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		uuid        string
+		expectError bool
+	}{
+		{
+			name:        "Get existing file by UUID",
+			uuid:        testFile.UUID,
+			expectError: false,
+		},
+		{
+			name:        "Get non-existing file by UUID",
+			uuid:        "non-existing-uuid",
+			expectError: true,
+		},
+		{
+			name:        "Get file with empty UUID",
+			uuid:        "",
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := File{UUID: tt.uuid}
+			err := file.GetFileByUUID(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if file.ID != testFile.ID {
+					t.Errorf("Expected ID %d, got %d", testFile.ID, file.ID)
+				}
+			}
+		})
+	}
+}
+
+func TestFile_DeleteFile(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create test files
+	testFile1 := File{
+		UUID:         "test-delete-1",
+		OriginalName: "delete1.txt",
+		StoredName:   "stored-delete1.txt",
+		Path:         "/uploads/delete1.txt",
+		Size:         1024,
+		MimeType:     "text/plain",
+		IsImage:      false,
+	}
+	err := testFile1.CreateFile(db)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		fileID      int
+		expectError bool
+	}{
+		{
+			name:        "Delete existing file",
+			fileID:      testFile1.ID,
+			expectError: false,
+		},
+		{
+			name:        "Delete non-existing file",
+			fileID:      999,
+			expectError: false, // SQLite doesn't error on DELETE with no matches
+		},
+		{
+			name:        "Delete file with zero ID",
+			fileID:      0,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := File{ID: tt.fileID}
+			err := file.DeleteFile(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// For existing file, verify deletion
+				if tt.fileID == testFile1.ID {
+					var count int
+					err = db.QueryRow("SELECT COUNT(*) FROM files WHERE id = ?", tt.fileID).Scan(&count)
+					if err != nil {
+						t.Errorf("Error checking if file was deleted: %v", err)
+					}
+					if count != 0 {
+						t.Errorf("Expected file to be deleted, but it still exists")
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestFile_IncrementDownloadCount(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create a test file
+	testFile := File{
+		UUID:          "test-download-uuid",
+		OriginalName:  "download.txt",
+		StoredName:    "stored-download.txt",
+		Path:          "/uploads/download.txt",
+		Size:          1024,
+		MimeType:      "text/plain",
+		DownloadCount: 0,
+		IsImage:       false,
+	}
+	err := testFile.CreateFile(db)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		fileID      int
+		expectError bool
+	}{
+		{
+			name:        "Increment download count for existing file",
+			fileID:      testFile.ID,
+			expectError: false,
+		},
+		{
+			name:        "Increment download count for non-existing file",
+			fileID:      999,
+			expectError: false, // SQLite doesn't error on UPDATE with no matches
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			file := File{ID: tt.fileID}
+			err := file.IncrementDownloadCount(db)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+
+				// For existing file, verify download count was incremented
+				if tt.fileID == testFile.ID {
+					var downloadCount int
+					err = db.QueryRow("SELECT download_count FROM files WHERE id = ?", tt.fileID).Scan(&downloadCount)
+					if err != nil {
+						t.Errorf("Error checking download count: %v", err)
+					}
+					if downloadCount != 1 {
+						t.Errorf("Expected download count to be 1, got %d", downloadCount)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestGetFiles(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	// Create test files
+	testFiles := []File{
+		{
+			UUID:         "file-1",
+			OriginalName: "file1.txt",
+			StoredName:   "stored1.txt",
+			Path:         "/uploads/file1.txt",
+			Size:         1024,
+			MimeType:     "text/plain",
+			IsImage:      false,
+		},
+		{
+			UUID:         "file-2",
+			OriginalName: "file2.jpg",
+			StoredName:   "stored2.jpg",
+			Path:         "/uploads/file2.jpg",
+			Size:         2048,
+			MimeType:     "image/jpeg",
+			IsImage:      true,
+		},
+		{
+			UUID:         "file-3",
+			OriginalName: "file3.pdf",
+			StoredName:   "stored3.pdf",
+			Path:         "/uploads/file3.pdf",
+			Size:         4096,
+			MimeType:     "application/pdf",
+			IsImage:      false,
+		},
+	}
+
+	for i := range testFiles {
+		err := testFiles[i].CreateFile(db)
+		if err != nil {
+			t.Fatalf("Failed to create test file %d: %v", i, err)
+		}
+	}
+
+	tests := []struct {
+		name          string
+		limit         int
+		offset        int
+		expectedCount int
+		expectError   bool
+	}{
+		{
+			name:          "Get first 2 files",
+			limit:         2,
+			offset:        0,
+			expectedCount: 2,
+			expectError:   false,
+		},
+		{
+			name:          "Get files with offset",
+			limit:         2,
+			offset:        1,
+			expectedCount: 2,
+			expectError:   false,
+		},
+		{
+			name:          "Get all files",
+			limit:         10,
+			offset:        0,
+			expectedCount: 3,
+			expectError:   false,
+		},
+		{
+			name:          "Get files with large offset",
+			limit:         2,
+			offset:        10,
+			expectedCount: 0,
+			expectError:   false,
+		},
+		{
+			name:          "Get files with zero limit",
+			limit:         0,
+			offset:        0,
+			expectedCount: 0,
+			expectError:   false,
+		},
+		{
+			name:          "Get files with negative limit",
+			limit:         -1,
+			offset:        0,
+			expectedCount: 3, // SQLite treats negative limit as no limit
+			expectError:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files, err := GetFiles(db, tt.limit, tt.offset)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Unexpected error: %v", err)
+				}
+				if len(files) != tt.expectedCount {
+					t.Errorf("Expected %d files, got %d", tt.expectedCount, len(files))
+				}
+
+				// Verify files are ordered by created_at desc (newest first)
+				for i := 1; i < len(files); i++ {
+					// Since we're using CURRENT_TIMESTAMP, we can't easily test exact ordering
+					// but we can verify the structure is correct
+					if files[i].ID <= 0 {
+						t.Errorf("File %d has invalid ID: %d", i, files[i].ID)
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestPost_CreatePostWithSEOIntegration(t *testing.T) {
+	db, cleanup := createTestDB(t)
+	defer cleanup()
+
+	tests := []struct {
 		name string
 		post Post
 	}{

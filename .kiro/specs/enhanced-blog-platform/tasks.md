@@ -6,8 +6,8 @@
   - Add test configuration management
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 2. Expand unit test coverage for existing functionality
-- [ ] 2.1 Create comprehensive model tests
+- [x] 2. Expand unit test coverage for existing functionality
+- [x] 2.1 Create comprehensive model tests
   - Write unit tests for all Post model methods (GetPost, UpdatePost, DeletePost, CreatePost)
   - Write unit tests for Comment model methods (CreateComment, DeleteComment)
   - Write unit tests for User model methods (IsUserExist, CreateUser, IsAdmin, CheckCredentials)
