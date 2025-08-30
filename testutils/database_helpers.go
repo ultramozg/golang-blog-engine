@@ -8,18 +8,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ultramozg/golang-blog-engine/model"
-	"github.com/ultramozg/golang-blog-engine/services"
 	"golang.org/x/crypto/bcrypt"
 	_ "modernc.org/sqlite"
+
+	"github.com/ultramozg/golang-blog-engine/model"
+	"github.com/ultramozg/golang-blog-engine/services"
 )
 
 // DatabaseTestHelper provides enhanced database testing utilities
 type DatabaseTestHelper struct {
-	DB       *sql.DB
-	Config   *TestConfig
-	TempDir  string
-	cleanup  func()
+	DB      *sql.DB
+	Config  *TestConfig
+	TempDir string
+	cleanup func()
 }
 
 // NewDatabaseTestHelper creates a new database test helper with enhanced features

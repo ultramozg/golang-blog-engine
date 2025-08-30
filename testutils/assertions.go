@@ -267,7 +267,7 @@ func AssertHTTPRedirect(t *testing.T, resp *http.Response, expectedLocation stri
 		t.Errorf("%s\nStatus: %d", message, resp.StatusCode)
 		return
 	}
-	
+
 	location := resp.Header.Get("Location")
 	if location != expectedLocation {
 		message := formatMessage("Redirect location mismatch", msgAndArgs...)
@@ -333,17 +333,17 @@ func formatMessage(defaultMessage string, msgAndArgs ...interface{}) string {
 	if len(msgAndArgs) == 0 {
 		return defaultMessage
 	}
-	
+
 	if len(msgAndArgs) == 1 {
 		if msg, ok := msgAndArgs[0].(string); ok {
 			return msg
 		}
 	}
-	
+
 	if format, ok := msgAndArgs[0].(string); ok {
 		return fmt.Sprintf(format, msgAndArgs[1:]...)
 	}
-	
+
 	return defaultMessage
 }
 
@@ -352,13 +352,13 @@ func isNil(value interface{}) bool {
 	if value == nil {
 		return true
 	}
-	
+
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
 		return v.IsNil()
 	}
-	
+
 	return false
 }
 
@@ -367,7 +367,7 @@ func isEmpty(value interface{}) bool {
 	if isNil(value) {
 		return true
 	}
-	
+
 	v := reflect.ValueOf(value)
 	switch v.Kind() {
 	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
@@ -383,7 +383,7 @@ func isEmpty(value interface{}) bool {
 	case reflect.Interface, reflect.Ptr:
 		return v.IsNil()
 	}
-	
+
 	return false
 }
 
@@ -392,7 +392,7 @@ func getLength(collection interface{}) int {
 	if collection == nil {
 		return 0
 	}
-	
+
 	v := reflect.ValueOf(collection)
 	switch v.Kind() {
 	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:

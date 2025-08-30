@@ -13,11 +13,21 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
+
 	"github.com/ultramozg/golang-blog-engine/app"
 	"github.com/ultramozg/golang-blog-engine/model"
 	"github.com/ultramozg/golang-blog-engine/services"
-	"golang.org/x/crypto/bcrypt"
-	_ "modernc.org/sqlite"
+)
+
+const (
+	// SessionCookieName is the name of the session cookie
+	SessionCookieName = "session"
+	// ContentTypeFormURLEncoded represents the form URL encoded content type
+	ContentTypeFormURLEncoded = "application/x-www-form-urlencoded"
+	// DefaultTemplatesPath is the default path for templates
+	DefaultTemplatesPath = "templates/*.gohtml"
 )
 
 // TestConfig holds configuration for testing
@@ -95,7 +105,9 @@ func (td *TestDatabase) SeedTestData() error {
 		slug := slugService.GenerateSlug(post.title)
 		uniqueSlug := slugService.EnsureUniqueSlug(slug, 0) // 0 for new post
 
-		_, err := td.DB.Exec(`INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+		query := `INSERT INTO posts (title, body, datepost, slug, created_at, updated_at) 
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
+		_, err := td.DB.Exec(query,
 			post.title, post.body, post.date, uniqueSlug)
 		if err != nil {
 			return fmt.Errorf("failed to seed post data: %v", err)
@@ -222,7 +234,12 @@ func (h *HTTPTestHelper) MakeRequest(method, path string, body string, headers m
 }
 
 // MakeRequestWithCookies makes an HTTP request with cookies
-func (h *HTTPTestHelper) MakeRequestWithCookies(method, path string, body string, headers map[string]string, cookies []*http.Cookie) (*http.Response, error) {
+func (h *HTTPTestHelper) MakeRequestWithCookies(
+	method, path string,
+	body string,
+	headers map[string]string,
+	cookies []*http.Cookie,
+) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != "" {
 		bodyReader = strings.NewReader(body)
@@ -250,7 +267,7 @@ func (h *HTTPTestHelper) MakeRequestWithCookies(method, path string, body string
 func (h *HTTPTestHelper) LoginAsAdmin() (*http.Cookie, error) {
 	loginData := "login=admin&password=" + h.App.Config.AdminPass
 	headers := map[string]string{
-		"Content-Type": "application/x-www-form-urlencoded",
+		"Content-Type": ContentTypeFormURLEncoded,
 	}
 
 	resp, err := h.MakeRequest("POST", "/login", loginData, headers)
@@ -267,7 +284,7 @@ func (h *HTTPTestHelper) LoginAsAdmin() (*http.Cookie, error) {
 
 	// Extract session cookie
 	for _, cookie := range resp.Cookies() {
-		if cookie.Name == "session" {
+		if cookie.Name == SessionCookieName {
 			return cookie, nil
 		}
 	}
@@ -442,26 +459,26 @@ func NewEnhancedTestRunner(t *testing.T) *EnhancedTestRunner {
 	// Create configuration manager
 	config := NewTestConfigManager()
 	config.LoadFromEnvironment()
-	
+
 	// Create database helper
 	db := NewDatabaseTestHelper(t)
-	
+
 	// Update config with database path
 	config.UpdateDatabaseDSN(db.Config.DBPath)
 	config.UpdateUploadPath(db.TempDir + "/uploads")
-	
+
 	// Set environment variables
 	err := config.SetEnvironmentVariables()
 	if err != nil {
 		t.Fatalf("Failed to set environment variables: %v", err)
 	}
-	
+
 	// Create app
 	testApp := SetupTestApp(t)
-	
+
 	// Create HTTP client
 	httpClient := NewHTTPTestClient(t, testApp)
-	
+
 	return &EnhancedTestRunner{
 		DB:     db,
 		HTTP:   httpClient,

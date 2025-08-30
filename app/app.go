@@ -1331,7 +1331,7 @@ func (a *App) getAllPostsForSitemap() ([]*model.Post, error) {
 	var posts []*model.Post
 	for rows.Next() {
 		post := &model.Post{}
-		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug, 
+		err := rows.Scan(&post.ID, &post.Title, &post.Body, &post.Date, &post.Slug,
 			&post.CreatedAt, &post.UpdatedAt, &post.MetaDescription, &post.Keywords)
 		if err != nil {
 			return nil, err

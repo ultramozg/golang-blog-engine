@@ -4,36 +4,42 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 )
 
+const (
+	// defaultTemplatesPath is the default path for templates
+	defaultTemplatesPath = "templates/*.gohtml"
+)
+
 // TestConfigManager manages test configuration with environment-specific settings
 type TestConfigManager struct {
-	config       *EnhancedTestConfig
-	originalEnv  map[string]string
-	tempDirs     []string
-	configFile   string
+	config      *EnhancedTestConfig
+	originalEnv map[string]string
+	tempDirs    []string
+	configFile  string
 }
 
 // EnhancedTestConfig provides comprehensive test configuration
 type EnhancedTestConfig struct {
 	// Database configuration
 	Database DatabaseConfig `json:"database"`
-	
+
 	// Server configuration
 	Server ServerConfig `json:"server"`
-	
+
 	// Authentication configuration
 	Auth AuthConfig `json:"auth"`
-	
+
 	// File upload configuration
 	FileUpload FileUploadConfig `json:"file_upload"`
-	
+
 	// Test-specific configuration
 	Test TestSpecificConfig `json:"test"`
-	
+
 	// Environment configuration
 	Environment EnvironmentConfig `json:"environment"`
 }
@@ -59,12 +65,12 @@ type ServerConfig struct {
 
 // AuthConfig holds authentication-related test configuration
 type AuthConfig struct {
-	AdminUsername    string `json:"admin_username"`
-	AdminPassword    string `json:"admin_password"`
-	SessionTimeout   time.Duration `json:"session_timeout"`
-	JWTSecret        string `json:"jwt_secret"`
-	OAuthClientID    string `json:"oauth_client_id"`
-	OAuthClientSecret string `json:"oauth_client_secret"`
+	AdminUsername     string        `json:"admin_username"`
+	AdminPassword     string        `json:"admin_password"`
+	SessionTimeout    time.Duration `json:"session_timeout"`
+	JWTSecret         string        `json:"jwt_secret"`
+	OAuthClientID     string        `json:"oauth_client_id"`
+	OAuthClientSecret string        `json:"oauth_client_secret"`
 }
 
 // FileUploadConfig holds file upload-related test configuration
@@ -156,7 +162,7 @@ func getDefaultTestConfig() *EnhancedTestConfig {
 // LoadFromFile loads configuration from a JSON file
 func (tcm *TestConfigManager) LoadFromFile(filename string) error {
 	tcm.configFile = filename
-	
+
 	// #nosec G304 - filename is controlled by test code
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -192,7 +198,16 @@ func (tcm *TestConfigManager) SaveToFile(filename string) error {
 
 // LoadFromEnvironment loads configuration from environment variables
 func (tcm *TestConfigManager) LoadFromEnvironment() {
-	// Database configuration
+	tcm.loadDatabaseConfigFromEnv()
+	tcm.loadServerConfigFromEnv()
+	tcm.loadAuthConfigFromEnv()
+	tcm.loadFileUploadConfigFromEnv()
+	tcm.loadTestConfigFromEnv()
+	tcm.loadEnvironmentConfigFromEnv()
+}
+
+// loadDatabaseConfigFromEnv loads database configuration from environment variables
+func (tcm *TestConfigManager) loadDatabaseConfigFromEnv() {
 	if dsn := os.Getenv("TEST_DB_DSN"); dsn != "" {
 		tcm.config.Database.DSN = dsn
 	}
@@ -204,8 +219,10 @@ func (tcm *TestConfigManager) LoadFromEnvironment() {
 			tcm.config.Database.MaxConnections = val
 		}
 	}
+}
 
-	// Server configuration
+// loadServerConfigFromEnv loads server configuration from environment variables
+func (tcm *TestConfigManager) loadServerConfigFromEnv() {
 	if host := os.Getenv("TEST_SERVER_HOST"); host != "" {
 		tcm.config.Server.Host = host
 	}
@@ -214,16 +231,20 @@ func (tcm *TestConfigManager) LoadFromEnvironment() {
 			tcm.config.Server.Port = val
 		}
 	}
+}
 
-	// Auth configuration
+// loadAuthConfigFromEnv loads authentication configuration from environment variables
+func (tcm *TestConfigManager) loadAuthConfigFromEnv() {
 	if adminUser := os.Getenv("TEST_ADMIN_USERNAME"); adminUser != "" {
 		tcm.config.Auth.AdminUsername = adminUser
 	}
 	if adminPass := os.Getenv("TEST_ADMIN_PASSWORD"); adminPass != "" {
 		tcm.config.Auth.AdminPassword = adminPass
 	}
+}
 
-	// File upload configuration
+// loadFileUploadConfigFromEnv loads file upload configuration from environment variables
+func (tcm *TestConfigManager) loadFileUploadConfigFromEnv() {
 	if maxSize := os.Getenv("TEST_MAX_FILE_SIZE"); maxSize != "" {
 		if val, err := strconv.ParseInt(maxSize, 10, 64); err == nil {
 			tcm.config.FileUpload.MaxFileSize = val
@@ -232,8 +253,10 @@ func (tcm *TestConfigManager) LoadFromEnvironment() {
 	if uploadPath := os.Getenv("TEST_UPLOAD_PATH"); uploadPath != "" {
 		tcm.config.FileUpload.UploadPath = uploadPath
 	}
+}
 
-	// Test configuration
+// loadTestConfigFromEnv loads test configuration from environment variables
+func (tcm *TestConfigManager) loadTestConfigFromEnv() {
 	if timeout := os.Getenv("TEST_TIMEOUT"); timeout != "" {
 		if val, err := time.ParseDuration(timeout); err == nil {
 			tcm.config.Test.Timeout = val
@@ -247,8 +270,10 @@ func (tcm *TestConfigManager) LoadFromEnvironment() {
 	if verbose := os.Getenv("TEST_VERBOSE"); verbose != "" {
 		tcm.config.Test.VerboseLogging = strings.ToLower(verbose) == "true"
 	}
+}
 
-	// Environment configuration
+// loadEnvironmentConfigFromEnv loads environment configuration from environment variables
+func (tcm *TestConfigManager) loadEnvironmentConfigFromEnv() {
 	if envName := os.Getenv("TEST_ENVIRONMENT"); envName != "" {
 		tcm.config.Environment.Name = envName
 	}
@@ -261,7 +286,7 @@ func (tcm *TestConfigManager) LoadFromEnvironment() {
 func (tcm *TestConfigManager) SetEnvironmentVariables() error {
 	envVars := map[string]string{
 		"DBURI":          tcm.config.Database.DSN,
-		"TEMPLATES":      GetTemplatesPath(),
+		"TEMPLATES":      getTemplatesPathForConfig(),
 		"ADMIN_PASSWORD": tcm.config.Auth.AdminPassword,
 		"PRODUCTION":     "false",
 		"IP_ADDR":        tcm.config.Server.Host,
@@ -452,7 +477,7 @@ func (tcm *TestConfigManager) Clone() (*TestConfigManager, error) {
 // GetConfigForEnvironment returns configuration for a specific environment
 func GetConfigForEnvironment(env string) (*TestConfigManager, error) {
 	tcm := NewTestConfigManager()
-	
+
 	// Try to load environment-specific config file
 	configFile := fmt.Sprintf("testconfig_%s.json", env)
 	if _, err := os.Stat(configFile); err == nil {
@@ -481,4 +506,24 @@ func GetConfigForEnvironment(env string) (*TestConfigManager, error) {
 func CreateTestConfigFile(filename string) error {
 	tcm := NewTestConfigManager()
 	return tcm.SaveToFile(filename)
+}
+
+// getTemplatesPathForConfig returns the templates path for configuration
+func getTemplatesPathForConfig() string {
+	// Look for templates in common locations
+	paths := []string{
+		defaultTemplatesPath,
+		"../templates/*.gohtml",
+		"../../templates/*.gohtml",
+	}
+
+	for _, path := range paths {
+		matches, _ := filepath.Glob(path)
+		if len(matches) > 0 {
+			return path
+		}
+	}
+
+	// Default fallback
+	return defaultTemplatesPath
 }

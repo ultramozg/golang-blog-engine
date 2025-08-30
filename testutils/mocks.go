@@ -324,7 +324,7 @@ func (trb *TestRequestBuilder) Cookie(cookie *http.Cookie) *TestRequestBuilder {
 // FormData sets form data as the body and content type
 func (trb *TestRequestBuilder) FormData(data string) *TestRequestBuilder {
 	trb.body = data
-	trb.headers["Content-Type"] = "application/x-www-form-urlencoded"
+	trb.headers["Content-Type"] = ContentTypeFormURLEncoded
 	return trb
 }
 

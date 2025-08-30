@@ -1688,7 +1688,7 @@ func TestUser_CheckCredentials_EdgeCases(t *testing.T) {
 		{"user2", "complex!@#$%^&*()_+", ADMIN},
 		{"user3", "unicode密码🔐", ADMIN},
 		{"user4", strings.Repeat("A", 70), ADMIN}, // Long password (within bcrypt limit)
-		{"user5", "", ADMIN},                       // Empty password (bcrypt will hash it)
+		{"user5", "", ADMIN},                      // Empty password (bcrypt will hash it)
 	}
 
 	for _, tc := range testCases {
@@ -2026,17 +2026,17 @@ func TestFile_CreateFile(t *testing.T) {
 		{
 			name: "Create valid image file",
 			file: File{
-				UUID:         "test-uuid-2",
-				OriginalName: "image.jpg",
-				StoredName:   "stored-image.jpg",
-				Path:         "/uploads/image.jpg",
-				Size:         2048,
-				MimeType:     "image/jpeg",
-				IsImage:      true,
-				Width:        func() *int { w := 800; return &w }(),
-				Height:       func() *int { h := 600; return &h }(),
+				UUID:          "test-uuid-2",
+				OriginalName:  "image.jpg",
+				StoredName:    "stored-image.jpg",
+				Path:          "/uploads/image.jpg",
+				Size:          2048,
+				MimeType:      "image/jpeg",
+				IsImage:       true,
+				Width:         func() *int { w := 800; return &w }(),
+				Height:        func() *int { h := 600; return &h }(),
 				ThumbnailPath: func() *string { p := "/uploads/thumb.jpg"; return &p }(),
-				AltText:      func() *string { a := "Test image"; return &a }(),
+				AltText:       func() *string { a := "Test image"; return &a }(),
 			},
 			expectError: false,
 		},

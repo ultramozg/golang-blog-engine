@@ -20,7 +20,7 @@ func TestEnhancedDatabaseHelpers(t *testing.T) {
 		// Test that database is properly initialized
 		AssertNotNil(t, dh.DB, "Database should be initialized")
 		AssertNotEmpty(t, dh.Config.DBPath, "Database path should be set")
-		
+
 		// Test that tables exist
 		dh.AssertTableExists(t, "posts")
 		dh.AssertTableExists(t, "comments")
@@ -74,7 +74,7 @@ func TestEnhancedDatabaseHelpers(t *testing.T) {
 		// Clear and seed data
 		err := dh.ClearAllTables()
 		AssertNil(t, err, "Should clear tables without error")
-		
+
 		err = dh.SeedTestPosts(1)
 		AssertNil(t, err, "Should seed posts without error")
 
@@ -88,7 +88,7 @@ func TestEnhancedDatabaseHelpers(t *testing.T) {
 		// Clear and seed data
 		err := dh.ClearAllTables()
 		AssertNil(t, err, "Should clear tables without error")
-		
+
 		err = dh.SeedTestPosts(3)
 		AssertNil(t, err, "Should seed posts without error")
 
@@ -142,10 +142,10 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 			GET("/page").
 			Query("p", "0").
 			Execute()
-		
+
 		AssertNil(t, err, "Should execute GET request without error")
 		defer resp.Body.Close()
-		
+
 		AssertHTTPStatusCode(t, resp, http.StatusOK)
 	})
 
@@ -163,10 +163,10 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 			Form("body", "Test Body").
 			Cookie(sessionCookie).
 			Execute()
-		
+
 		AssertNil(t, err, "Should execute POST request without error")
 		defer resp.Body.Close()
-		
+
 		AssertHTTPRedirect(t, resp, "/")
 	})
 
@@ -185,10 +185,10 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 			Field("description", "Test file").
 			File("file", "test.txt", fileContent, "text/plain").
 			Execute()
-		
+
 		AssertNil(t, err, "Should execute multipart request without error")
 		defer resp.Body.Close()
-		
+
 		// Note: This might fail if authentication is required for file upload
 		// The test demonstrates the multipart functionality
 	})
@@ -198,12 +198,12 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 			GET("/page").
 			Query("p", "0").
 			Execute()
-		
+
 		AssertNil(t, err, "Should execute request without error")
-		
+
 		helper, err := NewResponseHelper(resp)
 		AssertNil(t, err, "Should create response helper without error")
-		
+
 		AssertEqual(t, http.StatusOK, helper.StatusCode())
 		AssertTrue(t, len(helper.BodyString()) > 0, "Response body should not be empty")
 		AssertTrue(t, helper.ContainsString("Test Post"), "Response should contain test data")
@@ -211,13 +211,13 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 
 	t.Run("Session Helper", func(t *testing.T) {
 		sessionHelper := client.NewSessionHelper()
-		
+
 		// Test login
 		sessionCookie, err := sessionHelper.LoginAsAdmin("admin", runner.HTTP.App.Config.AdminPass)
 		AssertNil(t, err, "Should login without error")
 		AssertNotNil(t, sessionCookie, "Should get session cookie")
 		AssertEqual(t, "session", sessionCookie.Name)
-		
+
 		// Test logout
 		err = sessionHelper.Logout(sessionCookie)
 		AssertNil(t, err, "Should logout without error")
@@ -230,29 +230,30 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 				Query("p", "0").
 				Execute()
 		})
-		
+
 		AssertNil(t, err, "Should execute request without error")
 		defer resp.Body.Close()
-		
+
 		AssertHTTPResponseTime(t, duration, 5*time.Second)
 		AssertHTTPStatusCode(t, resp, http.StatusOK)
 	})
 
 	t.Run("Concurrent Requests", func(t *testing.T) {
+		//nolint:bodyclose // Response bodies are closed in the loop below
 		responses, errors := client.ConcurrentRequests(5, func(index int) (*http.Response, error) {
 			return client.NewRequest().
 				GET("/page").
 				Query("p", "0").
 				Execute()
 		})
-		
+
 		AssertLen(t, responses, 5, "Should have 5 responses")
 		AssertLen(t, errors, 5, "Should have 5 error slots")
-		
+
 		for i, err := range errors {
 			AssertNil(t, err, fmt.Sprintf("Request %d should not have error", i))
 		}
-		
+
 		for i, resp := range responses {
 			if resp != nil {
 				AssertHTTPStatusCode(t, resp, http.StatusOK, fmt.Sprintf("Request %d should return 200", i))
@@ -267,12 +268,12 @@ func TestEnhancedTestConfig(t *testing.T) {
 	t.Run("Default Configuration", func(t *testing.T) {
 		tcm := NewTestConfigManager()
 		AssertNotNil(t, tcm, "Should create test config manager")
-		
+
 		config := tcm.GetDatabaseConfig()
 		AssertEqual(t, "sqlite", config.Driver)
 		AssertEqual(t, ":memory:", config.DSN)
 		AssertTrue(t, config.MaxConnections > 0, "Max connections should be positive")
-		
+
 		authConfig := tcm.GetAuthConfig()
 		AssertNotEmpty(t, authConfig.AdminUsername, "Admin username should not be empty")
 		AssertNotEmpty(t, authConfig.AdminPassword, "Admin password should not be empty")
@@ -282,7 +283,7 @@ func TestEnhancedTestConfig(t *testing.T) {
 		// Set test environment variables
 		originalDBDSN := os.Getenv("TEST_DB_DSN")
 		originalAdminPass := os.Getenv("TEST_ADMIN_PASSWORD")
-		
+
 		defer func() {
 			// Restore original values
 			if originalDBDSN == "" {
@@ -296,43 +297,43 @@ func TestEnhancedTestConfig(t *testing.T) {
 				os.Setenv("TEST_ADMIN_PASSWORD", originalAdminPass)
 			}
 		}()
-		
+
 		os.Setenv("TEST_DB_DSN", "test.db")
 		os.Setenv("TEST_ADMIN_PASSWORD", "testpass456")
-		
+
 		tcm := NewTestConfigManager()
 		tcm.LoadFromEnvironment()
-		
+
 		dbConfig := tcm.GetDatabaseConfig()
 		AssertEqual(t, "test.db", dbConfig.DSN)
-		
+
 		authConfig := tcm.GetAuthConfig()
 		AssertEqual(t, "testpass456", authConfig.AdminPassword)
 	})
 
 	t.Run("Configuration File Operations", func(t *testing.T) {
 		tcm := NewTestConfigManager()
-		
+
 		// Create temporary config file
 		tempDir, err := os.MkdirTemp("", "config_test_")
 		AssertNil(t, err, "Should create temp dir without error")
 		defer os.RemoveAll(tempDir)
-		
+
 		configFile := filepath.Join(tempDir, "test_config.json")
-		
+
 		// Save configuration
 		err = tcm.SaveToFile(configFile)
 		AssertNil(t, err, "Should save config file without error")
-		
+
 		// Verify file exists
 		_, err = os.Stat(configFile)
 		AssertNil(t, err, "Config file should exist")
-		
+
 		// Load configuration
 		newTcm := NewTestConfigManager()
 		err = newTcm.LoadFromFile(configFile)
 		AssertNil(t, err, "Should load config file without error")
-		
+
 		// Verify loaded configuration matches
 		originalAuth := tcm.GetAuthConfig()
 		loadedAuth := newTcm.GetAuthConfig()
@@ -342,11 +343,11 @@ func TestEnhancedTestConfig(t *testing.T) {
 
 	t.Run("Configuration Validation", func(t *testing.T) {
 		tcm := NewTestConfigManager()
-		
+
 		// Valid configuration should pass
 		err := tcm.Validate()
 		AssertNil(t, err, "Valid configuration should pass validation")
-		
+
 		// Invalid configuration should fail
 		tcm.config.Database.Driver = ""
 		err = tcm.Validate()
@@ -357,21 +358,21 @@ func TestEnhancedTestConfig(t *testing.T) {
 	t.Run("Environment Variable Management", func(t *testing.T) {
 		tcm := NewTestConfigManager()
 		defer tcm.Cleanup()
-		
+
 		// Set custom environment variable
 		tcm.SetCustomEnvironmentVariable("TEST_CUSTOM_VAR", "custom_value")
-		
+
 		// Apply environment variables
 		err := tcm.SetEnvironmentVariables()
 		AssertNil(t, err, "Should set environment variables without error")
-		
+
 		// Verify custom variable is set
 		value := os.Getenv("TEST_CUSTOM_VAR")
 		AssertEqual(t, "custom_value", value)
-		
+
 		// Cleanup should restore original values
 		tcm.Cleanup()
-		
+
 		// Custom variable should be unset after cleanup
 		value = os.Getenv("TEST_CUSTOM_VAR")
 		AssertEmpty(t, value, "Custom variable should be unset after cleanup")
@@ -380,19 +381,19 @@ func TestEnhancedTestConfig(t *testing.T) {
 	t.Run("Temporary Directory Management", func(t *testing.T) {
 		tcm := NewTestConfigManager()
 		defer tcm.Cleanup()
-		
+
 		// Create temporary directory
 		tempDir, err := tcm.CreateTempDirectory("test_")
 		AssertNil(t, err, "Should create temp directory without error")
 		AssertNotEmpty(t, tempDir, "Temp directory path should not be empty")
-		
+
 		// Verify directory exists
 		_, err = os.Stat(tempDir)
 		AssertNil(t, err, "Temp directory should exist")
-		
+
 		// Cleanup should remove directory
 		tcm.Cleanup()
-		
+
 		// Directory should be removed after cleanup
 		_, err = os.Stat(tempDir)
 		AssertTrue(t, os.IsNotExist(err), "Temp directory should be removed after cleanup")
@@ -400,23 +401,23 @@ func TestEnhancedTestConfig(t *testing.T) {
 
 	t.Run("Configuration Cloning", func(t *testing.T) {
 		tcm := NewTestConfigManager()
-		
+
 		// Modify original configuration
 		tcm.config.Auth.AdminPassword = "modified_password"
-		
+
 		// Clone configuration
 		clonedTcm, err := tcm.Clone()
 		AssertNil(t, err, "Should clone configuration without error")
 		AssertNotNil(t, clonedTcm, "Cloned config manager should not be nil")
-		
+
 		// Verify clone has same values
 		originalAuth := tcm.GetAuthConfig()
 		clonedAuth := clonedTcm.GetAuthConfig()
 		AssertEqual(t, originalAuth.AdminPassword, clonedAuth.AdminPassword)
-		
+
 		// Modify clone and verify original is unchanged
 		clonedTcm.config.Auth.AdminPassword = "cloned_password"
-		
+
 		originalAuth = tcm.GetAuthConfig()
 		clonedAuth = clonedTcm.GetAuthConfig()
 		AssertNotEqual(t, originalAuth.AdminPassword, clonedAuth.AdminPassword)
@@ -429,15 +430,15 @@ func TestEnhancedAssertions(t *testing.T) {
 		// Test AssertEqual
 		AssertEqual(t, 42, 42, "Equal integers should pass")
 		AssertEqual(t, "hello", "hello", "Equal strings should pass")
-		
+
 		// Test AssertNotEqual
 		AssertNotEqual(t, 42, 43, "Different integers should pass")
 		AssertNotEqual(t, "hello", "world", "Different strings should pass")
-		
+
 		// Test AssertTrue/AssertFalse
 		AssertTrue(t, true, "True condition should pass")
 		AssertFalse(t, false, "False condition should pass")
-		
+
 		// Test AssertNil/AssertNotNil
 		AssertNil(t, nil, "Nil value should pass")
 		AssertNotNil(t, "not nil", "Non-nil value should pass")
@@ -449,7 +450,7 @@ func TestEnhancedAssertions(t *testing.T) {
 		AssertEmpty(t, []int{}, "Empty slice should pass")
 		AssertNotEmpty(t, "not empty", "Non-empty string should pass")
 		AssertNotEmpty(t, []int{1, 2, 3}, "Non-empty slice should pass")
-		
+
 		// Test AssertLen
 		AssertLen(t, []int{1, 2, 3}, 3, "Slice length should match")
 		AssertLen(t, "hello", 5, "String length should match")
@@ -458,12 +459,12 @@ func TestEnhancedAssertions(t *testing.T) {
 
 	t.Run("String Assertions", func(t *testing.T) {
 		text := "Hello, World!"
-		
+
 		// Test substring assertions
 		AssertContainsSubstring(t, text, "Hello", "Should contain substring")
 		AssertContainsSubstring(t, text, "World", "Should contain substring")
 		AssertNotContainsSubstring(t, text, "Goodbye", "Should not contain substring")
-		
+
 		// Test regex assertions
 		AssertMatchesRegex(t, text, `Hello.*World`, "Should match regex pattern")
 		AssertNotMatchesRegex(t, text, `^Goodbye`, "Should not match regex pattern")
@@ -474,7 +475,7 @@ func TestEnhancedAssertions(t *testing.T) {
 		AssertPanics(t, func() {
 			panic("test panic")
 		}, "Function should panic")
-		
+
 		// Test AssertNotPanics
 		AssertNotPanics(t, func() {
 			// This function should not panic
@@ -483,13 +484,13 @@ func TestEnhancedAssertions(t *testing.T) {
 
 	t.Run("Time-based Assertions", func(t *testing.T) {
 		counter := 0
-		
+
 		// Test AssertEventually
 		AssertEventually(t, func() bool {
 			counter++
 			return counter >= 3
 		}, 1*time.Second, 10*time.Millisecond, "Counter should eventually reach 3")
-		
+
 		// Test AssertNever
 		stable := true
 		AssertNever(t, func() bool {
@@ -502,16 +503,16 @@ func TestEnhancedAssertions(t *testing.T) {
 		start := time.Now()
 		time.Sleep(10 * time.Millisecond)
 		duration := time.Since(start)
-		
+
 		AssertResponseTime(t, duration, 100*time.Millisecond, "Response time should be acceptable")
-		
+
 		// Test memory usage assertion (simplified)
 		var m1, m2 runtime.MemStats
 		runtime.ReadMemStats(&m1)
-		
+
 		// Allocate some memory
 		_ = make([]byte, 1024)
-		
+
 		runtime.ReadMemStats(&m2)
 		AssertMemoryUsage(t, m1.Alloc, m2.Alloc, 10*1024, "Memory usage should be within limits")
 	})
@@ -531,10 +532,10 @@ func BenchmarkEnhancedTestInfrastructure(b *testing.B) {
 		runner := NewTestRunner(&testing.T{})
 		defer runner.Close()
 		runner.SetupTest()
-		
+
 		client := NewHTTPTestClient(&testing.T{}, runner.HTTP.App)
 		defer client.Close()
-		
+
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			resp, err := client.NewRequest().

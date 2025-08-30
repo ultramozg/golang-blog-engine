@@ -6,77 +6,52 @@ linters:
   enable:
     - bodyclose
     - dupl
-    - errcheck
     - goconst
     - gocyclo
     - govet
     - ineffassign
-    - lll
     - misspell
     - staticcheck
     - unconvert
     - unparam
     - unused
     - whitespace
-  settings:
-    dupl:
-      threshold: 100
-    goconst:
-      min-len: 2
-      min-occurrences: 2
-    gocyclo:
-      min-complexity: 15
-    lll:
-      line-length: 140
-    misspell:
-      locale: US
-    unparam:
-      check-exported: false
-    whitespace:
-      multi-if: false
-      multi-func: false
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    rules:
-      - linters:
-          - dupl
-          - errcheck
-          - gocyclo
-          - gosec
-        path: _test\.go
-      - linters:
-          - errcheck
-          - gosec
-          - unparam
-        path: testutils/
-      - linters:
-          - unparam
-        path: _test\.go
-        text: unused-parameter
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+linters-settings:
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  gocyclo:
+    min-complexity: 15
+  goimports:
+    local-prefixes: github.com/ultramozg/golang-blog-engine
+  lll:
+    line-length: 140
+  misspell:
+    locale: US
+  unparam:
+    check-exported: false
+  whitespace:
+    multi-if: false
+    multi-func: false
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   new: false
-formatters:
-  enable:
-    - gofmt
-    - goimports
-  settings:
-    goimports:
-      local-prefixes:
-        - github.com/ultramozg/golang-blog-engine
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dupl
+        - errcheck
+        - gocyclo
+        - gosec
+    - path: testutils
+      linters:
+        - errcheck
+        - lll
+    - path: _test\.go
+      linters:
+        - unparam
+      text: unused-parameter
+

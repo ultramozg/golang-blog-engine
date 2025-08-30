@@ -88,7 +88,7 @@ func TestTestingInfrastructure(t *testing.T) {
 		// Test post creation
 		formData := "title=Test+New+Post&body=This+is+a+test+post+body"
 		headers := map[string]string{
-			"Content-Type": "application/x-www-form-urlencoded",
+			"Content-Type": ContentTypeFormURLEncoded,
 		}
 
 		resp, err := runner.HTTP.MakeRequestWithCookies("POST", "/create", formData, headers, []*http.Cookie{sessionCookie})

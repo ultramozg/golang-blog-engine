@@ -19,10 +19,10 @@ import (
 
 // HTTPTestClient provides enhanced HTTP testing capabilities
 type HTTPTestClient struct {
-	App        *app.App
-	Server     *httptest.Server
-	Client     *http.Client
-	BaseURL    string
+	App            *app.App
+	Server         *httptest.Server
+	Client         *http.Client
+	BaseURL        string
 	DefaultHeaders map[string]string
 }
 
@@ -228,7 +228,7 @@ func (rb *RequestBuilder) Execute() (*http.Response, error) {
 		body = bytes.NewReader(jsonBytes)
 	} else if len(rb.formData) > 0 {
 		body = strings.NewReader(rb.formData.Encode())
-		rb.headers["Content-Type"] = "application/x-www-form-urlencoded"
+		rb.headers["Content-Type"] = ContentTypeFormURLEncoded
 	} else if rb.body != nil {
 		body = rb.body
 	}
@@ -541,6 +541,7 @@ func (c *HTTPTestClient) ConcurrentRequests(count int, requestFunc func(int) (*h
 	for i := 0; i < count; i++ {
 		go func(index int) {
 			defer func() { done <- struct{}{} }()
+			//nolint:bodyclose // Response body closing is caller's responsibility
 			responses[index], errors[index] = requestFunc(index)
 		}(i)
 	}
