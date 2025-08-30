@@ -157,6 +157,7 @@ func getDefaultTestConfig() *EnhancedTestConfig {
 func (tcm *TestConfigManager) LoadFromFile(filename string) error {
 	tcm.configFile = filename
 	
+	// #nosec G304 - filename is controlled by test code
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -181,7 +182,7 @@ func (tcm *TestConfigManager) SaveToFile(filename string) error {
 		return fmt.Errorf("failed to marshal config: %v", err)
 	}
 
-	err = os.WriteFile(filename, data, 0644)
+	err = os.WriteFile(filename, data, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write config file: %v", err)
 	}
@@ -355,15 +356,22 @@ func (tcm *TestConfigManager) Cleanup() {
 	// Restore original environment variables
 	for key, original := range tcm.originalEnv {
 		if original == "" {
-			os.Unsetenv(key)
+			if err := os.Unsetenv(key); err != nil {
+				fmt.Printf("Warning: failed to unset env var %s: %v\n", key, err)
+			}
 		} else {
-			os.Setenv(key, original)
+			if err := os.Setenv(key, original); err != nil {
+				fmt.Printf("Warning: failed to restore env var %s: %v\n", key, err)
+			}
 		}
 	}
 
 	// Remove temporary directories
 	for _, dir := range tcm.tempDirs {
-		os.RemoveAll(dir)
+		if err := os.RemoveAll(dir); err != nil {
+			// Log error but don't fail cleanup
+			fmt.Printf("Warning: failed to remove temp directory %s: %v\n", dir, err)
+		}
 	}
 
 	// Clear tracking
