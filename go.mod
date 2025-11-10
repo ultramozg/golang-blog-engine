@@ -1,12 +1,12 @@
 module github.com/ultramozg/golang-blog-engine
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/satori/go.uuid v1.2.0
 	golang.org/x/crypto v0.41.0
-	golang.org/x/oauth2 v0.30.0
+	golang.org/x/oauth2 v0.33.0
 	golang.org/x/text v0.28.0
 	modernc.org/sqlite v1.38.2
 )
