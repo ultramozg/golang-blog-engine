@@ -1,6 +1,6 @@
-{{template "header" .LoggedIn}}
+{{template "header" .Header}}
 <div class="container">
-{{$adm := .LoggedIn}}	
+{{$adm := .Header.IsAdmin}}
 
 {{range .Posts}}
 <div class="docs-section">

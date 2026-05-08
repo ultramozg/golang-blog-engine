@@ -111,12 +111,12 @@ func TestRoot(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(a.root)
 	handler.ServeHTTP(rr, req)
-	if status := rr.Code; status != http.StatusFound {
-		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusFound)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("Root handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
-	expectedURI := "/page?p=0"
-	if rr.Header().Get("Location") != expectedURI {
-		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expectedURI)
+	expected := `<p>Powered by Golang net/http package</p>`
+	if !strings.Contains(rr.Body.String(), expected) {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
 	}
 }
 
@@ -124,6 +124,7 @@ func TestGetPage(t *testing.T) {
 	a := NewApp()
 	a.Initialize()
 
+	// p=0 now redirects to / to avoid duplicate canonical
 	req, err := http.NewRequest(http.MethodGet, "/page?p=0", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -131,12 +132,11 @@ func TestGetPage(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(a.getPage)
 	handler.ServeHTTP(rr, req)
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("GetPage handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	if status := rr.Code; status != http.StatusMovedPermanently {
+		t.Errorf("GetPage p=0 should redirect: got %v want %v", status, http.StatusMovedPermanently)
 	}
-	expected := `<p>Powered by Golang net/http package</p>`
-	if !strings.Contains(rr.Body.String(), expected) {
-		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	if rr.Header().Get("Location") != "/" {
+		t.Errorf("GetPage p=0 redirect location: got %v want /", rr.Header().Get("Location"))
 	}
 }
 

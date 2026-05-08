@@ -33,6 +33,12 @@ const (
 	PostsPerPage = 8
 )
 
+// headerData is passed to header.gohtml for nav rendering and canonical URL injection
+type headerData struct {
+	IsAdmin      bool
+	CanonicalURL string
+}
+
 /*
 App The main app structure which holds all necessary Data within
 conf := NewConfig()
@@ -244,8 +250,9 @@ func (a *App) root(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Opps something did wrong", http.StatusNotFound)
 		return
 	}
-	http.Redirect(w, r, "/page?p=0", http.StatusFound)
+	a.servePosts(w, r, 0)
 }
+
 
 func (a *App) getPost(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.FormValue("id"))
@@ -395,31 +402,45 @@ func (a *App) getPostBySlug(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
-	var page int
-	var err error
-	page, err = strconv.Atoi(r.FormValue("p"))
+	page, err := strconv.Atoi(r.FormValue("p"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	posts, err := model.GetPosts(a.DB, PostsPerPage, page*PostsPerPage)
+	// Consolidate first page to / so there is a single canonical homepage URL
+	if page == 0 {
+		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		return
+	}
+	a.servePosts(w, r, page)
+}
 
+func (a *App) servePosts(w http.ResponseWriter, r *http.Request, page int) {
+	posts, err := model.GetPosts(a.DB, PostsPerPage, page*PostsPerPage)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	baseURL := a.SEOService.BaseURL()
+	var canonicalURL string
+	if page == 0 {
+		canonicalURL = baseURL + "/"
+	} else {
+		canonicalURL = fmt.Sprintf("%s/page?p=%d", baseURL, page)
 	}
 
 	switch r.Method {
 	case http.MethodGet:
 		data := struct {
 			Posts      []model.Post
-			LoggedIn   bool
+			Header     headerData
 			IsNextPage bool
 			PrevPage   int
 			NextPage   int
 		}{
 			posts,
-			a.Sessions.IsAdmin(r),
+			headerData{IsAdmin: a.Sessions.IsAdmin(r), CanonicalURL: canonicalURL},
 			isNextPage(page, model.CountPosts(a.DB)),
 			absolute(page - 1),
 			absolute(page + 1),
@@ -441,7 +462,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 func (a *App) createPost(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if err := a.Temp.ExecuteTemplate(w, "create.gohtml", a.Sessions.IsAdmin(r)); err != nil {
+		if err := a.Temp.ExecuteTemplate(w, "create.gohtml", headerData{IsAdmin: a.Sessions.IsAdmin(r)}); err != nil {
 			log.Println("Template execution error:", err)
 		}
 
@@ -532,11 +553,11 @@ func (a *App) updatePost(w http.ResponseWriter, r *http.Request) {
 		}
 
 		data := struct {
-			Post       model.Post
-			LogAsAdmin bool
+			Post   model.Post
+			Header headerData
 		}{
 			p,
-			a.Sessions.IsAdmin(r),
+			headerData{IsAdmin: a.Sessions.IsAdmin(r)},
 		}
 		err = a.Temp.ExecuteTemplate(w, "update.gohtml", data)
 		log.Println(err)
@@ -678,7 +699,7 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if err := a.Temp.ExecuteTemplate(w, "about.gohtml", a.Sessions.IsAdmin(r)); err != nil {
+		if err := a.Temp.ExecuteTemplate(w, "about.gohtml", headerData{IsAdmin: a.Sessions.IsAdmin(r)}); err != nil {
 			log.Println("Template execution error:", err)
 		}
 		return
@@ -694,7 +715,7 @@ func (a *App) about(w http.ResponseWriter, r *http.Request) {
 func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if err := a.Temp.ExecuteTemplate(w, "login.gohtml", a.Sessions.IsAdmin(r)); err != nil {
+		if err := a.Temp.ExecuteTemplate(w, "login.gohtml", headerData{IsAdmin: a.Sessions.IsAdmin(r)}); err != nil {
 			log.Println("Template execution error:", err)
 		}
 

@@ -543,13 +543,13 @@ func TestNavigationDoesNotContainCoursesOrLinks(t *testing.T) {
 	defer cleanup()
 
 	// Test homepage to check navigation
-	req, err := http.NewRequest("GET", "/page?p=0", nil)
+	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(app.getPage)
+	handler := http.HandlerFunc(app.root)
 	handler.ServeHTTP(rr, req)
 
 	// Check status code

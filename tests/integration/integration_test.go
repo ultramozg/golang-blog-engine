@@ -45,23 +45,30 @@ func TestBlogPlatformIntegration(t *testing.T) {
 }
 
 func testHomePage(t *testing.T, runner *testutils.TestRunner) {
-	// Test root redirect
+	// Test root serves page list directly (no redirect)
 	resp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to make request to root: %v", err)
 	}
 	defer resp.Body.Close()
 
-	testutils.AssertRedirect(t, resp, "/page?p=0")
+	testutils.AssertStatusCode(t, resp, http.StatusOK)
 
-	// Test page listing
+	// Test that /page?p=0 redirects to / (canonical consolidation)
 	resp, err = runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to make request to page: %v", err)
 	}
 	defer resp.Body.Close()
 
-	testutils.AssertStatusCode(t, resp, http.StatusOK)
+	testutils.AssertRedirect(t, resp, "/")
+
+	// Test page listing content at /
+	resp, err = runner.HTTP.MakeRequest("GET", "/", "", nil)
+	if err != nil {
+		t.Fatalf("Failed to make request to root for content: %v", err)
+	}
+	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -428,7 +435,7 @@ func TestConcurrentAccess(t *testing.T) {
 
 	for i := 0; i < numRequests; i++ {
 		go func() {
-			resp, err := runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
+			resp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
 			if err != nil {
 				results <- err
 				return

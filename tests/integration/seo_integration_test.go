@@ -483,7 +483,7 @@ func testNavigationDoesNotContainRemovedSections(t *testing.T, runner *testutils
 
 func testTemplatesDoNotRenderRemovedContent(t *testing.T, runner *testutils.TestRunner) {
 	// Test that templates don't try to render courses or links data
-	resp, err := runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
+	resp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to request homepage: %v", err)
 	}
@@ -1096,7 +1096,7 @@ func testNavigationRemovalComprehensive(t *testing.T, runner *testutils.TestRunn
 
 func testTemplateErrorsAbsent(t *testing.T, runner *testutils.TestRunner) {
 	// Test that templates don't contain errors related to removed content
-	resp, err := runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
+	resp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to request homepage: %v", err)
 	}

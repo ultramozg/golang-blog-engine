@@ -9,6 +9,7 @@
 	<link rel="stylesheet" href="/public/css/github-prettify-theme.css" />
 	<meta name="viewport" content="width=device-width,initial-scale=1.0">
 	<link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+	{{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
 	<title>My Posts</title>
 </head>
 <body>
@@ -23,7 +24,7 @@
 					<li class="navbar-item">
 						<a class="navbar-link" href="/">Blog</a>
 					</li>
-					{{if .}}
+					{{if .IsAdmin}}
 					<div class="u-pull-right">
 					<li class="navbar-item">
 						<a class="navbar-link" href="/create">Publish Post</a>

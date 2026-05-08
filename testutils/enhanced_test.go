@@ -139,8 +139,7 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 
 	t.Run("Request Builder - GET", func(t *testing.T) {
 		resp, err := client.NewRequest().
-			GET("/page").
-			Query("p", "0").
+			GET("/").
 			Execute()
 
 		AssertNil(t, err, "Should execute GET request without error")
@@ -195,8 +194,7 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 
 	t.Run("Response Helper", func(t *testing.T) {
 		resp, err := client.NewRequest().
-			GET("/page").
-			Query("p", "0").
+			GET("/").
 			Execute()
 
 		AssertNil(t, err, "Should execute request without error")
@@ -226,8 +224,7 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 	t.Run("Performance Measurement", func(t *testing.T) {
 		resp, duration, err := client.MeasureResponseTime(func() (*http.Response, error) {
 			return client.NewRequest().
-				GET("/page").
-				Query("p", "0").
+				GET("/").
 				Execute()
 		})
 
@@ -242,8 +239,7 @@ func TestEnhancedHTTPHelpers(t *testing.T) {
 		//nolint:bodyclose // Response bodies are closed in the loop below
 		responses, errors := client.ConcurrentRequests(5, func(index int) (*http.Response, error) {
 			return client.NewRequest().
-				GET("/page").
-				Query("p", "0").
+				GET("/").
 				Execute()
 		})
 
@@ -539,8 +535,7 @@ func BenchmarkEnhancedTestInfrastructure(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			resp, err := client.NewRequest().
-				GET("/page").
-				Query("p", "0").
+				GET("/").
 				Execute()
 			if err == nil && resp != nil {
 				resp.Body.Close()

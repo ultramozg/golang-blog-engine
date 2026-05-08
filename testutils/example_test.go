@@ -41,7 +41,7 @@ func TestTestingInfrastructure(t *testing.T) {
 
 	t.Run("HTTP Testing", func(t *testing.T) {
 		// Test GET request
-		resp, err := runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
+		resp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
 		if err != nil {
 			t.Fatalf("Failed to make request: %v", err)
 		}
@@ -200,7 +200,7 @@ func TestAssertionHelpers(t *testing.T) {
 	}
 
 	// Test status code assertion
-	resp, err := runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
+	resp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}
@@ -219,16 +219,15 @@ func TestAssertionHelpers(t *testing.T) {
 	AssertContains(t, bodyStr, "Test Post")             // Should contain test data
 	AssertNotContains(t, bodyStr, "NonExistentContent") // Should not contain this
 
-	// Test redirect assertion
-	redirectResp, err := runner.HTTP.MakeRequest("GET", "/", "", nil)
+	// Test redirect assertion: /page?p=0 now 301-redirects to /
+	redirectResp, err := runner.HTTP.MakeRequest("GET", "/page?p=0", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to make request: %v", err)
 	}
 	defer redirectResp.Body.Close()
 
-	// The root handler redirects with 302 Found status
 	if redirectResp.StatusCode >= 300 && redirectResp.StatusCode < 400 {
-		AssertRedirect(t, redirectResp, "/page?p=0")
+		AssertRedirect(t, redirectResp, "/")
 	}
 }
 

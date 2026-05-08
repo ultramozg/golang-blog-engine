@@ -21,6 +21,7 @@ type SEOService interface {
 	GenerateSitemap(posts []*model.Post) ([]byte, error)
 	GenerateRobotsTxt() string
 	GetCanonicalURL(post *model.Post) string
+	BaseURL() string
 }
 
 // seoService implements SEOService interface
@@ -271,6 +272,15 @@ func (s *seoService) GenerateRobotsTxt() string {
 	robots.WriteString(fmt.Sprintf("Sitemap: %ssitemap.xml\n", sitemapURL))
 
 	return robots.String()
+}
+
+// BaseURL returns the configured base URL for the site
+func (s *seoService) BaseURL() string {
+	baseURL := s.baseURL
+	if baseURL == "" || baseURL == "http://localhost" {
+		return "http://localhost:8080"
+	}
+	return baseURL
 }
 
 // GetCanonicalURL returns the canonical URL for a post (slug-based)

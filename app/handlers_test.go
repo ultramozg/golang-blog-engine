@@ -152,13 +152,16 @@ func TestRootHandler(t *testing.T) {
 		method           string
 		expectedStatus   int
 		expectedLocation string
+		checkContent     bool
+		expectedContent  string
 	}{
 		{
-			name:             "Root path redirects to page 0",
-			path:             "/",
-			method:           http.MethodGet,
-			expectedStatus:   http.StatusFound,
-			expectedLocation: "/page?p=0",
+			name:            "Root path serves page list directly",
+			path:            "/",
+			method:          http.MethodGet,
+			expectedStatus:  http.StatusOK,
+			checkContent:    true,
+			expectedContent: "Powered by Golang net/http package",
 		},
 		{
 			name:           "Non-root path returns 404",
@@ -183,6 +186,10 @@ func TestRootHandler(t *testing.T) {
 					t.Errorf("Expected location %s, got %s", tt.expectedLocation, location)
 				}
 			}
+
+			if tt.checkContent && !strings.Contains(rr.Body.String(), tt.expectedContent) {
+				t.Errorf("Expected body to contain %q", tt.expectedContent)
+			}
 		})
 	}
 }
@@ -206,12 +213,18 @@ func TestGetPageHandler(t *testing.T) {
 		expectedContent string
 	}{
 		{
-			name:            "Get first page",
-			path:            "/page?p=0",
+			name:            "Get second page",
+			path:            "/page?p=1",
 			method:          http.MethodGet,
 			expectedStatus:  http.StatusOK,
 			checkContent:    true,
-			expectedContent: "Test Post",
+			expectedContent: "Powered by Golang net/http package",
+		},
+		{
+			name:           "Get page 0 redirects to /",
+			path:           "/page?p=0",
+			method:         http.MethodGet,
+			expectedStatus: http.StatusMovedPermanently,
 		},
 		{
 			name:           "Get page with invalid parameter",
@@ -220,14 +233,14 @@ func TestGetPageHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "HEAD request returns OK",
-			path:           "/page?p=0",
+			name:           "HEAD request returns OK on p=1",
+			path:           "/page?p=1",
 			method:         http.MethodHead,
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "POST request returns method not allowed",
-			path:           "/page?p=0",
+			name:           "POST request returns method not allowed on p=1",
+			path:           "/page?p=1",
 			method:         http.MethodPost,
 			expectedStatus: http.StatusMethodNotAllowed,
 		},

@@ -1,5 +1,5 @@
-	{{template "header"}}
-	{{if not .}}
+	{{template "header" .}}
+	{{if not .IsAdmin}}
 	<div class="container">
 		<form method="POST" action="/login">
 			<label>Login</label><input name="login" type="text" value="" />
