@@ -315,15 +315,15 @@ func testStructuredData(t *testing.T, runner *testutils.TestRunner) {
 	testutils.AssertContains(t, bodyStr, `<script type="application/ld+json">`)
 
 	// Test structured data content (it's JSON-encoded in the script tag)
-	testutils.AssertContains(t, bodyStr, `\"@context\": \"https://schema.org\"`)
-	testutils.AssertContains(t, bodyStr, `\"@type\": \"BlogPosting\"`)
-	testutils.AssertContains(t, bodyStr, `\"headline\": \"Test Post 1\"`)
-	testutils.AssertContains(t, bodyStr, `\"author\"`)
-	testutils.AssertContains(t, bodyStr, `\"publisher\"`)
-	testutils.AssertContains(t, bodyStr, `\"mainEntityOfPage\"`)
+	testutils.AssertContains(t, bodyStr, `"@context": "https://schema.org"`)
+	testutils.AssertContains(t, bodyStr, `"@type": "BlogPosting"`)
+	testutils.AssertContains(t, bodyStr, `"headline": "Test Post 1"`)
+	testutils.AssertContains(t, bodyStr, `"author"`)
+	testutils.AssertContains(t, bodyStr, `"publisher"`)
+	testutils.AssertContains(t, bodyStr, `"mainEntityOfPage"`)
 
 	// Test that structured data contains date information
-	if !strings.Contains(bodyStr, `\"datePublished\"`) && !strings.Contains(bodyStr, `\"dateModified\"`) {
+	if !strings.Contains(bodyStr, `"datePublished"`) && !strings.Contains(bodyStr, `"dateModified"`) {
 		t.Error("Structured data should contain date information")
 	}
 }
@@ -797,7 +797,7 @@ func testSEOWithFileReferences(t *testing.T, runner *testutils.TestRunner) {
 	bodyStr := string(body)
 
 	// Test that image is included in structured data
-	testutils.AssertContains(t, bodyStr, `\"image\"`)
+	testutils.AssertContains(t, bodyStr, `"image"`)
 	testutils.AssertContains(t, bodyStr, "test-seo-image-uuid")
 
 	// Test that Open Graph image is included

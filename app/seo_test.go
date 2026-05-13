@@ -425,7 +425,7 @@ func TestPostHandlerSEOIntegration(t *testing.T) {
 		t.Error("Expected structured data script in response")
 	}
 
-	if !strings.Contains(body, `\"@type\": \"BlogPosting\"`) {
+	if !strings.Contains(body, `"@type": "BlogPosting"`) {
 		t.Error("Expected BlogPosting structured data in response")
 	}
 }
@@ -760,7 +760,7 @@ func TestSEOHeadersInResponses(t *testing.T) {
 		`<meta property="og:url" content="http://localhost:8080/p/seo-headers-test">`,
 		`<meta property="twitter:card" content="summary_large_image">`,
 		`<script type="application/ld+json">`,
-		`\"@type\": \"BlogPosting\"`,
+		`"@type": "BlogPosting"`,
 	}
 
 	for _, element := range seoElements {
@@ -944,7 +944,7 @@ func TestComprehensiveSEOFunctionality(t *testing.T) {
 				t.Error("Expected structured data script tag")
 			}
 
-			if !strings.Contains(body, `\"@type\": \"BlogPosting\"`) {
+			if !strings.Contains(body, `"@type": "BlogPosting"`) {
 				t.Error("Expected BlogPosting structured data")
 			}
 
@@ -1023,8 +1023,8 @@ func TestSEOWithFileReferences(t *testing.T) {
 
 	body := rr.Body.String()
 
-	// Test that structured data includes image (check for escaped JSON)
-	if !strings.Contains(body, `\"image\"`) && !strings.Contains(body, `"image"`) {
+	// Test that structured data includes image
+	if !strings.Contains(body, `"image"`) {
 		t.Error("Expected structured data to include image information")
 	}
 
