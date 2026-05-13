@@ -1,6 +1,6 @@
 module github.com/ultramozg/golang-blog-engine
 
-go 1.25.0
+go 1.25.10
 
 require (
 	github.com/google/go-github v17.0.0+incompatible
