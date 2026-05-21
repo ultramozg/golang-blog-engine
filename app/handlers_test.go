@@ -213,12 +213,10 @@ func TestGetPageHandler(t *testing.T) {
 		expectedContent string
 	}{
 		{
-			name:            "Get second page",
-			path:            "/page?p=1",
-			method:          http.MethodGet,
-			expectedStatus:  http.StatusOK,
-			checkContent:    true,
-			expectedContent: "Powered by Golang net/http package",
+			name:           "Get page 1 redirects to /",
+			path:           "/page?p=1",
+			method:         http.MethodGet,
+			expectedStatus: http.StatusMovedPermanently,
 		},
 		{
 			name:           "Get page 0 redirects to /",
@@ -233,16 +231,16 @@ func TestGetPageHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "HEAD request returns OK on p=1",
+			name:           "HEAD request on p=1 redirects to /",
 			path:           "/page?p=1",
 			method:         http.MethodHead,
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusMovedPermanently,
 		},
 		{
-			name:           "POST request returns method not allowed on p=1",
+			name:           "POST request on p=1 redirects to /",
 			path:           "/page?p=1",
 			method:         http.MethodPost,
-			expectedStatus: http.StatusMethodNotAllowed,
+			expectedStatus: http.StatusMovedPermanently,
 		},
 	}
 

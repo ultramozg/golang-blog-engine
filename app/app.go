@@ -167,7 +167,7 @@ func (a *App) Run() {
 
 	httpHandler := a.Router
 	if a.Config.Production == "true" {
-		httpHandler = middleware.RedirectTLSMiddleware(httpHandler)
+		httpHandler = middleware.RedirectTLSMiddleware(httpHandler, a.Config.Domain)
 	}
 	httpHandler = cert.HTTPHandler(httpHandler)
 
@@ -408,7 +408,7 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Consolidate first page to / so there is a single canonical homepage URL
-	if page == 0 {
+	if page == 0 || page == 1 {
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		return
 	}
