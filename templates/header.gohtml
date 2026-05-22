@@ -10,7 +10,7 @@
 	<meta name="viewport" content="width=device-width,initial-scale=1.0">
 	<link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
 	{{if .CanonicalURL}}<link rel="canonical" href="{{.CanonicalURL}}">{{end}}
-	<title>My Posts</title>
+	<title>{{if .Title}}{{.Title}}{{else}}srelog.dev{{end}}</title>
 </head>
 <body>
 		<div class="navbar-spacer"></div>

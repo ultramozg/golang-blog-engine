@@ -37,6 +37,7 @@ const (
 type headerData struct {
 	IsAdmin      bool
 	CanonicalURL string
+	Title        string
 }
 
 /*
@@ -432,6 +433,12 @@ func (a *App) servePosts(w http.ResponseWriter, r *http.Request, page int) {
 
 	switch r.Method {
 	case http.MethodGet:
+		var pageTitle string
+		if page == 0 {
+			pageTitle = "srelog.dev"
+		} else {
+			pageTitle = fmt.Sprintf("Page %d | srelog.dev", page)
+		}
 		data := struct {
 			Posts      []model.Post
 			Header     headerData
@@ -440,7 +447,7 @@ func (a *App) servePosts(w http.ResponseWriter, r *http.Request, page int) {
 			NextPage   int
 		}{
 			posts,
-			headerData{IsAdmin: a.Sessions.IsAdmin(r), CanonicalURL: canonicalURL},
+			headerData{IsAdmin: a.Sessions.IsAdmin(r), CanonicalURL: canonicalURL, Title: pageTitle},
 			isNextPage(page, model.CountPosts(a.DB)),
 			absolute(page - 1),
 			absolute(page + 1),
@@ -699,7 +706,12 @@ func (a *App) deletePost(w http.ResponseWriter, r *http.Request) {
 func (a *App) about(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		if err := a.Temp.ExecuteTemplate(w, "about.gohtml", headerData{IsAdmin: a.Sessions.IsAdmin(r)}); err != nil {
+		hd := headerData{
+			IsAdmin:      a.Sessions.IsAdmin(r),
+			CanonicalURL: a.SEOService.BaseURL() + "/about",
+			Title:        "About | srelog.dev",
+		}
+		if err := a.Temp.ExecuteTemplate(w, "about.gohtml", hd); err != nil {
 			log.Println("Template execution error:", err)
 		}
 		return

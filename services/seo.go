@@ -206,6 +206,13 @@ func (s *seoService) GenerateSitemap(posts []*model.Post) ([]byte, error) {
 	sitemap.WriteString("    <priority>1.0</priority>\n")
 	sitemap.WriteString("  </url>\n")
 
+	// Add about page
+	sitemap.WriteString("  <url>\n")
+	sitemap.WriteString(fmt.Sprintf("    <loc>%s</loc>\n", html.EscapeString(strings.TrimSuffix(s.baseURL, "/")+"/about")))
+	sitemap.WriteString("    <changefreq>monthly</changefreq>\n")
+	sitemap.WriteString("    <priority>0.6</priority>\n")
+	sitemap.WriteString("  </url>\n")
+
 	// Add blog posts with canonical URLs only
 	for _, post := range posts {
 		if post.Slug == "" {
