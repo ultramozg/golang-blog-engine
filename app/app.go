@@ -408,8 +408,9 @@ func (a *App) getPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// Consolidate first page to / so there is a single canonical homepage URL
-	if page == 0 || page == 1 {
+	// Page 0 is a duplicate of the homepage ("/"), so consolidate it to a
+	// single canonical URL with a 301. Page 1 and up are distinct list pages.
+	if page <= 0 {
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 		return
 	}
@@ -439,18 +440,29 @@ func (a *App) servePosts(w http.ResponseWriter, r *http.Request, page int) {
 		} else {
 			pageTitle = fmt.Sprintf("Page %d | srelog.dev", page)
 		}
+		// Build pagination links. The previous link for page 1 points to "/"
+		// (the homepage) rather than "/page?p=0" so we never link to a URL
+		// that only 301-redirects, which Google flags as "Page with redirect".
+		prevURL := "/"
+		if page-1 >= 1 {
+			prevURL = fmt.Sprintf("/page?p=%d", page-1)
+		}
+		nextURL := fmt.Sprintf("/page?p=%d", page+1)
+
 		data := struct {
-			Posts      []model.Post
-			Header     headerData
-			IsNextPage bool
-			PrevPage   int
-			NextPage   int
+			Posts   []model.Post
+			Header  headerData
+			HasPrev bool
+			HasNext bool
+			PrevURL string
+			NextURL string
 		}{
 			posts,
 			headerData{IsAdmin: a.Sessions.IsAdmin(r), CanonicalURL: canonicalURL, Title: pageTitle},
+			page > 0,
 			isNextPage(page, model.CountPosts(a.DB)),
-			absolute(page - 1),
-			absolute(page + 1),
+			prevURL,
+			nextURL,
 		}
 		if err := a.Temp.ExecuteTemplate(w, "posts.gohtml", data); err != nil {
 			log.Println("Template execution error:", err)
@@ -885,13 +897,6 @@ func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-}
-
-func absolute(i int) int {
-	if i <= 0 {
-		return 0
-	}
-	return i
 }
 
 func isNextPage(nextPage, totalPosts int) bool {

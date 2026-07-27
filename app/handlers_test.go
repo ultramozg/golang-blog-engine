@@ -213,14 +213,20 @@ func TestGetPageHandler(t *testing.T) {
 		expectedContent string
 	}{
 		{
-			name:           "Get page 1 redirects to /",
+			name:           "Get page 1 serves a distinct list page",
 			path:           "/page?p=1",
 			method:         http.MethodGet,
-			expectedStatus: http.StatusMovedPermanently,
+			expectedStatus: http.StatusOK,
 		},
 		{
 			name:           "Get page 0 redirects to /",
 			path:           "/page?p=0",
+			method:         http.MethodGet,
+			expectedStatus: http.StatusMovedPermanently,
+		},
+		{
+			name:           "Get negative page redirects to /",
+			path:           "/page?p=-1",
 			method:         http.MethodGet,
 			expectedStatus: http.StatusMovedPermanently,
 		},
@@ -231,16 +237,16 @@ func TestGetPageHandler(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "HEAD request on p=1 redirects to /",
+			name:           "HEAD request on p=1 returns OK",
 			path:           "/page?p=1",
 			method:         http.MethodHead,
-			expectedStatus: http.StatusMovedPermanently,
+			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "POST request on p=1 redirects to /",
+			name:           "POST request on p=1 is not allowed",
 			path:           "/page?p=1",
 			method:         http.MethodPost,
-			expectedStatus: http.StatusMovedPermanently,
+			expectedStatus: http.StatusMethodNotAllowed,
 		},
 	}
 
@@ -1072,25 +1078,6 @@ func TestSecurityMiddleware(t *testing.T) {
 
 // Test utility functions
 func TestUtilityFunctions(t *testing.T) {
-	t.Run("absolute function", func(t *testing.T) {
-		tests := []struct {
-			input    int
-			expected int
-		}{
-			{5, 5},
-			{0, 0},
-			{-1, 0},
-			{-10, 0},
-		}
-
-		for _, tt := range tests {
-			result := absolute(tt.input)
-			if result != tt.expected {
-				t.Errorf("absolute(%d) = %d, expected %d", tt.input, result, tt.expected)
-			}
-		}
-	})
-
 	t.Run("isNextPage function", func(t *testing.T) {
 		tests := []struct {
 			nextPage   int
